@@ -1,6 +1,9 @@
 {
   "backgrounds": {
-    "default.png": "HEG"
+    "default.png": "HEG",
+    "Fallen Order.png": "FOD",
+    "Mountain Sunrise.png": "MSR",
+    "Outer Wilds.png": "OWD"
   },
   "frames": {
     "default.png": "SPK",
@@ -10,6 +13,7 @@
     "Ribbon.png": "RBN",
     "Royal.png": "RYL",
     "Simple Vector.png": "SVC",
+    "Star Wars.png": "SWR",
     "Whiteboard.png": "WBD"
   }
 }
