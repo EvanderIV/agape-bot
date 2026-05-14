@@ -48,6 +48,7 @@ public class ApplicationHandler extends ListenerAdapter {
         public AppStep currentStep = AppStep.LANGUAGE;
         
         public String language;
+        public String username; // NEW: Store the Discord Handle!
         public String name;
         public String country;
         public short age;
@@ -103,7 +104,10 @@ public class ApplicationHandler extends ListenerAdapter {
      */
     public static void startApplication(User user, SlashCommandInteractionEvent event) {
         // Create a new blank state for this user and save it in memory
-        activeApplications.put(user.getId(), new AppState());
+        AppState newState = new AppState();
+        newState.username = user.getName(); // Capture their handle immediately
+        activeApplications.put(user.getId(), newState);
+        
         System.out.println("Started application for user: " + user.getName() + " (ID: " + user.getId() + ")");
         
         // Open a DM channel and send the very first question to kick off the chain!
