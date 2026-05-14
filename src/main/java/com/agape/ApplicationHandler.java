@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Base64;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -264,22 +265,26 @@ public class ApplicationHandler extends ListenerAdapter {
         }
     }
 
-    private String getDesignCodePrompt(String language) {
-        if (language == null) return "Please visit https://eminich.com/apps/ccm/ to create your custom design.\nOnce you're done, copy and paste the **Design Code** here!\n-# (If you changed your mind, type **cancel** to go back).";
+    private String getDesignCodePrompt(String language, String userId) {
+        // Base64 encode the user ID to obscure it in the web URL
+        String encodedId = Base64.getEncoder().encodeToString(userId.getBytes());
+        String url = "https://eminich.com/apps/ccm/?id=" + encodedId;
+
+        if (language == null) return "Please visit " + url + " to create your custom design.\nOnce you're done, copy and paste the **Design Code** here!\n-# (If you changed your mind, type **cancel** to go back).";
         switch (language.toLowerCase()) {
-            case "spanish": return "Visita https://eminich.com/apps/ccm/ para crear tu diseño personalizado.\n¡Una vez que hayas terminado, copia y pega el **Código de Diseño** aquí!\n-# (Si cambiaste de opinión, escribe **cancel** para volver).";
-            case "french": return "Visitez https://eminich.com/apps/ccm/ pour créer votre design.\nUne fois terminé, copiez et collez le **Code de Design** ici!\n-# (Si vous changez d'avis, tapez **cancel** pour revenir).";
-            case "portuguese": return "Visite https://eminich.com/apps/ccm/ para criar seu design.\nQuando terminar, copie e cole o **Código de Design** aqui!\n-# (Se você mudou de ideia, digite **cancel** para voltar).";
-            case "dutch": return "Bezoek https://eminich.com/apps/ccm/ om je ontwerp te maken.\nZodra je klaar bent, kopieer en plak de **Design Code** hier!\n-# (Typ **cancel** om terug te gaan).";
-            case "german": return "Besuche https://eminich.com/apps/ccm/ für dein Design.\nKopiere dann den **Design Code** hierher!\n-# (Tippe **cancel**, um zurückzugehen).";
-            case "italian": return "Visita https://eminich.com/apps/ccm/ per il tuo design.\nIncolla il **Design Code** qui!\n-# (Digita **cancel** per tornare indietro).";
-            case "tagalog": return "Bisitahin ang https://eminich.com/apps/ccm/ para sa iyong disenyo.\nI-paste ang **Design Code** dito!\n-# (I-type ang **cancel** para bumalik).";
-            case "japanese": return "https://eminich.com/apps/ccm/ にアクセスしてデザインを作成し、**デザインコード**をここに貼り付けてください！\n-# （戻る場合は **cancel** と入力）。";
-            case "chinese": return "请访问 https://eminich.com/apps/ccm/ 创建设计，并将 **设计代码** 粘贴到这里！\n-# （回复 **cancel** 返回）。";
-            case "swahili": return "Tembelea https://eminich.com/apps/ccm/ kufanya muundo wako.\nBandika **Design Code** hapa!\n-# (Andika **cancel** kurudi).";
-            case "afrikaans": return "Besoek https://eminich.com/apps/ccm/ vir jou ontwerp.\nPlak die **Design Code** hier!\n-# (Tik **cancel** om terug te gaan).";
-            case "romanian": return "Vizitați https://eminich.com/apps/ccm/ pentru designul dvs.\nLipiți **Design Code** aici!\n-# (Tastați **cancel** pentru a vă întoarce).";
-            default: return "Please visit https://eminich.com/apps/ccm/ to create your custom design.\nOnce you're done, copy and paste the **Design Code** here!\n-# (If you changed your mind, type **cancel** to go back).";
+            case "spanish": return "Visita " + url + " para crear tu diseño personalizado.\n¡Una vez que hayas terminado, copia y pega el **Código de Diseño** aquí!\n-# (Si cambiaste de opinión, escribe **cancel** para volver).";
+            case "french": return "Visitez " + url + " pour créer votre design.\nUne fois terminé, copiez et collez le **Code de Design** ici!\n-# (Si vous changez d'avis, tapez **cancel** pour revenir).";
+            case "portuguese": return "Visite " + url + " para criar seu design.\nQuando terminar, copie e cole o **Código de Design** aqui!\n-# (Se você mudou de ideia, digite **cancel** para voltar).";
+            case "dutch": return "Bezoek " + url + " om je ontwerp te maken.\nZodra je klaar bent, kopieer en plak de **Design Code** hier!\n-# (Typ **cancel** om terug te gaan).";
+            case "german": return "Besuche " + url + " für dein Design.\nKopiere dann den **Design Code** hierher!\n-# (Tippe **cancel**, um zurückzugehen).";
+            case "italian": return "Visita " + url + " per il tuo design.\nIncolla il **Design Code** qui!\n-# (Digita **cancel** per tornare indietro).";
+            case "tagalog": return "Bisitahin ang " + url + " para sa iyong disenyo.\nI-paste ang **Design Code** dito!\n-# (I-type ang **cancel** para bumalik).";
+            case "japanese": return url + " にアクセスしてデザインを作成し、**デザインコード**をここに貼り付けてください！\n-# （戻る場合は **cancel** と入力）。";
+            case "chinese": return "请访问 " + url + " 创建设计，并将 **设计代码** 粘贴到这里！\n-# （回复 **cancel** 返回）。";
+            case "swahili": return "Tembelea " + url + " kufanya muundo wako.\nBandika **Design Code** hapa!\n-# (Andika **cancel** kurudi).";
+            case "afrikaans": return "Besoek " + url + " vir jou ontwerp.\nPlak die **Design Code** hier!\n-# (Tik **cancel** om terug te gaan).";
+            case "romanian": return "Vizitați " + url + " pentru designul dvs.\nLipiți **Design Code** aici!\n-# (Tastați **cancel** pentru a vă întoarce).";
+            default: return "Please visit " + url + " to create your custom design.\nOnce you're done, copy and paste the **Design Code** here!\n-# (If you changed your mind, type **cancel** to go back).";
         }
     }
 
@@ -891,7 +896,7 @@ public class ApplicationHandler extends ListenerAdapter {
             case CUSTOMIZE_PROMPT:
                 if (isYes(messageContent)) {
                     state.currentStep = AppStep.WAITING_FOR_DESIGN_CODE;
-                    event.getChannel().sendMessage(getDesignCodePrompt(state.language)).queue();
+                    event.getChannel().sendMessage(getDesignCodePrompt(state.language, userId)).queue();
                     
                     // Save temporary JSON to the 'srv' directory for the web app to access!
                     File srvDir = new File("user_content/srv/");
