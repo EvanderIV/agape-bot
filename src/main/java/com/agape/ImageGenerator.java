@@ -210,8 +210,7 @@ public class ImageGenerator {
                                 BufferedImage frameImage = ImageIO.read(frameFile);
                                 
                                 // Default config (matching the old 116% scale logic)
-                                double configScaleX = 1.16;
-                                double configScaleY = 1.16;
+                                double configScale = 1.16;
                                 double configOffsetX = 0.0;
                                 double configOffsetY = 0.0;
 
@@ -223,8 +222,7 @@ public class ImageGenerator {
                                         Map<String, Map<String, Double>> configs = new Gson().fromJson(reader, type);
                                         if (configs != null && configs.containsKey(frameFile.getName())) {
                                             Map<String, Double> config = configs.get(frameFile.getName());
-                                            if (config.containsKey("scaleX")) configScaleX = config.get("scaleX");
-                                            if (config.containsKey("scaleY")) configScaleY = config.get("scaleY");
+                                            if (config.containsKey("scale")) configScale = config.get("scale");
                                             if (config.containsKey("offsetX")) configOffsetX = config.get("offsetX");
                                             if (config.containsKey("offsetY")) configOffsetY = config.get("offsetY");
                                         }
@@ -233,8 +231,10 @@ public class ImageGenerator {
                                     }
                                 }
 
-                                int drawW = (int) (pfpSize * configScaleX);
-                                int drawH = (int) (pfpSize * configScaleY);
+                                // Use configScaleX as the master uniform scale, and mathematically derive the height
+                                // to perfectly preserve the frame's native aspect ratio without warping!
+                                int drawW = (int) (pfpSize * configScale);
+                                int drawH = (int) (drawW / ((double) frameImage.getWidth() / frameImage.getHeight()));
                                 
                                 // Center the properly scaled frame over the PFP, then apply the custom X/Y translation offset
                                 int drawX = pfpX + (pfpSize - drawW) / 2 + (int) (pfpSize * configOffsetX);
