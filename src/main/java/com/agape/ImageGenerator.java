@@ -5,8 +5,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.AffineTransform;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
@@ -33,7 +33,8 @@ public class ImageGenerator {
                 try {
                     File fontFile = new File(fontPath);
                     if (!fontFile.exists()) {
-                        // If it doesn't look like a file (no extension), try loading it as a system font
+                        // If it doesn't look like a file (no extension), try loading it as a system
+                        // font
                         if (!fontPath.contains(".")) {
                             cache.put(fontPath, new Font(fontPath, Font.BOLD, 12));
                         } else {
@@ -65,7 +66,8 @@ public class ImageGenerator {
                 return cache.get(hex);
             try {
                 // Fetch the Twemoji graphic from jsdelivr CDN using the emoji's hex sequence
-                URL url = new URL("https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/72x72/" + hex + ".png");
+                URL url = new URI("https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/72x72/" + hex + ".png")
+                        .toURL();
                 BufferedImage img = ImageIO.read(url);
                 cache.put(hex, img);
                 return img;
@@ -100,8 +102,8 @@ public class ImageGenerator {
         String gradType = "none";
         Color c1 = Color.WHITE;
         Color c2 = Color.WHITE;
-        Color outlineColor = new Color(15, 40, 70); // Darker blueish border for thicker walls
-        float outlineWidth = 5.0f; // Thick walls default (increased from 3.0)
+        Color outlineColor = new Color(30, 81, 117); // Darker blueish border for thicker walls
+        float outlineWidth = 7.0f; // Thick walls default (increased from 3.0)
         float fontSize = -1f; // -1 means use default base size
         String fontPath = null; // null means use global base font
 
@@ -231,7 +233,7 @@ public class ImageGenerator {
 
             // 3. Draw the rich text
             if (mainText != null && !mainText.isEmpty()) {
-                Font baseFont = FontLoader.getFont(fontPath, 36f); // Dynamically loads or fetches cached font
+                Font baseFont = FontLoader.getFont(fontPath, 40f); // Dynamically loads or fetches cached font
 
                 // Default starting position for text
                 int textX = 80; // Moved a tad right to match template margins
@@ -264,14 +266,13 @@ public class ImageGenerator {
                                 ld.width + paddingX * 2, ld.height + paddingY * 2));
                     }
 
-                    currentY += ld.height + 10; // Move Y down for next line dynamically
+                    currentY += ld.height - 4; // Move Y down for next line dynamically
                     previousWasBlob = ld.hasBlob;
                 }
 
                 if (!blobBounds.isEmpty()) {
                     Color avgColor = getAverageColor(backgroundImage);
-                    Color blobOverlay = new Color(avgColor.getRed(), avgColor.getGreen(), avgColor.getBlue(), 64); // 25%
-                                                                                                                   // Opacity
+                    Color blobOverlay = new Color(avgColor.getRed(), avgColor.getGreen(), avgColor.getBlue(), 127);
 
                     int w = backgroundImage.getWidth();
                     int h = backgroundImage.getHeight();
@@ -481,8 +482,9 @@ public class ImageGenerator {
 
         for (TextRun run : ld.runs) {
             // Determine the base font for this specific run
-            Font runBase = (run.fontPath != null && !run.fontPath.isEmpty()) ? FontLoader.getFont(run.fontPath, 36f) : baseFont;
-            
+            Font runBase = (run.fontPath != null && !run.fontPath.isEmpty()) ? FontLoader.getFont(run.fontPath, 36f)
+                    : baseFont;
+
             Font runFont = run.fontSize > 0 ? runBase.deriveFont(run.style).deriveFont(run.fontSize)
                     : runBase.deriveFont(run.style);
             FontMetrics fm = g2d.getFontMetrics(runFont);
@@ -515,8 +517,9 @@ public class ImageGenerator {
 
         for (TextRun run : ld.runs) {
             // Determine the base font for this specific run
-            Font runBase = (run.fontPath != null && !run.fontPath.isEmpty()) ? FontLoader.getFont(run.fontPath, 36f) : baseFont;
-            
+            Font runBase = (run.fontPath != null && !run.fontPath.isEmpty()) ? FontLoader.getFont(run.fontPath, 36f)
+                    : baseFont;
+
             Font runFont = run.fontSize > 0 ? runBase.deriveFont(run.style).deriveFont(run.fontSize)
                     : runBase.deriveFont(run.style);
             g2d.setFont(runFont);
@@ -778,9 +781,9 @@ public class ImageGenerator {
 
         // Call the main generator with reasonable default coordinates/sizes based on
         // the reference
-        int defaultMarginRight = 159;
+        int defaultMarginRight = 134;
         int defaultMarginTop = 50;
-        int defaultPfpSize = 300;
+        int defaultPfpSize = 350;
 
         boolean success = generateMatchmakingImage(backgroundPath, pfpUrl, framePath, fontPath, mainText, outputPath,
                 defaultMarginRight, defaultMarginTop, defaultPfpSize);
