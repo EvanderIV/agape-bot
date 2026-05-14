@@ -116,7 +116,7 @@ public class AgapeBot extends ListenerAdapter {
 
             // Assuming your template is sitting in the root folder of your project
             String backgroundPath = "assets/backgrounds/default.png";
-            String framePath = "assets/frames/Windows Vista.png";
+            String framePath = "assets/frames/default.png";
             String fontPath = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
 
             // Dynamically pull the user's custom Design Code if they completed the application!
