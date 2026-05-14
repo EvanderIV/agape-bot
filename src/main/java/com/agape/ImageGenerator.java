@@ -815,4 +815,61 @@ public class ImageGenerator {
         }
         return null;
     }
+
+    /**
+     * Decodes a 5-7 character design code (e.g. "DEF-DEF") into actual file paths.
+     * @param designCode The code provided by the user.
+     * @return An array containing [Background Path, Frame Path].
+     */
+    public static String[] decodeDesignCode(String designCode) {
+        String bgFile = "default.png";
+        String frameFile = "default.png";
+        
+        if (designCode != null && designCode.contains("-")) {
+            String[] parts = designCode.trim().toUpperCase().split("-");
+            if (parts.length >= 2) {
+                bgFile = resolveCodeToFilename(parts[0], "backgrounds");
+                frameFile = resolveCodeToFilename(parts[1], "frames");
+            }
+        }
+        return new String[]{ "assets/backgrounds/" + bgFile, "assets/frames/" + frameFile };
+    }
+
+    private static String resolveCodeToFilename(String code, String category) {
+        // 1. Check design_codes.json config map
+        File configFile = new File("assets/design_codes.json");
+        if (configFile.exists()) {
+            try (FileReader reader = new FileReader(configFile)) {
+                java.lang.reflect.Type type = new TypeToken<Map<String, Map<String, String>>>(){}.getType();
+                Map<String, Map<String, String>> configs = new Gson().fromJson(reader, type);
+                if (configs != null && configs.containsKey(category)) {
+                    for (Map.Entry<String, String> entry : configs.get(category).entrySet()) {
+                        if (entry.getValue().toUpperCase().equals(code)) {
+                            return entry.getKey();
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("Failed to read design codes: " + ex.getMessage());
+            }
+        }
+        
+        // 2. Fallback search by auto-hashing available files if not in config
+        File dir = new File("assets/" + category + "/");
+        if (dir.exists() && dir.isDirectory()) {
+            for (File file : dir.listFiles()) {
+                String nameOnly = file.getName();
+                int dotIndex = nameOnly.lastIndexOf('.');
+                if(dotIndex > 0) nameOnly = nameOnly.substring(0, dotIndex);
+                
+                String clean = nameOnly.replaceAll("[^A-Za-z0-9]", "");
+                String fallbackCode = clean.length() >= 3 ? clean.substring(0, 3).toUpperCase() : clean.toUpperCase();
+                
+                if (fallbackCode.equals(code)) {
+                    return file.getName();
+                }
+            }
+        }
+        return "default.png";
+    }
 }

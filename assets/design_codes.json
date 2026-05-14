@@ -1,0 +1,15 @@
+{
+  "backgrounds": {
+    "default.png": "HEG"
+  },
+  "frames": {
+    "default.png": "SPK",
+    "Abstract Splats.png": "SPT",
+    "Futuristic.png": "FTR",
+    "Painted Strokes.png": "PST",
+    "Ribbon.png": "RBN",
+    "Royal.png": "RYL",
+    "Simple Vector.png": "SVC",
+    "Whiteboard.png": "WBD"
+  }
+}

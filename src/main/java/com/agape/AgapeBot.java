@@ -13,7 +13,10 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
 import java.io.File;
+import java.io.FileReader;
 import java.util.EnumSet;
+
+import com.google.gson.Gson;
 
 public class AgapeBot extends ListenerAdapter {
 
@@ -97,12 +100,12 @@ public class AgapeBot extends ListenerAdapter {
             // 3. Build the placeholder text based on your reference design requirements
             // Note: In a real app, you'd fetch this data from a database based on the
             // userId
-            String placeholderText = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:10.0}{f:Arial Rounded MT Bold}"
+            String placeholderText = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}"
                     + displayName
                     + "{/}*\n"
-                    + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}@"
+                    + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}@"
                     + targetUser.getName() + "{/}*\n\n"
-                    + "20 | 2005\n"
+                    + "{sc:#0F2846}{o:#0F2846:8.0}20 | 2005\n"
                     + "M\n"
                     + "DISCORD USER\n"
                     + "EARTH / ENGLISH\n"
@@ -116,6 +119,23 @@ public class AgapeBot extends ListenerAdapter {
             String framePath = "assets/frames/default.png";
             String fontPath = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
 
+            // Dynamically pull the user's custom Design Code if they completed the application!
+            File profileFile = new File("user_content/profiles/" + userId + ".json");
+            if (profileFile.exists()) {
+                try (FileReader reader = new FileReader(profileFile)) {
+                    Gson gson = new Gson();
+                    ApplicationHandler.AppState state = gson.fromJson(reader, ApplicationHandler.AppState.class);
+                    if (state.designCode != null && !state.designCode.isEmpty()) {
+                        // Decode the shortcode (e.g. "DEF-DEF") into actual file paths!
+                        String[] decodedPaths = ImageGenerator.decodeDesignCode(state.designCode);
+                        backgroundPath = decodedPaths[0];
+                        framePath = decodedPaths[1];
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to load user profile for design code.");
+                }
+            }
+
             // Print files in the specified path for debugging purposes
             File bgFile = new File(backgroundPath);
             if (!bgFile.exists()) {
@@ -128,10 +148,15 @@ public class AgapeBot extends ListenerAdapter {
                 return;
             }
 
+            // Capture current values for use in lambda (lambda requires effectively final variables)
+            final String bgPath = backgroundPath;
+            final String fmPath = framePath;
+            final String ftPath = fontPath;
+
             // 4. Run the generation in a new thread so it doesn't block JDA's main event
             // loop
             new Thread(() -> {
-                File generatedImage = ImageGenerator.generateForUser(backgroundPath, avatarUrl, framePath, fontPath,
+                File generatedImage = ImageGenerator.generateForUser(bgPath, avatarUrl, fmPath, ftPath,
                         placeholderText, userId);
 
                 // 5. Send the result back to Discord
