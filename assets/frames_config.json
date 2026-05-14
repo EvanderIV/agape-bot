@@ -9,6 +9,11 @@
     "offsetX": -0.015,
     "offsetY": 0.0
   },
+  "Camera.png": {
+    "scale": 1.245,
+    "offsetX": -0.005,
+    "offsetY": -0.002
+  },
   "Futuristic.png": {
     "scale": 1.3,
     "offsetX": -0.012,
@@ -41,6 +46,11 @@
   },
   "Whiteboard.png": {
     "scale": 1.145,
+    "offsetX": 0.0,
+    "offsetY": -0.01
+  },
+  "Windows Vista.png": {
+    "scale": 1.2,
     "offsetX": 0.0,
     "offsetY": -0.01
   }

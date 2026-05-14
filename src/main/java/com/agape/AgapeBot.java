@@ -105,7 +105,7 @@ public class AgapeBot extends ListenerAdapter {
                     + "{/}*\n"
                     + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}@"
                     + targetUser.getName() + "{/}*\n\n"
-                    + "{sc:#0F2846}{o:#0F2846:8.0}20 | 2005\n"
+                    + "20 | 2005\n"
                     + "M\n"
                     + "DISCORD USER\n"
                     + "EARTH / ENGLISH\n"
@@ -115,8 +115,8 @@ public class AgapeBot extends ListenerAdapter {
                     + "{img:red_flag.png} PARTNER: TOXIC, UNAVAILABLE.";
 
             // Assuming your template is sitting in the root folder of your project
-            String backgroundPath = "assets/backgrounds/Fallen Order.png";
-            String framePath = "assets/frames/Star Wars.png";
+            String backgroundPath = "assets/backgrounds/default.png";
+            String framePath = "assets/frames/Windows Vista.png";
             String fontPath = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
 
             // Dynamically pull the user's custom Design Code if they completed the application!

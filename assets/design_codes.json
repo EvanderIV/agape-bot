@@ -8,12 +8,14 @@
   "frames": {
     "default.png": "SPK",
     "Abstract Splats.png": "SPT",
+    "Camera.png": "CMA",
     "Futuristic.png": "FTR",
     "Painted Strokes.png": "PST",
     "Ribbon.png": "RBN",
     "Royal.png": "RYL",
     "Simple Vector.png": "SVC",
     "Star Wars.png": "SWR",
-    "Whiteboard.png": "WBD"
+    "Whiteboard.png": "WBD",
+    "Windows Vista.png": "WOV"
   }
 }
