@@ -261,35 +261,20 @@ public class ImageGenerator {
                 int textX = 80; // Moved a tad right to match template margins
                 int textY = 140; // Moved down a bit from the top edge
 
-                String[] lines = mainText.split("\n");
-                List<LineData> parsedLines = new ArrayList<>();
+                // Calculate PFP collision bounds for dynamic wrapping
+                int pfpBottom = pfpMarginTop + pfpSize + 30; // buffer below PFP
+                int pfpLeft = backgroundImage.getWidth() - pfpSize - pfpMarginRight - 30; // buffer left of PFP
+
+                List<LineData> parsedLines = layoutText(g2d, mainText, baseFont, textX, textY, backgroundImage.getWidth(), pfpBottom, pfpLeft);
                 List<Rectangle> blobBounds = new ArrayList<>();
 
-                int currentY = textY;
-                boolean previousWasBlob = false;
-
-                for (String line : lines) {
-                    LineData ld = parseAndMeasureLine(g2d, line, baseFont);
-
-                    // If this line and the previous line are both in the blob (Title & Handle),
-                    // pull them closer together to reduce the gap created by large font sizes.
-                    if (ld.hasBlob && previousWasBlob) {
-                        currentY -= 25;
-                    }
-
-                    ld.startX = textX;
-                    ld.startY = currentY;
-                    parsedLines.add(ld);
-
+                for (LineData ld : parsedLines) {
                     if (ld.hasBlob) {
                         int paddingX = 40;
                         int paddingY = 25;
                         blobBounds.add(new Rectangle(ld.startX - paddingX, ld.startY - ld.ascent - paddingY,
                                 ld.width + paddingX * 2, ld.height + paddingY * 2));
                     }
-
-                    currentY += ld.height - 4; // Move Y down for next line dynamically
-                    previousWasBlob = ld.hasBlob;
                 }
 
                 if (!blobBounds.isEmpty()) {
@@ -379,13 +364,178 @@ public class ImageGenerator {
         }
     }
 
-    private static LineData parseAndMeasureLine(Graphics2D g2d, String line, Font baseFont) {
-        LineData ld = new LineData();
-        if (line.contains("{blob}")) {
-            ld.hasBlob = true;
-            line = line.replace("{blob}", ""); // Consume the tag quietly
-        }
+    private static List<LineData> layoutText(Graphics2D g2d, String mainText, Font baseFont, int startX, int startY, int bgWidth, int pfpBottom, int pfpLeft) {
+        List<LineData> finalLines = new ArrayList<>();
+        String[] paragraphs = mainText.split("\n"); 
+        int currentY = startY;
+        boolean previousWasBlob = false;
 
+        for (String paragraph : paragraphs) {
+            boolean hasBlob = false;
+            if (paragraph.contains("{blob}")) {
+                hasBlob = true;
+                paragraph = paragraph.replace("{blob}", ""); // Consume the tag quietly
+            }
+
+            if (hasBlob && previousWasBlob) {
+                currentY -= 25; // Pull consecutive blob paragraphs (like Name/Handle) closer together
+            }
+
+            List<TextRun> parsedRuns = parseRichText(paragraph);
+            
+            // Handle completely empty lines gracefully
+            if (parsedRuns.isEmpty()) {
+                LineData blankLine = new LineData();
+                blankLine.hasBlob = hasBlob;
+                FontMetrics fm = g2d.getFontMetrics(baseFont);
+                blankLine.height = fm.getHeight();
+                blankLine.ascent = fm.getAscent();
+                blankLine.startX = startX;
+                blankLine.startY = currentY;
+                finalLines.add(blankLine);
+                
+                currentY += blankLine.height - 4;
+                previousWasBlob = hasBlob;
+                continue;
+            }
+
+            LineData currentLine = new LineData();
+            currentLine.hasBlob = hasBlob;
+            int currentLineWidth = 0;
+            int maxLineHeight = 0;
+            int maxLineAscent = 0;
+
+            for (TextRun run : parsedRuns) {
+                Font runBase = (run.fontPath != null && !run.fontPath.isEmpty()) ? FontLoader.getFont(run.fontPath, 36f) : baseFont;
+                Font runFont = run.fontSize > 0 ? runBase.deriveFont(run.style).deriveFont(run.fontSize) : runBase.deriveFont(run.style);
+                FontMetrics fm = g2d.getFontMetrics(runFont);
+
+                if (run.isEmoji) {
+                    int runWidth = fm.getHeight() + 2;
+                    int maxWidth = (currentY < pfpBottom) ? (pfpLeft - startX) : (bgWidth - startX - 80);
+                    
+                    if (currentLineWidth + runWidth > maxWidth && currentLineWidth > 0) {
+                        currentLine.width = currentLineWidth;
+                        if (maxLineHeight == 0) { maxLineHeight = fm.getHeight(); maxLineAscent = fm.getAscent(); }
+                        currentLine.height = maxLineHeight;
+                        currentLine.ascent = maxLineAscent;
+                        currentLine.startX = startX;
+                        currentLine.startY = currentY;
+                        finalLines.add(currentLine);
+                        
+                        currentY += currentLine.height - 4;
+                        currentLine = new LineData();
+                        currentLine.hasBlob = hasBlob;
+                        currentLineWidth = 0;
+                        maxLineHeight = 0;
+                        maxLineAscent = 0;
+                        maxWidth = (currentY < pfpBottom) ? (pfpLeft - startX) : (bgWidth - startX - 80);
+                    }
+                    
+                    currentLine.runs.add(run);
+                    currentLineWidth += runWidth;
+                    maxLineHeight = Math.max(maxLineHeight, fm.getHeight());
+                    maxLineAscent = Math.max(maxLineAscent, fm.getAscent());
+                } 
+                else if (run.isLocalImage && run.localImage != null) {
+                    int runWidth = (int) ((double) run.localImage.getWidth() / run.localImage.getHeight() * fm.getHeight()) + 5;
+                    int maxWidth = (currentY < pfpBottom) ? (pfpLeft - startX) : (bgWidth - startX - 80);
+                    
+                    if (currentLineWidth + runWidth > maxWidth && currentLineWidth > 0) {
+                        currentLine.width = currentLineWidth;
+                        if (maxLineHeight == 0) { maxLineHeight = fm.getHeight(); maxLineAscent = fm.getAscent(); }
+                        currentLine.height = maxLineHeight;
+                        currentLine.ascent = maxLineAscent;
+                        currentLine.startX = startX;
+                        currentLine.startY = currentY;
+                        finalLines.add(currentLine);
+                        
+                        currentY += currentLine.height - 4;
+                        currentLine = new LineData();
+                        currentLine.hasBlob = hasBlob;
+                        currentLineWidth = 0;
+                        maxLineHeight = 0;
+                        maxLineAscent = 0;
+                    }
+                    
+                    currentLine.runs.add(run);
+                    currentLineWidth += runWidth;
+                    maxLineHeight = Math.max(maxLineHeight, fm.getHeight());
+                    maxLineAscent = Math.max(maxLineAscent, fm.getAscent());
+                } 
+                else {
+                    // Standard Text: Split by spaces but explicitly keep the space tokens to preserve spacing!
+                    String[] words = run.text.toString().split("(?<=\\s)|(?=\\s)");
+                    TextRun currentWordRun = run.copy();
+                    currentWordRun.text = new StringBuilder();
+                    
+                    for (String word : words) {
+                        if (word.isEmpty()) continue;
+                        int wordWidth = fm.stringWidth(word);
+                        int maxWidth = (currentY < pfpBottom) ? (pfpLeft - startX) : (bgWidth - startX - 80);
+                        
+                        // Prevent leading spaces from aggressively pushing a wrapped line rightward
+                        if (currentLineWidth == 0 && word.trim().isEmpty()) continue;
+                        
+                        // If it overflows the allowed bounds, snap it to the next line below!
+                        if (currentLineWidth + wordWidth > maxWidth && currentLineWidth > 0) {
+                            if (currentWordRun.text.length() > 0) {
+                                currentLine.runs.add(currentWordRun);
+                            }
+                            currentLine.width = currentLineWidth;
+                            if (maxLineHeight == 0) { maxLineHeight = fm.getHeight(); maxLineAscent = fm.getAscent(); }
+                            currentLine.height = maxLineHeight;
+                            currentLine.ascent = maxLineAscent;
+                            currentLine.startX = startX;
+                            currentLine.startY = currentY;
+                            finalLines.add(currentLine);
+                            
+                            currentY += currentLine.height - 4;
+                            currentLine = new LineData();
+                            currentLine.hasBlob = hasBlob;
+                            currentLineWidth = 0;
+                            maxLineHeight = 0;
+                            maxLineAscent = 0;
+                            
+                            currentWordRun = run.copy();
+                            currentWordRun.text = new StringBuilder();
+                            
+                            if (word.trim().isEmpty()) continue;
+                        }
+                        
+                        currentWordRun.text.append(word);
+                        currentLineWidth += wordWidth;
+                        maxLineHeight = Math.max(maxLineHeight, fm.getHeight());
+                        maxLineAscent = Math.max(maxLineAscent, fm.getAscent());
+                    }
+                    if (currentWordRun.text.length() > 0) {
+                        currentLine.runs.add(currentWordRun);
+                    }
+                }
+            }
+            
+            if (!currentLine.runs.isEmpty() || currentLine.width > 0) {
+                currentLine.width = currentLineWidth;
+                if (maxLineHeight == 0) { 
+                    FontMetrics fm = g2d.getFontMetrics(baseFont);
+                    maxLineHeight = fm.getHeight(); 
+                    maxLineAscent = fm.getAscent(); 
+                }
+                currentLine.height = maxLineHeight;
+                currentLine.ascent = maxLineAscent;
+                currentLine.startX = startX;
+                currentLine.startY = currentY;
+                finalLines.add(currentLine);
+                currentY += currentLine.height - 4;
+            }
+            
+            previousWasBlob = hasBlob;
+        }
+        return finalLines;
+    }
+
+    private static List<TextRun> parseRichText(String line) {
+        List<TextRun> runs = new ArrayList<>();
         // 1. Pre-process real emojis
         line = EmojiParser.parseFromUnicode(line,
                 candidate -> "{e:" + getTwemojiHex(candidate.getEmoji().getUnicode()) + "}");
@@ -396,7 +546,7 @@ public class ImageGenerator {
         for (int i = 0; i < line.length(); i++) {
             if (line.startsWith("**", i)) {
                 if (currentRun.text.length() > 0) {
-                    ld.runs.add(currentRun);
+                    runs.add(currentRun);
                     currentRun = currentRun.copy();
                     currentRun.text = new StringBuilder();
                 }
@@ -404,7 +554,7 @@ public class ImageGenerator {
                 i++; // skip second asterisk
             } else if (line.startsWith("*", i)) {
                 if (currentRun.text.length() > 0) {
-                    ld.runs.add(currentRun);
+                    runs.add(currentRun);
                     currentRun = currentRun.copy();
                     currentRun.text = new StringBuilder();
                 }
@@ -414,7 +564,7 @@ public class ImageGenerator {
                 if (end != -1) {
                     String tag = line.substring(i + 1, end);
                     if (currentRun.text.length() > 0) {
-                        ld.runs.add(currentRun);
+                        runs.add(currentRun);
                         currentRun = currentRun.copy();
                         currentRun.text = new StringBuilder();
                     }
@@ -450,7 +600,7 @@ public class ImageGenerator {
                             TextRun emojiRun = currentRun.copy();
                             emojiRun.isEmoji = true;
                             emojiRun.emojiImage = EmojiLoader.getEmoji(hex);
-                            ld.runs.add(emojiRun);
+                            runs.add(emojiRun);
                         } else if (tag.startsWith("img:")) {
                             String path = "assets/customojis/" + tag.substring(4);
                             TextRun imgRun = currentRun.copy();
@@ -460,7 +610,7 @@ public class ImageGenerator {
                             } catch (Exception ex) {
                                 System.err.println("Could not load local image: " + path);
                             }
-                            ld.runs.add(imgRun);
+                            runs.add(imgRun);
                         } else if (tag.startsWith("g:")) {
                             String[] parts = tag.split(":");
                             if (parts.length == 4) {
@@ -495,41 +645,10 @@ public class ImageGenerator {
             }
         }
         if (currentRun.text.length() > 0) {
-            ld.runs.add(currentRun);
+            runs.add(currentRun);
         }
-
-        int totalLineWidth = 0;
-        int maxLineHeight = g2d.getFontMetrics(baseFont).getHeight();
-        int maxLineAscent = g2d.getFontMetrics(baseFont).getAscent();
-
-        for (TextRun run : ld.runs) {
-            // Determine the base font for this specific run
-            Font runBase = (run.fontPath != null && !run.fontPath.isEmpty()) ? FontLoader.getFont(run.fontPath, 36f)
-                    : baseFont;
-
-            Font runFont = run.fontSize > 0 ? runBase.deriveFont(run.style).deriveFont(run.fontSize)
-                    : runBase.deriveFont(run.style);
-            FontMetrics fm = g2d.getFontMetrics(runFont);
-
-            if (fm.getHeight() > maxLineHeight)
-                maxLineHeight = fm.getHeight();
-            if (fm.getAscent() > maxLineAscent)
-                maxLineAscent = fm.getAscent();
-
-            if (run.isEmoji) {
-                totalLineWidth += fm.getHeight() + 2;
-            } else if (run.isLocalImage && run.localImage != null) {
-                int th = fm.getHeight();
-                totalLineWidth += (int) ((double) run.localImage.getWidth() / run.localImage.getHeight() * th) + 5;
-            } else {
-                totalLineWidth += fm.stringWidth(run.text.toString());
-            }
-        }
-
-        ld.width = totalLineWidth;
-        ld.height = maxLineHeight;
-        ld.ascent = maxLineAscent;
-        return ld;
+        
+        return runs;
     }
 
     private static void drawParsedLine(Graphics2D g2d, LineData ld, Font baseFont) {
