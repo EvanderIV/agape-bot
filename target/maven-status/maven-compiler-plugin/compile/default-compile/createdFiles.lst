@@ -6,4 +6,5 @@ com\agape\ApplicationHandler$AppState.class
 com\agape\AgapeBot.class
 com\agape\ImageGenerator$LineData.class
 com\agape\ImageGenerator$TextRun.class
+com\agape\ImageGenerator$1.class
 com\agape\ApplicationHandler.class

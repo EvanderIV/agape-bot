@@ -4,6 +4,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -18,6 +19,8 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.vdurmont.emoji.EmojiParser;
 
 public class ImageGenerator {
@@ -206,17 +209,36 @@ public class ImageGenerator {
                             if (frameFile.exists()) {
                                 BufferedImage frameImage = ImageIO.read(frameFile);
                                 
-                                // Scale the frame while maintaining its original aspect ratio
-                                double scaleX = (double) (pfpSize + 30) / frameImage.getWidth();
-                                double scaleY = (double) (pfpSize + 30) / frameImage.getHeight();
-                                double scale = Math.min(scaleX, scaleY); // 'contain' behavior
+                                // Default config (matching the old 116% scale logic)
+                                double configScaleX = 1.16;
+                                double configScaleY = 1.16;
+                                double configOffsetX = 0.0;
+                                double configOffsetY = 0.0;
+
+                                // Try reading from frames_config.json
+                                File configFile = new File("assets/frames_config.json");
+                                if (configFile.exists()) {
+                                    try (FileReader reader = new FileReader(configFile)) {
+                                        java.lang.reflect.Type type = new TypeToken<Map<String, Map<String, Double>>>(){}.getType();
+                                        Map<String, Map<String, Double>> configs = new Gson().fromJson(reader, type);
+                                        if (configs != null && configs.containsKey(frameFile.getName())) {
+                                            Map<String, Double> config = configs.get(frameFile.getName());
+                                            if (config.containsKey("scaleX")) configScaleX = config.get("scaleX");
+                                            if (config.containsKey("scaleY")) configScaleY = config.get("scaleY");
+                                            if (config.containsKey("offsetX")) configOffsetX = config.get("offsetX");
+                                            if (config.containsKey("offsetY")) configOffsetY = config.get("offsetY");
+                                        }
+                                    } catch (Exception ex) {
+                                        System.err.println("Failed to read frame configs: " + ex.getMessage());
+                                    }
+                                }
+
+                                int drawW = (int) (pfpSize * configScaleX);
+                                int drawH = (int) (pfpSize * configScaleY);
                                 
-                                int drawW = (int) (frameImage.getWidth() * scale);
-                                int drawH = (int) (frameImage.getHeight() * scale);
-                                
-                                // Center the properly scaled frame over the PFP
-                                int drawX = pfpX + (pfpSize - drawW) / 2;
-                                int drawY = pfpY + (pfpSize - drawH) / 2;
+                                // Center the properly scaled frame over the PFP, then apply the custom X/Y translation offset
+                                int drawX = pfpX + (pfpSize - drawW) / 2 + (int) (pfpSize * configOffsetX);
+                                int drawY = pfpY + (pfpSize - drawH) / 2 + (int) (pfpSize * configOffsetY);
 
                                 g2d.drawImage(frameImage, drawX, drawY, drawW, drawH, null);
                             } else {

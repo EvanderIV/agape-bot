@@ -859,8 +859,8 @@ public class ApplicationHandler extends ListenerAdapter {
                             }
                             
                             // Construct the beautiful rich text using their actual answers!
-                            String text = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:10.0}{f:Arial Rounded MT Bold}" + state.name + "{/}*\n" +
-                                          "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}@" + user.getName() + "{/}*\n\n" +
+                            String text = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}" + state.name + "{/}*\n" +
+                                          "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:6.0}{f:Arial Rounded MT Bold}@" + user.getName() + "{/}*\n\n" +
                                           // Get age and also subtract if from current year
                                           state.age + " | " + (currYear - state.age) + "\n" +
                                           state.sex + "\n" +
