@@ -1,11 +1,15 @@
 {
   "backgrounds": {
     "default.png": "HEG",
+    "Breath of the Wild.png": "BTW",
     "Expedition 33.png": "EXP",
     "Fallen Order.png": "FOD",
+    "Liyue.png": "LYU",
+    "Minecraft.png": "MCJ",
     "Mountain Sunrise.png": "MSR",
     "Outer Wilds.png": "OWD",
-    "Remember Reach.png": "REA"
+    "Remember Reach.png": "REA",
+    "Wangshu Inn.png": "WSI"
   },
   "frames": {
     "default.png": "SPK",
