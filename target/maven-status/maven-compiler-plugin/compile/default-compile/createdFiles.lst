@@ -1,5 +1,6 @@
 com\agape\ApplicationHandler$AppStep.class
-com\agape\ImageGenerator$EmojiLoader.class
+com\agape\LanguageManager.class
+com\agape\MessagingHandler.class
 com\agape\ImageGenerator$2.class
 com\agape\ImageGenerator$FontLoader.class
 com\agape\ImageGenerator.class
@@ -7,5 +8,8 @@ com\agape\ApplicationHandler$AppState.class
 com\agape\AgapeBot.class
 com\agape\ImageGenerator$LineData.class
 com\agape\ImageGenerator$TextRun.class
-com\agape\ImageGenerator$1.class
 com\agape\ApplicationHandler.class
+com\agape\ImageGenerator$EmojiLoader.class
+com\agape\ApplicationHandler$DesignPaths.class
+com\agape\ImageGenerator$1.class
+com\agape\ApplicationHandler$AutoModResult.class
