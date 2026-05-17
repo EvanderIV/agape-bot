@@ -4,21 +4,16 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
-import net.dv8tion.jda.api.interactions.components.text.TextInput;
-import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.util.EnumSet;
 
 import com.google.gson.Gson;
@@ -87,12 +82,6 @@ public class AgapeBot extends ListenerAdapter {
                 .addOption(OptionType.USER, "user", "The applicant to message", true)
                 .addOption(OptionType.STRING, "message", "The message to send", true);
 
-        SlashCommandData acceptCmd = Commands.slash("accept", "Accept an applicant (Matchmakers only)")
-                .addOption(OptionType.USER, "user", "The applicant to accept", true);
-
-        SlashCommandData rejectCmd = Commands.slash("reject", "Reject an applicant (Matchmakers only)")
-                .addOption(OptionType.USER, "user", "The applicant to reject", true);
-
         SlashCommandData statusCmd = Commands.slash("app-status", "Check the status of an applicant's profile")
                 .addOption(OptionType.USER, "user", "The user to check status for", true);
 
@@ -103,7 +92,7 @@ public class AgapeBot extends ListenerAdapter {
         // instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, acceptCmd, rejectCmd, statusCmd, historyCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -262,108 +251,64 @@ public class AgapeBot extends ListenerAdapter {
             User applicant = event.getOption("user").getAsUser();
             String messageContent = event.getOption("message").getAsString();
             String matchmakerId = event.getUser().getId();
+            String applicantId = applicant.getId();
 
             event.deferReply(true).queue();
 
             applicant.openPrivateChannel().queue(channel -> {
-                channel.sendMessage("📨 **Message from Matchmaker:**\n" + messageContent).queue(success -> {
-                    MessagingHandler.saveMessage(applicant.getId(), matchmakerId, "matchmaker", messageContent);
-                    event.getHook().sendMessage("✅ Message sent to " + applicant.getAsMention()).queue();
-                }, error -> {
-                    event.getHook().sendMessage("❌ Could not send message - user may have DMs disabled.").queue();
-                });
+                // Create embed for the message
+                net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                    .setTitle("💬 Message from Matchmaker")
+                    .setColor(0xFF9999)
+                    .setDescription(messageContent)
+                    .setFooter("Matchmaker ID: " + matchmakerId)
+                    .setTimestamp(java.time.Instant.now());
+
+                // Add reply button to the DM
+                net.dv8tion.jda.api.interactions.components.buttons.Button replyBtn = 
+                    net.dv8tion.jda.api.interactions.components.buttons.Button.primary(
+                        "convo_reply_" + applicantId + "_" + matchmakerId, "💬 Reply"
+                    );
+                net.dv8tion.jda.api.interactions.components.ActionRow actionRow = 
+                    net.dv8tion.jda.api.interactions.components.ActionRow.of(replyBtn);
+                
+                channel.sendMessageEmbeds(embed.build())
+                    .setComponents(actionRow)
+                    .queue(success -> {
+                        // Store the new message ID
+                        String newMessageId = success.getId();
+                        MessagingHandler.saveDMMessageId(applicantId, matchmakerId, newMessageId);
+                        MessagingHandler.saveMessage(applicantId, matchmakerId, "matchmaker", messageContent);
+                        
+                        // Remove reply button from the previous message if it exists
+                        String oldMessageId = MessagingHandler.getDMMessageId(applicantId, matchmakerId);
+                        if (oldMessageId != null && !oldMessageId.equals(newMessageId)) {
+                            channel.retrieveMessageById(oldMessageId).queue(oldMsg -> {
+                                try {
+                                    oldMsg.editMessageComponents(java.util.Collections.emptyList()).queue(
+                                        editSuccess -> System.out.println("✅ Removed reply button from old message"),
+                                        editError -> System.err.println("⚠️ Could not remove reply button from old message")
+                                    );
+                                } catch (Exception ex) {
+                                    System.err.println("⚠️ Could not edit old message: " + ex.getMessage());
+                                }
+                            }, msgError -> System.err.println("⚠️ Could not retrieve old message"));
+                        }
+                        
+                        event.getHook().sendMessage("✅ Message sent to " + applicant.getAsMention()).queue();
+                    }, error -> {
+                        event.getHook().sendMessage("❌ Could not send message - user may have DMs disabled.").queue();
+                    });
             }, error -> {
                 event.getHook().sendMessage("❌ Could not open DM channel with the user.").queue();
             });
 
-        } else if (event.getName().equals("accept")) {
-            // MATCHMAKER COMMAND: Accept an applicant
-            if (!hasMatchmakerRole(event)) {
-                event.reply("❌ Only matchmakers can use this command.")
-                        .setEphemeral(true)
-                        .queue();
-                return;
-            }
-
-            User applicant = event.getOption("user").getAsUser();
-            String applicantId = applicant.getId();
-            String matchmakerId = event.getUser().getId();
-
-            event.deferReply(true).queue();
-
-            // Load the applicant's profile
-            File profileFile = new File("user_content/profiles/" + applicantId + ".json");
-            if (!profileFile.exists()) {
-                event.getHook().sendMessage("❌ No application found for this user.").queue();
-                return;
-            }
-
-            try {
-                Gson gson = new Gson();
-                ApplicationHandler.AppState state = gson.fromJson(
-                    new FileReader(profileFile),
-                    ApplicationHandler.AppState.class
+            // Also post to the applications channel for the applicant to reply through
+            if (event.getGuild() != null) {
+                ApplicationHandler.postConversationStartToChannel(
+                    applicant, messageContent, matchmakerId, event.getGuild().getId(), event.getJDA()
                 );
-
-                // Update status
-                state.status = "ACCEPTED";
-                state.reviewedAt = java.time.LocalDateTime.now()
-                    .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                state.reviewedBy = matchmakerId;
-
-                // Save updated profile
-                try (FileWriter writer = new FileWriter(profileFile)) {
-                    Gson gsonWriter = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-                    gsonWriter.toJson(state, writer);
-                }
-
-                // Notify the applicant
-                applicant.openPrivateChannel().queue(channel -> {
-                    channel.sendMessage("✅ **Good news!** Your application has been **ACCEPTED** by a matchmaker!\n\n" +
-                        "You'll be hearing from them soon via messages. Stay tuned! 💕").queue();
-                });
-
-                event.getHook().sendMessage("✅ Application ACCEPTED for " + applicant.getAsMention()).queue();
-
-            } catch (Exception e) {
-                System.err.println("Error accepting application: " + e.getMessage());
-                event.getHook().sendMessage("❌ Error processing acceptance.").queue();
             }
-
-        } else if (event.getName().equals("reject")) {
-            // MATCHMAKER COMMAND: Reject an applicant
-            if (!hasMatchmakerRole(event)) {
-                event.reply("❌ Only matchmakers can use this command.")
-                        .setEphemeral(true)
-                        .queue();
-                return;
-            }
-
-            User applicant = event.getOption("user").getAsUser();
-            String applicantId = applicant.getId();
-
-            // Check if the applicant has an application
-            File profileFile = new File("user_content/profiles/" + applicantId + ".json");
-            if (!profileFile.exists()) {
-                event.reply("❌ No application found for this user.")
-                        .setEphemeral(true)
-                        .queue();
-                return;
-            }
-
-            // Create and show a modal for rejection reason
-            TextInput reasonInput = TextInput.create("rejection_reason", "Reason for Rejection", TextInputStyle.PARAGRAPH)
-                    .setPlaceholder("Please explain why the application is being rejected and what changes are needed...")
-                    .setRequired(true)
-                    .setMinLength(10)
-                    .setMaxLength(4000)
-                    .build();
-
-            Modal modal = Modal.create("reject_modal_" + applicantId, "Reject Application")
-                    .addActionRow(reasonInput)
-                    .build();
-
-            event.replyModal(modal).queue();
 
         } else if (event.getName().equals("app-status")) {
             // Check application status (anyone can use this)
@@ -390,6 +335,8 @@ public class AgapeBot extends ListenerAdapter {
                     statusEmoji = "✅";
                 } else if ("REJECTED".equals(state.status)) {
                     statusEmoji = "❌";
+                } else if ("CHANGES_REQUESTED".equals(state.status)) {
+                    statusEmoji = "📝";
                 }
 
                 StringBuilder response = new StringBuilder();
@@ -401,6 +348,10 @@ public class AgapeBot extends ListenerAdapter {
                 if (state.reviewedAt != null) {
                     response.append("**Reviewed:** ").append(state.reviewedAt).append("\n");
                     response.append("**Reviewed By:** <@").append(state.reviewedBy).append(">\n");
+                }
+
+                if ("REJECTED".equals(state.status) && state.rejectionReason != null) {
+                    response.append("\n**Rejection Reason:** ").append(state.rejectionReason).append("\n");
                 }
 
                 event.getHook().sendMessage(response.toString()).queue();
@@ -436,68 +387,4 @@ public class AgapeBot extends ListenerAdapter {
             }
         }
     }
-
-    @Override
-    public void onModalInteraction(ModalInteractionEvent event) {
-        String modalId = event.getModalId();
-
-        // Handle rejection modal (triggered from the /reject slash command)
-        if (modalId.startsWith("reject_modal_")) {
-            String applicantId = modalId.substring("reject_modal_".length());
-            String matchmakerId = event.getUser().getId();
-            String rejectionReason = event.getValue("rejection_reason").getAsString();
-
-            event.deferReply(true).queue();
-
-            // Load the applicant's profile
-            File profileFile = new File("user_content/profiles/" + applicantId + ".json");
-            if (!profileFile.exists()) {
-                event.getHook().sendMessage("❌ No application found for this user.").queue();
-                return;
-            }
-
-            try {
-                Gson gson = new Gson();
-                ApplicationHandler.AppState state = gson.fromJson(
-                    new FileReader(profileFile),
-                    ApplicationHandler.AppState.class
-                );
-
-                // Update status and save rejection reason
-                state.status = "REJECTED";
-                state.rejectionReason = rejectionReason;
-                state.reviewedAt = java.time.LocalDateTime.now()
-                    .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                state.reviewedBy = matchmakerId;
-
-                // Save updated profile
-                try (FileWriter writer = new FileWriter(profileFile)) {
-                    Gson gsonWriter = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-                    gsonWriter.toJson(state, writer);
-                }
-
-                // FIX: Use retrieveUserById to fetch directly from the Discord API and bypass the cache!
-                event.getJDA().retrieveUserById(applicantId).queue(user -> {
-                    user.openPrivateChannel().queue(channel -> {
-                        channel.sendMessage("ℹ️ **Application Update:** Your application has been reviewed and needs revision.\n\n" +
-                            "**Feedback:** " + rejectionReason + "\n\n" +
-                            "Please address these concerns and resubmit your application. We look forward to reviewing it again! 💕").queue();
-                    }, error -> {
-                        event.getHook().sendMessage("⚠️ Application REJECTED, but I could not DM the user to notify them.").queue();
-                    });
-                }, error -> {
-                    event.getHook().sendMessage("⚠️ Application REJECTED, but I could not find the user to notify them.").queue();
-                });
-
-                event.getHook().sendMessage("✅ Application REJECTED for <@" + applicantId + ">\n**Reason:** " + rejectionReason).queue();
-
-            } catch (Exception e) {
-                System.err.println("Error rejecting application: " + e.getMessage());
-                event.getHook().sendMessage("❌ Error processing rejection.").queue();
-            }
-        }
-    }
-    
-    // NOTE: onButtonInteraction was COMPLETELY deleted from this file!
-    // ApplicationHandler.java now safely handles all the review buttons alone.
 }

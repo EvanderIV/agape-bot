@@ -152,4 +152,70 @@ public class MessagingHandler {
         activeConversations.remove(applicantId + "_" + matchmakerId);
         System.out.println("💬 Closed messaging conversation: " + applicantId + " <-> " + matchmakerId);
     }
+
+    /**
+     * Saves the DM message ID for a conversation (used to edit messages later)
+     * @param applicantId The applicant's ID
+     * @param matchmakerId The matchmaker's ID
+     * @param messageId The Discord message ID
+     */
+    public static void saveDMMessageId(String applicantId, String matchmakerId, String messageId) {
+        File dmIdDir = new File("user_content/dm_messages/");
+        if (!dmIdDir.exists()) {
+            dmIdDir.mkdirs();
+        }
+
+        File idFile = new File(dmIdDir, applicantId + "_" + matchmakerId + ".json");
+
+        try (FileWriter writer = new FileWriter(idFile)) {
+            JsonObject idObj = new JsonObject();
+            idObj.addProperty("messageId", messageId);
+            idObj.addProperty("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            gson.toJson(idObj, writer);
+            System.out.println("✅ Saved DM message ID: " + messageId);
+        } catch (IOException e) {
+            System.err.println("❌ Failed to save DM message ID: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Gets the current DM message ID for a conversation
+     * @param applicantId The applicant's ID
+     * @param matchmakerId The matchmaker's ID
+     * @return The message ID, or null if not found
+     */
+    public static String getDMMessageId(String applicantId, String matchmakerId) {
+        File dmIdDir = new File("user_content/dm_messages/");
+        File idFile = new File(dmIdDir, applicantId + "_" + matchmakerId + ".json");
+
+        if (!idFile.exists()) {
+            return null;
+        }
+
+        try {
+            String content = new String(java.nio.file.Files.readAllBytes(idFile.toPath()));
+            JsonObject idObj = JsonParser.parseString(content).getAsJsonObject();
+            return idObj.get("messageId").getAsString();
+        } catch (IOException e) {
+            System.err.println("Error reading DM message ID: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Clears the stored DM message ID for a conversation
+     * @param applicantId The applicant's ID
+     * @param matchmakerId The matchmaker's ID
+     */
+    public static void clearDMMessageId(String applicantId, String matchmakerId) {
+        File dmIdDir = new File("user_content/dm_messages/");
+        File idFile = new File(dmIdDir, applicantId + "_" + matchmakerId + ".json");
+
+        if (idFile.exists()) {
+            idFile.delete();
+            System.out.println("✅ Cleared DM message ID");
+        }
+    }
 }

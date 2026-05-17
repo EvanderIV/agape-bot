@@ -573,6 +573,284 @@ public class ApplicationHandler extends ListenerAdapter {
     }
 
     /**
+     * Posts a conversation start message to the applications channel
+     */
+    public static void postConversationStartToChannel(User applicant, String messageContent, String matchmakerId, String guildId, JDA jda) {
+        try {
+            net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
+            if (guild == null) {
+                System.err.println("❌ Guild not found for ID: " + guildId);
+                return;
+            }
+
+            // Find the applications channel
+            java.util.List<?> applicationsList = guild.getTextChannelsByName("matchmaker-backroom", true);
+            if (applicationsList.isEmpty()) {
+                applicationsList = guild.getTextChannelsByName("matchmakers", true);
+            }
+            if (applicationsList.isEmpty()) {
+                applicationsList = guild.getTextChannelsByName("applications", true);
+            }
+            if (applicationsList.isEmpty()) {
+                applicationsList = guild.getTextChannelsByName("pending-applications", true);
+            }
+
+            if (applicationsList.isEmpty()) {
+                System.err.println("⚠️ No applications channel found in guild: " + guild.getName());
+                return;
+            }
+
+            // Create embed for conversation start (without button - it goes in the DM instead)
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle("💬 Anonymous Conversation with " + applicant.getName())
+                    .setColor(0x6699FF)
+                    .addField("Applicant", applicant.getAsMention() + " (ID: " + applicant.getId() + ")", false)
+                    .addField("Matchmaker Message", messageContent, false)
+                    .setFooter("ID: " + applicant.getId() + " | Matchmaker: " + matchmakerId)
+                    .setTimestamp(java.time.Instant.now());
+
+            // Send to channel (no buttons - reply button is in the DM)
+            Object channelObj = applicationsList.get(0);
+            try {
+                java.lang.reflect.Method sendEmbedMethod = channelObj.getClass().getMethod("sendMessageEmbeds", java.util.Collection.class);
+                Object messageAction = sendEmbedMethod.invoke(channelObj, java.util.Collections.singletonList(embed.build()));
+                
+                java.lang.reflect.Method queueMethod = messageAction.getClass().getMethod("queue");
+                queueMethod.invoke(messageAction);
+                
+                System.out.println("✅ Conversation message posted to channel");
+            } catch (Exception ex) {
+                System.err.println("❌ Failed to post conversation message: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error posting conversation to channel: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Handles the reply button click from applicant's DM - shows modal
+     */
+    private void handleConversationReplyButton(ButtonInteractionEvent event) {
+        String buttonId = event.getComponentId();
+        String applicantId, matchmakerId;
+        String modalTitle = "Reply to Matchmaker";
+        String modalId;
+        
+        if (buttonId.startsWith("convo_reply_mm_")) {
+            // Matchmaker replying to applicant
+            String[] parts = buttonId.substring("convo_reply_mm_".length()).split("_");
+            if (parts.length < 2) {
+                event.reply("❌ Invalid conversation reference.").setEphemeral(true).queue();
+                return;
+            }
+            matchmakerId = parts[0];
+            applicantId = parts[1];
+            modalTitle = "Reply to Applicant";
+            modalId = "modal_convo_reply_mm_" + matchmakerId + "_" + applicantId;
+        } else {
+            // Applicant replying to matchmaker
+            String[] parts = buttonId.substring("convo_reply_".length()).split("_");
+            if (parts.length < 2) {
+                event.reply("❌ Invalid conversation reference.").setEphemeral(true).queue();
+                return;
+            }
+            applicantId = parts[0];
+            matchmakerId = parts[1];
+            modalId = "modal_convo_reply_" + applicantId + "_" + matchmakerId;
+        }
+        
+        // Create modal for reply
+        TextInput replyInput = TextInput.create("reply_message", "Your Reply", TextInputStyle.PARAGRAPH)
+                .setPlaceholder("Type your response here...")
+                .setRequired(true)
+                .build();
+        
+        Modal modal = Modal.create(modalId, modalTitle)
+                .addActionRow(replyInput)
+                .build();
+        
+        event.replyModal(modal).queue();
+    }
+
+    /**
+     * Posts a conversation reply to the applications channel when applicant replies via DM modal
+     */
+    private void postConversationReplyToChannel(String applicantId, String matchmakerId, String replyContent, JDA jda, String sender) {
+        try {
+            // Get the applicant's guild ID from their profile
+            File profileFile = new File("user_content/profiles/" + applicantId + ".json");
+            if (!profileFile.exists()) {
+                System.err.println("❌ Profile not found for applicant: " + applicantId);
+                return;
+            }
+
+            Gson gson = new Gson();
+            AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
+            String guildId = state.guildId;
+
+            if (guildId == null) {
+                System.err.println("❌ No guild ID found in applicant profile");
+                return;
+            }
+
+            net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
+            if (guild == null) {
+                System.err.println("❌ Guild not found for ID: " + guildId);
+                return;
+            }
+
+            // Find the applications channel
+            java.util.List<?> applicationsList = guild.getTextChannelsByName("matchmaker-backroom", true);
+            if (applicationsList.isEmpty()) {
+                applicationsList = guild.getTextChannelsByName("matchmakers", true);
+            }
+            if (applicationsList.isEmpty()) {
+                applicationsList = guild.getTextChannelsByName("applications", true);
+            }
+            if (applicationsList.isEmpty()) {
+                applicationsList = guild.getTextChannelsByName("pending-applications", true);
+            }
+
+            if (applicationsList.isEmpty()) {
+                System.err.println("⚠️ No applications channel found in guild: " + guild.getName());
+                return;
+            }
+
+            // Create embed for reply
+            String senderLabel = "applicant".equals(sender) ? "Applicant Reply" : "Matchmaker Reply";
+            int embedColor = "applicant".equals(sender) ? 0x99FF99 : 0xFF9999;
+
+            // If applicant replied, mention the matchmaker; if matchmaker, mention is in the embed
+            String mention = "applicant".equals(sender) ? "<@" + matchmakerId + ">" : "";
+            String description = mention.isEmpty() ? replyContent : mention + "\n\n" + replyContent;
+
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle(senderLabel)
+                    .setColor(embedColor)
+                    .setDescription(description)
+                    .setFooter("Applicant ID: " + applicantId)
+                    .setTimestamp(java.time.Instant.now());
+
+            // Send to channel
+            Object channelObj = applicationsList.get(0);
+            try {
+                java.lang.reflect.Method sendEmbedMethod = channelObj.getClass().getMethod("sendMessageEmbeds", java.util.Collection.class);
+                Object messageAction = sendEmbedMethod.invoke(channelObj, java.util.Collections.singletonList(embed.build()));
+                
+                // Add reply button for applicant replies
+                if ("applicant".equals(sender)) {
+                    Button replyBtn = Button.primary("convo_reply_mm_" + matchmakerId + "_" + applicantId, "💬 Reply");
+                    ActionRow actionRow = ActionRow.of(replyBtn);
+                    
+                    java.lang.reflect.Method setComponentsMethod = messageAction.getClass().getMethod("setComponents", java.util.Collection.class);
+                    messageAction = setComponentsMethod.invoke(messageAction, java.util.Collections.singletonList(actionRow));
+                }
+                
+                java.lang.reflect.Method queueMethod = messageAction.getClass().getMethod("queue");
+                queueMethod.invoke(messageAction);
+                
+                System.out.println("✅ Conversation reply posted to channel");
+            } catch (Exception ex) {
+                System.err.println("❌ Failed to post conversation reply: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error posting conversation reply to channel: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Sends a matchmaker's reply to the applicant via DM
+     */
+    private void sendConversationReplyToApplicant(String applicantId, String matchmakerId, String replyContent, JDA jda) {
+        try {
+            net.dv8tion.jda.api.entities.User applicant = jda.retrieveUserById(applicantId).complete();
+            if (applicant == null) {
+                System.err.println("❌ Could not retrieve applicant with ID: " + applicantId);
+                return;
+            }
+
+            applicant.openPrivateChannel().queue(dm -> {
+                EmbedBuilder embed = new EmbedBuilder()
+                        .setTitle("💬 Message from Matchmaker")
+                        .setColor(0xFF9999)
+                        .setDescription(replyContent)
+                        .setFooter("Matchmaker ID: " + matchmakerId)
+                        .setTimestamp(java.time.Instant.now());
+
+                Button replyBtn = Button.primary("convo_reply_" + applicantId + "_" + matchmakerId, "💬 Reply");
+                ActionRow actionRow = ActionRow.of(replyBtn);
+
+                dm.sendMessageEmbeds(embed.build())
+                        .setComponents(actionRow)
+                        .queue(
+                            success -> System.out.println("✅ Conversation reply sent to applicant via DM"),
+                            error -> System.err.println("❌ Failed to send conversation reply to applicant: " + error.getMessage())
+                        );
+            });
+        } catch (Exception e) {
+            System.err.println("❌ Error sending conversation reply to applicant: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Edits the original DM message to include the applicant's reply
+     */
+    private void editDMWithApplicantReply(String applicantId, String matchmakerId, String replyContent, JDA jda) {
+        try {
+            net.dv8tion.jda.api.entities.User applicant = jda.retrieveUserById(applicantId).complete();
+            if (applicant == null) {
+                System.err.println("❌ Could not retrieve applicant with ID: " + applicantId);
+                return;
+            }
+
+            applicant.openPrivateChannel().queue(dm -> {
+                String messageId = MessagingHandler.getDMMessageId(applicantId, matchmakerId);
+                if (messageId == null) {
+                    System.err.println("⚠️ No DM message ID found for editing");
+                    return;
+                }
+
+                dm.retrieveMessageById(messageId).queue(msg -> {
+                    try {
+                        // Get the current embed
+                        if (msg.getEmbeds().isEmpty()) {
+                            System.err.println("⚠️ Original message has no embed");
+                            return;
+                        }
+
+                        net.dv8tion.jda.api.entities.MessageEmbed originalEmbed = msg.getEmbeds().get(0);
+                        String originalDescription = originalEmbed.getDescription();
+
+                        // Append the reply to the embed
+                        String updatedDescription = originalDescription + "\n\n✅ **Your reply:**\n" + replyContent;
+
+                        EmbedBuilder embed = new EmbedBuilder(originalEmbed)
+                                .setDescription(updatedDescription);
+
+                        // Remove reply button (set components to empty)
+                        msg.editMessageEmbeds(embed.build())
+                                .setComponents(java.util.Collections.emptyList())
+                                .queue(
+                                    editSuccess -> System.out.println("✅ Edited DM to include applicant reply"),
+                                    editError -> System.err.println("⚠️ Could not edit DM: " + editError.getMessage())
+                                );
+                    } catch (Exception ex) {
+                        System.err.println("⚠️ Error editing message: " + ex.getMessage());
+                    }
+                }, msgError -> System.err.println("⚠️ Could not retrieve message for editing"));
+            });
+        } catch (Exception e) {
+            System.err.println("❌ Error editing DM with reply: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Displays all user answers in a numbered list so they can select which to edit
      */
     private String displayAnswersForEditing(AppState state) {
@@ -1018,6 +1296,12 @@ public class ApplicationHandler extends ListenerAdapter {
             return;
         }
 
+        // Check if it's a conversation reply button
+        if (buttonId.startsWith("convo_reply_")) {
+            handleConversationReplyButton(event);
+            return;
+        }
+
         // NEW: Check if it's a user application edit/delete button
         if (buttonId.startsWith("user_edit_app_") || buttonId.equals("user_delete_app")) {
             handleUserAppAction(event);
@@ -1186,6 +1470,60 @@ public class ApplicationHandler extends ListenerAdapter {
             }, error -> {
                 event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
             });
+        } else if (event.getModalId().startsWith("modal_convo_reply_mm_")) {
+            // Handle conversation reply from matchmaker
+            String[] parts = event.getModalId().substring("modal_convo_reply_mm_".length()).split("_");
+            if (parts.length < 2) {
+                event.reply("❌ Invalid conversation reference.").setEphemeral(true).queue();
+                return;
+            }
+            
+            String matchmakerId = parts[0];
+            String applicantId = parts[1];
+            String replyContent = event.getValue("reply_message").getAsString();
+            
+            event.deferReply(true).queue();
+            
+            // Save the conversation
+            MessagingHandler.saveMessage(applicantId, matchmakerId, "matchmaker", replyContent);
+            
+            // Try to post to applications channel
+            postConversationReplyToChannel(
+                applicantId, matchmakerId, replyContent, 
+                event.getJDA(), "matchmaker"
+            );
+            
+            // Send reply to applicant via DM
+            sendConversationReplyToApplicant(applicantId, matchmakerId, replyContent, event.getJDA());
+            
+            event.getHook().sendMessage("✅ Your reply has been sent to the applicant.").queue();
+        } else if (event.getModalId().startsWith("modal_convo_reply_")) {
+            // Handle conversation reply from applicant
+            String[] parts = event.getModalId().substring("modal_convo_reply_".length()).split("_");
+            if (parts.length < 2) {
+                event.reply("❌ Invalid conversation reference.").setEphemeral(true).queue();
+                return;
+            }
+            
+            String applicantId = parts[0];
+            String matchmakerId = parts[1];
+            String replyContent = event.getValue("reply_message").getAsString();
+            
+            event.deferReply(true).queue();
+            
+            // Save the conversation
+            MessagingHandler.saveMessage(applicantId, matchmakerId, "applicant", replyContent);
+            
+            // Edit the original DM to include the reply
+            editDMWithApplicantReply(applicantId, matchmakerId, replyContent, event.getJDA());
+            
+            // Try to post to applications channel
+            postConversationReplyToChannel(
+                applicantId, matchmakerId, replyContent, 
+                event.getJDA(), "applicant"
+            );
+            
+            event.getHook().sendMessage("✅ Your reply has been sent to the matchmaker.").queue();
         }
     }
 
