@@ -29,6 +29,7 @@ public class ImageGenerator {
         private static final Map<String, Font> cache = new HashMap<>();
 
         public static Font getFont(String fontPath, float size) {
+            //System.out.println("Loading font: " + fontPath + " at size: " + size);
             if (fontPath == null || fontPath.isEmpty()) {
                 return new Font("Arial Rounded MT Bold", Font.BOLD, (int) size);
             }
