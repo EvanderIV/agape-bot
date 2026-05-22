@@ -3,7 +3,6 @@ package com.agape;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,7 +65,7 @@ public class ApplicationHandler extends ListenerAdapter {
         public String username; // Store the Discord Handle
         public String name;
         public String country;
-        public short age;
+        public String birthday; // stored as M/D/YYYY
         public boolean sex;
         public String sect;
         public String physicalDescription;
@@ -87,6 +86,9 @@ public class ApplicationHandler extends ListenerAdapter {
         public String reviewedBy; // Matchmaker's ID who reviewed it
         public String rejectionReason; // Reason for rejection with request for change
         public String guildId; // Guild where /apply was used
+        
+        // Quickmatch system
+        public boolean quickmatchEnrolled = false;
         
         // Track which field is being edited
         public String fieldBeingEdited; // Store the AppStep enum name of the field being edited
@@ -359,19 +361,16 @@ public class ApplicationHandler extends ListenerAdapter {
                     // Ensure the image path is a valid URI if it's a local file
                     String pfpUri = state.photoPath.startsWith("http") ? state.photoPath : new File(state.photoPath).toURI().toURL().toString();
 
-                    int currYear = Calendar.getInstance().get(Calendar.YEAR);
-
                     String strAndWeak = "\n";
 
                     if (state.strengths != null && !state.strengths.isEmpty() && state.weaknesses != null && !state.weaknesses.isEmpty()) {
                         strAndWeak = state.strengths + "\n" + state.weaknesses + "\n\n";
                     }
-                    
+
                     // Construct the beautiful rich text using their actual answers!
                     String text = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}" + state.name + "{/}*\n" +
                                     "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:6.0}{f:Arial Rounded MT Bold}@" + user.getName() + "{/}*\n\n" +
-                                    // Get age and also subtract if from current year
-                                    state.age + " | " + (currYear - state.age) + "\n" +
+                                    calculateAge(state.birthday) + " | " + getBirthYear(state.birthday) + "\n" +
                                     (state.sex ? "Female" : "Male") + "\n" +
                                     state.sect + "\n" +
                                     state.physicalDescription + "\n\n" +
@@ -406,6 +405,28 @@ public class ApplicationHandler extends ListenerAdapter {
                 }
             }).start();
         });
+    }
+
+    /** Builds the rich-text card string from a completed AppState. Used by both the signup preview and the match thread. */
+    public static String buildCardText(AppState state) {
+        String strAndWeak = "\n";
+        if (state.strengths != null && !state.strengths.isEmpty()
+                && state.weaknesses != null && !state.weaknesses.isEmpty()) {
+            strAndWeak = state.strengths + "\n" + state.weaknesses + "\n\n";
+        }
+        String username = state.username != null ? state.username : "unknown";
+        String lookFor = state.lookFor != null ? state.lookFor.replace("\n", ", ") : "";
+        String dealBreakers = state.dealBreakers != null ? state.dealBreakers.replace("\n", ", ") : "";
+        return "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}" + state.name + "{/}*\n"
+            + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:6.0}{f:Arial Rounded MT Bold}@" + username + "{/}*\n\n"
+            + calculateAge(state.birthday) + " | " + getBirthYear(state.birthday) + "\n"
+            + (state.sex ? "Female" : "Male") + "\n"
+            + state.sect + "\n"
+            + state.physicalDescription + "\n\n"
+            + state.hobbies + "\n\n"
+            + strAndWeak
+            + "{img:green_flag.png} PARTNER: " + lookFor + "\n"
+            + "{img:red_flag.png} PARTNER: " + dealBreakers;
     }
 
     /**
@@ -446,11 +467,15 @@ public class ApplicationHandler extends ListenerAdapter {
             return; // EXIT HERE! Do not post to the matchmaker channel!
         }
 
+        if ((state.status == null || !state.status.equals("CHANGES_REQUESTED")) && !state.quickmatchEnrolled) {
+            sendQuickmatchEnrollmentPrompt(userId, jda);
+        }
         // --- NORMAL SUBMISSION FLOW ---
         state.status = "PENDING";
         saveProfileJson(state, userId);
         cleanUpSrvJson(userId);
         postApplicationToChannel(state, userId, jda);
+        // Only send QM enrollment prompt if this is the first time the user is submitting an application
     }
 
     // Helper to save JSON
@@ -472,6 +497,47 @@ public class ApplicationHandler extends ListenerAdapter {
 
     private void completeApplication(AppState state, String userId, MessageReceivedEvent event) {
         processFinalSubmission(state, userId, event.getJDA(), event.getChannel());
+    }
+
+    /**
+     * Sends the quickmatch enrollment prompt after successful profile submission
+     */
+    private void sendQuickmatchEnrollmentPrompt(String userId, JDA jda) {
+        jda.retrieveUserById(userId).queue(user -> {
+            user.openPrivateChannel().queue(dm -> {
+                // Load the user's profile to get their language preference
+                try {
+                    File profileFile = new File("user_content/profiles/" + userId + ".json");
+                    String language = "english";
+                    
+                    if (profileFile.exists()) {
+                        Gson gson = new Gson();
+                        AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
+                        if (state.language != null) {
+                            language = state.language;
+                        }
+                    }
+                    
+                    Button enrollBtn = Button.success("quickmatch_enroll_" + userId, "✅ Enroll in Quickmatch");
+                    Button passBtn = Button.secondary("quickmatch_pass_" + userId, "⏭️ Pass for Now");
+                    
+                    EmbedBuilder embed = new EmbedBuilder()
+                        .setColor(0x9966FF)
+                        .setTitle(LanguageManager.getQuickmatchTitle(language))
+                        .setDescription(LanguageManager.getQuickmatchDescription(language))
+                        .addField(LanguageManager.getQuickmatchField1Title(language), LanguageManager.getQuickmatchField1Value(language), false)
+                        .addField(LanguageManager.getQuickmatchField2Title(language), LanguageManager.getQuickmatchField2Value(language), false)
+                        .setFooter(LanguageManager.getQuickmatchFooter(language));
+                    
+                    dm.sendMessageEmbeds(embed.build())
+                        .setComponents(ActionRow.of(enrollBtn, passBtn))
+                        .queue();
+                } catch (Exception e) {
+                    System.err.println("Error sending quickmatch prompt to user " + userId + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        });
     }
 
     /**
@@ -520,7 +586,7 @@ public class ApplicationHandler extends ListenerAdapter {
                     .setTitle("📋 New Application: " + state.name)
                     .setColor(state.sex ? 0xFF6699 : 0x9966FF)
                     .addField("1. Name", state.name, true)
-                    .addField("2. Age", String.valueOf(state.age), true)
+                    .addField("2. Birthday", state.birthday != null ? state.birthday + " (age " + calculateAge(state.birthday) + ")" : "N/A", true)
                     .addField("3. Location", state.country, true)
                     .addField("4. Gender", state.sex ? "Female" : "Male", true)
                     .addField("5. Denomination", state.sect, true)
@@ -858,7 +924,7 @@ public class ApplicationHandler extends ListenerAdapter {
         sb.append("✏️ **Which answer would you like to edit?**\n\n");
         
         sb.append("` 1)` Name: ").append(state.name).append("\n");
-        sb.append("` 2)` Age: ").append(state.age).append("\n");
+        sb.append("` 2)` Birthday: ").append(state.birthday != null ? state.birthday + " (age " + calculateAge(state.birthday) + ")" : "N/A").append("\n");
         sb.append("` 3)` Location: ").append(state.country).append("\n");
         sb.append("` 4)` Sex: ").append(state.sex ? "Female" : "Male").append("\n");
         sb.append("` 5)` Denomination: ").append(state.sect).append("\n");
@@ -946,7 +1012,7 @@ public class ApplicationHandler extends ListenerAdapter {
     private String getSectionName(int sectionNum) {
         switch (sectionNum) {
             case 1: return "Name";
-            case 2: return "Age";
+            case 2: return "Birthday";
             case 3: return "Location";
             case 4: return "Gender";
             case 5: return "Denomination";
@@ -960,6 +1026,49 @@ public class ApplicationHandler extends ListenerAdapter {
             case 13: return "Deal Breakers";
             default: return "Unknown Section";
         }
+    }
+
+    /** Parses birthday input: M/D/YYYY date string or plain age integer (fallback sets birthday to today minus N years). Returns null if unparseable. */
+    private static String parseBirthday(String input) {
+        if (input == null) return null;
+        input = input.trim();
+        // Fallback: plain age number
+        try {
+            int age = Integer.parseInt(input);
+            if (age < 1 || age > 120) return null;
+            java.time.LocalDate bd = java.time.LocalDate.now().minusYears(age);
+            return bd.getMonthValue() + "/" + bd.getDayOfMonth() + "/" + bd.getYear();
+        } catch (NumberFormatException ignored) {}
+        // Primary: M/D/YYYY (also accepts M-D-YYYY)
+        String[] parts = input.split("[/\\-]");
+        if (parts.length == 3) {
+            try {
+                int month = Integer.parseInt(parts[0].trim());
+                int day   = Integer.parseInt(parts[1].trim());
+                int year  = Integer.parseInt(parts[2].trim());
+                if (year < 100) year += 1900;
+                java.time.LocalDate.of(year, month, day); // validates ranges
+                if (year < 1900 || year > java.time.LocalDate.now().getYear()) return null;
+                return month + "/" + day + "/" + year;
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    private static int calculateAge(String birthday) {
+        if (birthday == null) return 0;
+        try {
+            String[] p = birthday.split("/");
+            java.time.LocalDate bd = java.time.LocalDate.of(Integer.parseInt(p[2]), Integer.parseInt(p[0]), Integer.parseInt(p[1]));
+            return (int) java.time.temporal.ChronoUnit.YEARS.between(bd, java.time.LocalDate.now());
+        } catch (Exception e) { return 0; }
+    }
+
+    private static int getBirthYear(String birthday) {
+        if (birthday == null) return 0;
+        try {
+            return Integer.parseInt(birthday.split("/")[2]);
+        } catch (Exception e) { return 0; }
     }
 
     @Override
@@ -1021,22 +1130,19 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case AGE:
-                try {
-                    state.age = Short.parseShort(messageContent);
-                    if (state.age > 99) {
-                        event.getChannel().sendMessage("⚠️ " + LanguageManager.getInvalidAgeWarning(state.language) + "\n-# Please enter a valid number for your age.").queue();
-                        return;
-                    } else if (state.age < 18) {
-                        event.getChannel().sendMessage("❌ " + LanguageManager.getUnderageWarning(state.language)).queue();
-                        activeApplications.remove(userId);
-                        return;
-                    }
-                    state.currentStep = AppStep.SEX;
-                    event.getChannel().sendMessage("**(5/15)** " + currentQuestions[3]).queue();
-                } catch (NumberFormatException e) {
-                    event.getChannel().sendMessage("⚠️ " + LanguageManager.getInvalidAgeWarning(state.language) + "\n-# Please enter a valid number for your age.").queue();
+                String parsedBirthday = parseBirthday(messageContent);
+                if (parsedBirthday == null) {
+                    event.getChannel().sendMessage("⚠️ " + LanguageManager.getInvalidAgeWarning(state.language)).queue();
                     return;
                 }
+                if (calculateAge(parsedBirthday) < 18) {
+                    event.getChannel().sendMessage("❌ " + LanguageManager.getUnderageWarning(state.language)).queue();
+                    activeApplications.remove(userId);
+                    return;
+                }
+                state.birthday = parsedBirthday;
+                state.currentStep = AppStep.SEX;
+                event.getChannel().sendMessage("**(5/15)** " + currentQuestions[3]).queue();
                 break;
 
             case SEX:
@@ -1046,8 +1152,12 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case SECT:
-                state.sect = messageContent;
+                state.sect = DenominationCompatibility.normalizeDenomination(messageContent);
+                // if (!state.sect.equalsIgnoreCase(messageContent.trim())) {
+                //     event.getChannel().sendMessage("-# ✅ Matched your denomination as **" + state.sect + "**").queue();
+                // }
                 state.currentStep = AppStep.PHYSICAL;
+
                 event.getChannel().sendMessage("**(7/15)** " + currentQuestions[5]).queue();
                 break;
 
@@ -1078,7 +1188,7 @@ public class ApplicationHandler extends ListenerAdapter {
             case PHOTO:
                 // Check if they opted to skip
                 if (messageContent.equalsIgnoreCase("skip") || messageContent.equalsIgnoreCase("no")) {
-                    state.photoPath = user.getEffectiveAvatarUrl();
+                    state.photoPath = state.sex ? "assets/female.png" : "assets/male.png";
                     advanceToTargetAge(state, event);
                 } 
                 // Check if they actually attached an image
@@ -1102,8 +1212,8 @@ public class ApplicationHandler extends ListenerAdapter {
                             state.photoPath = file.getAbsolutePath();
                             advanceToTargetAge(state, event);
                         }).exceptionally(ex -> {
-                            event.getChannel().sendMessage("❌ Something went wrong saving your image. We'll use your profile picture instead.").queue();
-                            state.photoPath = user.getEffectiveAvatarUrl();
+                            event.getChannel().sendMessage("❌ Something went wrong saving your image. We'll use a placeholder profile picture instead.").queue();
+                            state.photoPath = state.sex ? "assets/female.png" : "assets/male.png";
                             advanceToTargetAge(state, event);
                             return null;
                         });
@@ -1119,6 +1229,14 @@ public class ApplicationHandler extends ListenerAdapter {
                 if (isValidTargetAge(messageContent)) {
                     state.targetAge = messageContent;
                     state.currentStep = AppStep.TARGET_SECT;
+                    // List<String> denomSuggestions = DenominationCompatibility.getCompatibleDenominations(state.sect, false);
+                    // if (!denomSuggestions.isEmpty()) {
+                    //     StringBuilder hint = new StringBuilder(LanguageManager.getDenominationSuggestionHint(state.language) + "\n");
+                    //     for (String denom : denomSuggestions) {
+                    //         hint.append("• ").append(denom).append("\n");
+                    //     }
+                    //     event.getChannel().sendMessage(hint.toString().trim()).queue();
+                    // }
                     event.getChannel().sendMessage("**(13/15)** " + currentQuestions[11]).queue();
                 } else {
                     event.getChannel().sendMessage("⚠️ " + LanguageManager.getTargetAgeValidationError(state.language)).queue();
@@ -1210,26 +1328,26 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.country = messageContent;
                         break;
                     case AGE:
-                        try {
-                            state.age = Short.parseShort(messageContent);
-                            if (state.age > 99) {
-                                event.getChannel().sendMessage("⚠️ " + LanguageManager.getInvalidAgeWarning(state.language) + "\n-# Please enter a valid number for your age.").queue();
-                                return;
-                            } else if (state.age < 18) {
-                                event.getChannel().sendMessage("❌ " + LanguageManager.getUnderageWarning(state.language)).queue();
-                                activeApplications.remove(userId);
-                                return;
-                            }
-                        } catch (NumberFormatException e) {
-                            event.getChannel().sendMessage("⚠️ " + LanguageManager.getInvalidAgeWarning(state.language) + "\n-# Please enter a valid number for your age.").queue();
+                        String editedBirthday = parseBirthday(messageContent);
+                        if (editedBirthday == null) {
+                            event.getChannel().sendMessage("⚠️ " + LanguageManager.getInvalidAgeWarning(state.language)).queue();
                             return;
                         }
+                        if (calculateAge(editedBirthday) < 18) {
+                            event.getChannel().sendMessage("❌ " + LanguageManager.getUnderageWarning(state.language)).queue();
+                            activeApplications.remove(userId);
+                            return;
+                        }
+                        state.birthday = editedBirthday;
                         break;
                     case SEX:
                         state.sex = LanguageManager.isFemale(messageContent);
                         break;
                     case SECT:
-                        state.sect = messageContent;
+                        state.sect = DenominationCompatibility.normalizeDenomination(messageContent);
+                        if (!state.sect.equalsIgnoreCase(messageContent.trim())) {
+                            event.getChannel().sendMessage("-# ✅ Matched your denomination as **" + state.sect + "**").queue();
+                        }
                         break;
                     case PHYSICAL:
                         state.physicalDescription = messageContent;
@@ -1289,6 +1407,16 @@ public class ApplicationHandler extends ListenerAdapter {
     @Override
     public void onButtonInteraction(ButtonInteractionEvent event) {
         String buttonId = event.getComponentId();
+        String userId = event.getUser().getId();
+        
+        // Handle quickmatch enrollment buttons
+        if (buttonId.startsWith("quickmatch_enroll_")) {
+            handleQuickmatchEnrollment(userId, true, event);
+            return;
+        } else if (buttonId.startsWith("quickmatch_pass_")) {
+            handleQuickmatchEnrollment(userId, false, event);
+            return;
+        }
         
         // Check if it's a matchmaker review button
         if (buttonId.startsWith("app_accept_") || buttonId.startsWith("app_request_change_") || buttonId.startsWith("app_reject_")) {
@@ -1314,9 +1442,7 @@ public class ApplicationHandler extends ListenerAdapter {
         }
         
         event.deferEdit().queue(); // Acknowledge the button click
-        
-        // We need to get the user's active application state
-        String userId = event.getUser().getId();
+
         if (!activeApplications.containsKey(userId)) {
             event.getHook().sendMessage("❌ No active application found.").queue();
             return;
@@ -1397,6 +1523,24 @@ public class ApplicationHandler extends ListenerAdapter {
             // 2. For Accept / Reject: Defer the edit, then remove buttons (This acts as the ACK!)
             event.deferEdit().queue();
             event.getHook().editOriginalComponents(Collections.emptyList()).queue();
+            
+            // Update profile status before sending DM
+            String newStatus = buttonId.startsWith("app_accept_") ? "ACCEPTED" : "REJECTED";
+            File profileFile = new File("user_content/profiles/" + targetUserId + ".json");
+            if (profileFile.exists()) {
+                try {
+                    Gson gson = new Gson();
+                    AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
+                    state.status = newStatus;
+                    try (FileWriter writer = new FileWriter(profileFile)) {
+                        Gson gsonWriter = new GsonBuilder().setPrettyPrinting().create();
+                        gsonWriter.toJson(state, writer);
+                    }
+                    System.out.println("✅ Profile status updated to " + newStatus + " for user " + targetUserId);
+                } catch (Exception ex) {
+                    System.err.println("❌ Error updating profile status: " + ex.getMessage());
+                }
+            }
             
             // Now safely fetch user using the API (bypassing local cache) and send DM
             event.getJDA().retrieveUserById(targetUserId).queue(user -> {
@@ -1611,6 +1755,41 @@ public class ApplicationHandler extends ListenerAdapter {
                     System.err.println("Failed to notify matchmakers of deleted application.");
                 }
             }
+        }
+    }
+
+    /**
+     * Handles quickmatch enrollment/unenrollment
+     */
+    private void handleQuickmatchEnrollment(String userId, boolean enrolled, ButtonInteractionEvent event) {
+        event.deferEdit().queue();
+        
+        File profileFile = new File("user_content/profiles/" + userId + ".json");
+        if (!profileFile.exists()) {
+            event.getHook().sendMessage("❌ Could not find your profile. Please contact support.").queue();
+            return;
+        }
+
+        try {
+            Gson gson = new Gson();
+            AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
+            
+            state.quickmatchEnrolled = enrolled;
+            
+            // Save updated profile
+            try (FileWriter writer = new FileWriter(profileFile)) {
+                new GsonBuilder().setPrettyPrinting().create().toJson(state, writer);
+            }
+            
+            // Get the appropriate message based on language
+            String message = enrolled 
+                ? LanguageManager.getQuickmatchEnrollSuccess(state.language)
+                : LanguageManager.getQuickmatchDeclineMessage(state.language);
+            
+            event.getHook().sendMessage(message).queue();
+        } catch (Exception e) {
+            System.err.println("Error updating quickmatch enrollment for user " + userId + ": " + e.getMessage());
+            event.getHook().sendMessage("❌ Something went wrong. Please try again later.").queue();
         }
     }
 }

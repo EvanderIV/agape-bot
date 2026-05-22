@@ -14,9 +14,11 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.EnumSet;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class AgapeBot extends ListenerAdapter {
 
@@ -30,7 +32,7 @@ public class AgapeBot extends ListenerAdapter {
 
         try {
             // Build the JDA instance. Add the DIRECT_MESSAGES intent so it can hear users in DMs!
-            JDABuilder.createLight(token, EnumSet.of(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT))
+            JDABuilder.createLight(token, EnumSet.of(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS))
                     .addEventListeners(new AgapeBot(), new ApplicationHandler())
                     .build();
         } catch (Exception e) {
@@ -67,9 +69,153 @@ public class AgapeBot extends ListenerAdapter {
         return false;
     }
 
+    /**
+     * Creates a private thread under the "quick-match" / "quickmatch" channel for a matched pair,
+     * adds both users and all cached matchmaker-role members, then sends the intro message with profile card attachments.
+     * user1 is always the runner; user2 is always the matched person (receives the DM).
+     */
+    private void createMatchThread(
+            net.dv8tion.jda.api.entities.Guild guild,
+            String user1Id, boolean user1IsMale, String user1Name, ApplicationHandler.AppState user1Profile,
+            String user2Id, boolean user2IsMale, String user2Name, ApplicationHandler.AppState user2Profile) {
+
+        // Find the channel (normalize "quick-match" → "quickmatch" for comparison)
+        net.dv8tion.jda.api.entities.channel.concrete.TextChannel qmChannel = null;
+        for (net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch : guild.getTextChannels()) {
+            if (ch.getName().toLowerCase().replace("-", "").equals("quickmatch")) {
+                qmChannel = ch;
+                break;
+            }
+        }
+        if (qmChannel == null) {
+            System.err.println("Quickmatch: No 'quick-match' or 'quickmatch' channel found in guild " + guild.getId());
+            return;
+        }
+
+        // Order names/profiles: male first, female second (fall back to runner+matched if same sex)
+        final String maleId, maleName, femaleId, femaleName;
+        final ApplicationHandler.AppState maleProfile, femaleProfile;
+        if (user1IsMale && !user2IsMale) {
+            maleId = user1Id; maleName = user1Name; maleProfile = user1Profile;
+            femaleId = user2Id; femaleName = user2Name; femaleProfile = user2Profile;
+        } else if (!user1IsMale && user2IsMale) {
+            maleId = user2Id; maleName = user2Name; maleProfile = user2Profile;
+            femaleId = user1Id; femaleName = user1Name; femaleProfile = user1Profile;
+        } else {
+            maleId = user1Id; maleName = user1Name; maleProfile = user1Profile;
+            femaleId = user2Id; femaleName = user2Name; femaleProfile = user2Profile;
+        }
+
+        String threadName = maleName + " + " + femaleName + " (Agape QM)";
+
+        qmChannel.createThreadChannel(threadName, true)
+            .setAutoArchiveDuration(net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel.AutoArchiveDuration.TIME_24_HOURS)
+            .queue(thread -> {
+                ThreadManager.registerThread(thread.getId(), guild.getId(), maleId, femaleId);
+
+                thread.addThreadMemberById(maleId).queue();
+                thread.addThreadMemberById(femaleId).queue();
+
+                // Load full member list and add anyone with the matchmaker role
+                guild.loadMembers().onSuccess(allMembers -> {
+                    for (net.dv8tion.jda.api.entities.Member member : allMembers) {
+                        for (Role role : member.getRoles()) {
+                            if (role.getName().toLowerCase().contains("matchmaker")) {
+                                thread.addThreadMemberById(member.getId()).queue();
+                                break;
+                            }
+                        }
+                    }
+                });
+
+                // Find a guidelines channel to reference in the intro message
+                String guidelinesRef = "";
+                for (net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch : guild.getTextChannels()) {
+                    String normalized = ch.getName().toLowerCase().replace("-", "");
+                    if (normalized.equals("howitworks") || normalized.equals("quickmatchrules")) {
+                        guidelinesRef = "-# As always, please review the guidelines in <#" + ch.getId() + ">.\n\n";
+                        break;
+                    }
+                }
+
+                long closeTimestamp = java.time.Instant.now().getEpochSecond() + 86400L;
+                final String message = "## Match Found!\n\n"
+                    + "Take this opportunity to get to know each other—we want to see how you both will connect, "
+                    + "and whether you are interested in potentially pursuing a relationship together.\n\n"
+                    + guidelinesRef
+                    + "-# This thread will automatically close <t:" + closeTimestamp + ":R>.\n"
+                    + "||<@" + maleId + "> <@" + femaleId + ">||";
+
+                // Generate profile cards on a background thread, then send the intro message with attachments
+                final String fontPath = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
+                new Thread(() -> {
+                    java.util.List<FileUpload> uploads = new java.util.ArrayList<>();
+                    java.util.List<File> toDelete = new java.util.ArrayList<>();
+
+                    File card1 = generateProfileCardFile(maleId, maleProfile, fontPath, guild);
+                    File card2 = generateProfileCardFile(femaleId, femaleProfile, fontPath, guild);
+
+                    if (card1 != null) { uploads.add(FileUpload.fromData(card1, maleName + "_profile.png")); toDelete.add(card1); }
+                    if (card2 != null) { uploads.add(FileUpload.fromData(card2, femaleName + "_profile.png")); toDelete.add(card2); }
+
+                    net.dv8tion.jda.api.requests.restaction.MessageCreateAction msgAction = thread.sendMessage(message);
+                    if (!uploads.isEmpty()) msgAction = msgAction.addFiles(uploads);
+                    msgAction.queue(
+                        s -> toDelete.forEach(File::delete),
+                        err -> { toDelete.forEach(File::delete); System.err.println("Quickmatch: Failed to send intro message: " + err.getMessage()); }
+                    );
+                }, "qm-card-gen").start();
+
+                // DM the matched person (user2) with a direct link to the thread
+                guild.getJDA().openPrivateChannelById(user2Id).queue(dmChannel -> {
+                    net.dv8tion.jda.api.EmbedBuilder notifEmbed = new net.dv8tion.jda.api.EmbedBuilder()
+                        .setTitle("💘 Someone was matched with you!")
+                        .setColor(0xFF6699)
+                        .setDescription("**" + user1Name + "** (<@" + user1Id + ">) was matched with you through Agape Matchmaking!\n\n"
+                            + "[Click here to open your match thread!](" + thread.getJumpUrl() + ")")
+                        .setFooter("Agape Matchmaking • You have 24 hours before you can be matched again.");
+                    dmChannel.sendMessageEmbeds(notifEmbed.build()).queue();
+                }, err -> System.err.println("Quickmatch: Could not DM matched user " + user2Id));
+            }, err -> System.err.println("Quickmatch: Failed to create match thread: " + err.getMessage()));
+    }
+
+    /** Generates a profile card image for the given user; returns the temp File or null on failure. */
+    private File generateProfileCardFile(String userId, ApplicationHandler.AppState profile, String fontPath, net.dv8tion.jda.api.entities.Guild guild) {
+        if (profile == null) return null;
+        try {
+            String pfpUri;
+            if (profile.photoPath != null && !profile.photoPath.isEmpty()) {
+                pfpUri = profile.photoPath.startsWith("http")
+                    ? profile.photoPath
+                    : new File(profile.photoPath).toURI().toURL().toString();
+            } else {
+                pfpUri = guild.getJDA().retrieveUserById(userId).complete().getEffectiveAvatarUrl();
+            }
+            String text = ApplicationHandler.buildCardText(profile);
+            String[] designPaths = ImageGenerator.decodeDesignCode(profile.designCode);
+            return ImageGenerator.generateForUser(designPaths[0], pfpUri, designPaths[1], fontPath, text, userId + "_qm_card");
+        } catch (Exception e) {
+            System.err.println("Quickmatch: Failed to generate profile card for " + userId + ": " + e.getMessage());
+            return null;
+        }
+    }
+
     @Override
     public void onReady(ReadyEvent event) {
         System.out.println("Bot is ready! Logged in as: " + event.getJDA().getSelfUser().getName());
+
+        // Archive any threads that expired while the bot was offline
+        ThreadManager.checkExpiredThreads(event.getJDA());
+
+        // Schedule ongoing expiry checks every 5 minutes
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "qm-thread-manager");
+            t.setDaemon(true);
+            return t;
+        }).scheduleAtFixedRate(
+            () -> ThreadManager.checkExpiredThreads(event.getJDA()),
+            5, 5, java.util.concurrent.TimeUnit.MINUTES
+        );
 
         // Define your command(s) here
         SlashCommandData generateCmd = Commands.slash("generate", "Generates a matchmaking profile image for a user.")
@@ -88,11 +234,14 @@ public class AgapeBot extends ListenerAdapter {
         SlashCommandData historyCmd = Commands.slash("message-history", "View message history with an applicant (Matchmakers only)")
                 .addOption(OptionType.USER, "user", "The applicant to view history with", true);
 
-        // 1. Force refresh the commands on every specific server the bot is in (Updates
-        // instantly!)
+        SlashCommandData quickmatchCmd = Commands.slash("quickmatch", "Find a random match from the quickmatch pool");
+
+        SlashCommandData toggleQmCmd = Commands.slash("toggle-qm", "Enroll or unenroll yourself from the quickmatch pool");
+
+        // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -376,14 +525,111 @@ public class AgapeBot extends ListenerAdapter {
             event.deferReply(true).queue();
 
             String history = MessagingHandler.getConversationHistory(applicant.getId(), matchmakerId);
-            
+
             // Discord message length limit is 2000, so we might need to split
             if (history.length() > 1950) {
-                event.getHook().sendMessage("📨 **Message History with " + applicant.getAsMention() + ":**\n```\n" 
+                event.getHook().sendMessage("📨 **Message History with " + applicant.getAsMention() + ":**\n```\n"
                     + history.substring(0, 1950) + "...\n```").queue();
             } else {
-                event.getHook().sendMessage("📨 **Message History with " + applicant.getAsMention() + ":**\n```\n" 
+                event.getHook().sendMessage("📨 **Message History with " + applicant.getAsMention() + ":**\n```\n"
                     + history + "\n```").queue();
+            }
+
+        } else if (event.getName().equals("quickmatch")) {
+            event.deferReply(true).queue();
+            String userId = event.getUser().getId();
+
+            MatchmakingEngine.MatchResult result = MatchmakingEngine.quickmatch(userId, event.getJDA());
+
+            if (result == null) {
+                event.getHook().sendMessage(
+                    "💔 No match found right now. You may be on cooldown, not enrolled in quickmatch, or there are no eligible candidates at the moment."
+                ).queue();
+                return;
+            }
+
+            // Calculate matched person's age from birthday
+            int matchedAge = 0;
+            if (result.matchedProfile.birthday != null) {
+                try {
+                    String[] p = result.matchedProfile.birthday.split("/");
+                    java.time.LocalDate bd = java.time.LocalDate.of(
+                        Integer.parseInt(p[2]), Integer.parseInt(p[0]), Integer.parseInt(p[1]));
+                    matchedAge = (int) java.time.temporal.ChronoUnit.YEARS.between(bd, java.time.LocalDate.now());
+                } catch (Exception ignored) {}
+            }
+
+            net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                .setTitle("💘 You've been matched!")
+                .setColor(0xFF6699)
+                .setDescription("You've been matched with **" + result.matchedProfile.name
+                    + "** (<@" + result.matchedUserId + ">)!")
+                .addField("Age", matchedAge > 0 ? String.valueOf(matchedAge) : "N/A", true)
+                .addField("Denomination", result.matchedProfile.sect != null ? result.matchedProfile.sect : "N/A", true)
+                .addField("Country", result.matchedProfile.country != null ? result.matchedProfile.country : "N/A", true)
+                .setFooter("Agape Matchmaking • You have 24 hours before you can be matched again.");
+
+            event.getHook().sendMessageEmbeds(embed.build()).queue();
+
+            // Create the match thread in the server
+            if (event.getGuild() != null) {
+                ApplicationHandler.AppState runnerProfile = null;
+                try {
+                    runnerProfile = new Gson().fromJson(
+                        new FileReader("user_content/profiles/" + userId + ".json"),
+                        ApplicationHandler.AppState.class
+                    );
+                } catch (Exception e) {
+                    System.err.println("Quickmatch: Could not load runner profile for thread creation: " + e.getMessage());
+                }
+
+                String runnerName = (runnerProfile != null && runnerProfile.name != null)
+                    ? runnerProfile.name : event.getUser().getEffectiveName();
+                boolean runnerIsMale = runnerProfile == null || !runnerProfile.sex;
+                boolean matchedIsMale = !result.matchedProfile.sex;
+                String matchedName = result.matchedProfile.name != null
+                    ? result.matchedProfile.name : "Unknown";
+
+                createMatchThread(
+                    event.getGuild(),
+                    userId, runnerIsMale, runnerName, runnerProfile,
+                    result.matchedUserId, matchedIsMale, matchedName, result.matchedProfile
+                );
+            }
+
+        } else if (event.getName().equals("toggle-qm")) {
+            event.deferReply(true).queue();
+            String userId = event.getUser().getId();
+
+            File profileFile = new File("user_content/profiles/" + userId + ".json");
+            if (!profileFile.exists()) {
+                event.getHook().sendMessage("❌ You don't have a profile on file. Use `/apply` to get started.").queue();
+                return;
+            }
+
+            try {
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                ApplicationHandler.AppState state = gson.fromJson(new FileReader(profileFile), ApplicationHandler.AppState.class);
+
+                if (!"ACCEPTED".equals(state.status)) {
+                    event.getHook().sendMessage("❌ Your profile must be accepted before you can manage quickmatch enrollment.").queue();
+                    return;
+                }
+
+                state.quickmatchEnrolled = !state.quickmatchEnrolled;
+
+                try (FileWriter writer = new FileWriter(profileFile)) {
+                    gson.toJson(state, writer);
+                }
+
+                String statusMsg = state.quickmatchEnrolled
+                    ? "✅ You are now **enrolled** in quickmatch. Run `/quickmatch` to find a match!"
+                    : "✅ You are now **unenrolled** from quickmatch.";
+                event.getHook().sendMessage(statusMsg).queue();
+
+            } catch (Exception e) {
+                System.err.println("Error toggling quickmatch for " + userId + ": " + e.getMessage());
+                event.getHook().sendMessage("❌ Error updating your quickmatch status.").queue();
             }
         }
     }
