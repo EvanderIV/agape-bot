@@ -430,11 +430,56 @@ public class ApplicationHandler extends ListenerAdapter {
     }
 
     /**
+     * Suggests a design code based on the applicant's hobbies and self-descriptions.
+     * Only called when the user has not manually chosen a code.
+     *
+     * Men:   Star Wars → FOD-SWR | Artsy → STN-PST | Gaming → BTW-PST / REA-WOV / MCJ-CMA | Adventure → MSR-CMA
+     * Women: Calm/peaceful trait → SKA-SPR / SPC-SPK, then same hobby checks as men.
+     * Fallback: HEG-SPK
+     */
+    public static String suggestDesignCode(AppState state) {
+        String hobbies  = state.hobbies  != null ? state.hobbies.toLowerCase()  : "";
+        String strengths = state.strengths != null ? state.strengths.toLowerCase() : "";
+
+        boolean isFemale = state.sex;
+
+        // Female calm/peaceful trait check (takes priority for women)
+        if (isFemale && containsAny(strengths, "calm", "peaceful", "serene", "tranquil", "gentle", "relaxed", "laid-back", "easygoing", "easy-going", "soft-spoken")) {
+            String[] opts = {"SKA-SPR", "SPC-SPK"};
+            return opts[new Random().nextInt(opts.length)];
+        }
+
+        // Hobby-based checks (shared by both sexes)
+        if (containsAny(hobbies, "star wars")) return "FOD-SWR";
+
+        if (containsAny(hobbies, "paint", "draw", "sketch", "craft", "sculpt", "canvas", "watercolor", "artsy", "digital art")) return "STN-PST";
+
+        if (containsAny(hobbies, "gaming", "video game", "gamer", "game", "minecraft", "playstation", "xbox", "nintendo", "pc games")) {
+            String[] opts = {"BTW-PST", "REA-WOV", "MCJ-CMA"};
+            return opts[new Random().nextInt(opts.length)];
+        }
+
+        if (containsAny(hobbies, "hike", "hiking", "adventure", "trail", "mountain", "camping", "outdoor", "backpack", "nature", "travel", "exploration", "walks", "walking")) return "MSR-CMA";
+
+        return "HEG-SPK";
+    }
+
+    private static boolean containsAny(String text, String... keywords) {
+        for (String kw : keywords) {
+            if (text.contains(kw)) return true;
+        }
+        return false;
+    }
+
+    /**
      * Centralized method to handle final submission, auto-mod checks, and JSON saving.
      */
     private void processFinalSubmission(AppState state, String userId, JDA jda, net.dv8tion.jda.api.entities.channel.middleman.MessageChannel channel) {
         state.currentStep = AppStep.COMPLETED;
         state.submittedAt = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        if (state.designCode == null || state.designCode.isEmpty()) {
+            state.designCode = suggestDesignCode(state);
+        }
         activeApplications.remove(userId);
         
         channel.sendMessage("✅ **" + LanguageManager.getCompletionMessage(state.language) + "**").queue();
@@ -1258,7 +1303,9 @@ public class ApplicationHandler extends ListenerAdapter {
             case DEAL_BREAKERS:
                 state.dealBreakers = messageContent;
                 state.currentStep = AppStep.CUSTOMIZE_PROMPT;
-
+                if (state.designCode == null || state.designCode.isEmpty()) {
+                    state.designCode = suggestDesignCode(state);
+                }
                 generateProfileCard(state, event);
                 break;
 
