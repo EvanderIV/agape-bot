@@ -89,6 +89,7 @@ public class ApplicationHandler extends ListenerAdapter {
         
         // Quickmatch system
         public boolean quickmatchEnrolled = false;
+        public boolean quickmatchPromptSent = false;
         
         // Track which field is being edited
         public String fieldBeingEdited; // Store the AppStep enum name of the field being edited
@@ -484,6 +485,9 @@ public class ApplicationHandler extends ListenerAdapter {
         
         channel.sendMessage("✅ **" + LanguageManager.getCompletionMessage(state.language) + "**").queue();
 
+        boolean sendQMPrompt = !state.quickmatchPromptSent;
+        if (sendQMPrompt) state.quickmatchPromptSent = true;
+
         AutoModResult autoMod = checkAutoRules(state);
 
         if (autoMod != null) {
@@ -494,13 +498,13 @@ public class ApplicationHandler extends ListenerAdapter {
 
             // Calculate a random delay between 60 and 300 seconds (1 to 5 minutes)
             int delaySeconds = 60 + new Random().nextInt(241);
-            
+
             scheduler.schedule(() -> {
                 jda.retrieveUserById(userId).queue(user -> {
                     user.openPrivateChannel().queue(dm -> {
                         Button editBtn = Button.primary("user_edit_app_" + autoMod.sectionNum, "✏️ Edit Application");
                         Button deleteBtn = Button.danger("user_delete_app", "🗑️ Delete Application");
-                        
+
                         dm.sendMessage("⚠️ A matchmaker has requested changes to your application. Please review the feedback and update the requested section.\n\n**Matchmaker Note:** " + autoMod.reason + "\n**Section to Edit:** #" + autoMod.sectionNum + " (" + getSectionName(autoMod.sectionNum) + ")")
                             .setComponents(ActionRow.of(editBtn, deleteBtn))
                             .queue();
@@ -508,19 +512,17 @@ public class ApplicationHandler extends ListenerAdapter {
                 });
             }, delaySeconds, TimeUnit.SECONDS);
 
+            if (sendQMPrompt) sendQuickmatchEnrollmentPrompt(userId, jda);
             System.out.println("🤖 Auto-Mod intercepted application for " + state.name + ". Ghost request scheduled in " + delaySeconds + " seconds.");
             return; // EXIT HERE! Do not post to the matchmaker channel!
         }
 
-        if ((state.status == null || !state.status.equals("CHANGES_REQUESTED")) && !state.quickmatchEnrolled) {
-            sendQuickmatchEnrollmentPrompt(userId, jda);
-        }
         // --- NORMAL SUBMISSION FLOW ---
         state.status = "PENDING";
         saveProfileJson(state, userId);
         cleanUpSrvJson(userId);
         postApplicationToChannel(state, userId, jda);
-        // Only send QM enrollment prompt if this is the first time the user is submitting an application
+        if (sendQMPrompt) sendQuickmatchEnrollmentPrompt(userId, jda);
     }
 
     // Helper to save JSON
