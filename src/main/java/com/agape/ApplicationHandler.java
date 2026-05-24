@@ -171,10 +171,10 @@ public class ApplicationHandler extends ListenerAdapter {
             return new AutoModResult("Gooning? Really??? Please change that", 13);
         }
 
-        // Gooning? Really man?
+        // Breedable? Really man?
         if (state.physicalDescription != null && state.physicalDescription.toLowerCase().contains("breedable")) {
             System.out.println("Auto-Mod: I... really didn't think anyone would ever type that: " + state.username + " | Content: `" + state.physicalDescription + "`");
-            return new AutoModResult("Please don't include obscene or provocative language in your self-description", 6);
+            return new AutoModResult("Please don't include obscene or sexual language in your self-description", 6);
         }
 
         // Add more regex or length checks here!
@@ -410,23 +410,30 @@ public class ApplicationHandler extends ListenerAdapter {
 
     /** Builds the rich-text card string from a completed AppState. Used by both the signup preview and the match thread. */
     public static String buildCardText(AppState state) {
-        String strAndWeak = "\n";
-        if (state.strengths != null && !state.strengths.isEmpty()
-                && state.weaknesses != null && !state.weaknesses.isEmpty()) {
-            strAndWeak = state.strengths + "\n" + state.weaknesses + "\n\n";
-        }
+        boolean hasStrengths = state.strengths != null && !state.strengths.isEmpty();
+        boolean hasWeaknesses = state.weaknesses != null && !state.weaknesses.isEmpty();
+        String strAndWeak = "";
+        if (hasStrengths) strAndWeak += state.strengths + "\n";
+        if (hasWeaknesses) strAndWeak += state.weaknesses + "\n";
+        if (!strAndWeak.isEmpty()) strAndWeak += "\n";
+        else strAndWeak = "\n";
+
         String username = state.username != null ? state.username : "unknown";
-        String lookFor = state.lookFor != null ? state.lookFor.replace("\n", ", ") : "";
+        String lookFor = (state.lookFor != null && !state.lookFor.isEmpty())
+            ? state.lookFor.replace("\n", ", ") : null;
+        String location = (state.country != null && !state.country.isEmpty())
+            ? state.country : null;
         String dealBreakers = state.dealBreakers != null ? state.dealBreakers.replace("\n", ", ") : "";
         return "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}" + state.name + "{/}*\n"
             + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:6.0}{f:Arial Rounded MT Bold}@" + username + "{/}*\n\n"
             + calculateAge(state.birthday) + " | " + getBirthYear(state.birthday) + "\n"
             + (state.sex ? "Female" : "Male") + "\n"
             + state.sect + "\n"
+            + (location != null ? location + "\n" : "")
             + state.physicalDescription + "\n\n"
             + state.hobbies + "\n\n"
             + strAndWeak
-            + "{img:green_flag.png} PARTNER: " + lookFor + "\n"
+            + (lookFor != null ? "{img:green_flag.png} PARTNER: " + lookFor + "\n" : "")
             + "{img:red_flag.png} PARTNER: " + dealBreakers;
     }
 
@@ -1171,7 +1178,7 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case COUNTRY:
-                state.country = messageContent;
+                state.country = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                 state.currentStep = AppStep.AGE;
                 event.getChannel().sendMessage("**(4/15)** " + currentQuestions[2]).queue();
                 break;
@@ -1221,13 +1228,13 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case STRENGTHS:
-                state.strengths = messageContent;
+                state.strengths = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                 state.currentStep = AppStep.WEAKNESSES;
                 event.getChannel().sendMessage("**(10/15)** " + currentQuestions[8]).queue();
                 break;
 
             case WEAKNESSES:
-                state.weaknesses = messageContent;
+                state.weaknesses = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                 state.currentStep = AppStep.PHOTO;
                 event.getChannel().sendMessage("**(11/15)** " + currentQuestions[9]).queue();
                 break;
@@ -1297,7 +1304,7 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case LOOK_FOR:
-                state.lookFor = messageContent;
+                state.lookFor = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                 state.currentStep = AppStep.DEAL_BREAKERS;
                 event.getChannel().sendMessage("**(15/15)** " + currentQuestions[13]).queue();
                 break;
@@ -1374,7 +1381,7 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.name = messageContent;
                         break;
                     case COUNTRY:
-                        state.country = messageContent;
+                        state.country = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                         break;
                     case AGE:
                         String editedBirthday = parseBirthday(messageContent);
@@ -1405,10 +1412,10 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.hobbies = messageContent;
                         break;
                     case STRENGTHS:
-                        state.strengths = messageContent;
+                        state.strengths = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                         break;
                     case WEAKNESSES:
-                        state.weaknesses = messageContent;
+                        state.weaknesses = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                         break;
                     case TARGET_AGE:
                         if (!isValidTargetAge(messageContent)) {
@@ -1421,7 +1428,7 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.targetSect = messageContent;
                         break;
                     case LOOK_FOR:
-                        state.lookFor = messageContent;
+                        state.lookFor = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                         break;
                     case DEAL_BREAKERS:
                         state.dealBreakers = messageContent;
