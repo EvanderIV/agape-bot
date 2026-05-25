@@ -19,6 +19,8 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -635,7 +637,9 @@ public class ApplicationHandler extends ListenerAdapter {
                 return;
             }
 
-            // Create embed with application details (all 13 sections)
+            // Determine photo display
+            boolean isLocalPhoto = state.photoPath != null && !state.photoPath.startsWith("http");
+            String photoDesc;
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle("📋 New Application: " + state.name)
                     .setColor(state.sex ? 0xFF6699 : 0x9966FF)
@@ -655,35 +659,43 @@ public class ApplicationHandler extends ListenerAdapter {
                     .setFooter("User ID: " + userId + " | Submitted: " + state.submittedAt)
                     .setTimestamp(java.time.Instant.now());
 
+            if (state.photoPath == null || state.photoPath.isEmpty()) {
+                photoDesc = "N/A";
+            } else if (isLocalPhoto) {
+                photoDesc = "(Uploaded file — see image below)";
+                embed.setImage("attachment://photo.png");
+            } else {
+                photoDesc = state.photoPath;
+                embed.setImage(state.photoPath);
+            }
+            embed.addField("14. Photo", photoDesc, false);
+
             // Create action buttons
             Button acceptBtn = Button.success("app_accept_" + userId, "✅ Accept");
             Button requestChangeBtn = Button.secondary("app_request_change_" + userId, "⚠️ Request Change");
+            Button requestPhotoChangeBtn = Button.primary("app_request_photo_change_" + userId, "📷 Request Photo Change");
             Button rejectBtn = Button.danger("app_reject_" + userId, "❌ Reject");
 
-            ActionRow actionRow = ActionRow.of(acceptBtn, requestChangeBtn, rejectBtn);
+            ActionRow actionRow = ActionRow.of(acceptBtn, requestChangeBtn, requestPhotoChangeBtn, rejectBtn);
 
-            // Send the message with embed and buttons to the channel
-            Object channelObj = applicationsList.get(0);
-            
-            // Use reflection to call sendMessageEmbeds and setComponents
-            java.lang.reflect.Method sendEmbedMethod;
-            java.lang.reflect.Method setComponentsMethod;
-            java.lang.reflect.Method queueMethod;
-            
-            try {
-                sendEmbedMethod = channelObj.getClass().getMethod("sendMessageEmbeds", java.util.Collection.class);
-                Object messageAction = sendEmbedMethod.invoke(channelObj, java.util.Collections.singletonList(embed.build()));
-                
-                setComponentsMethod = messageAction.getClass().getMethod("setComponents", java.util.Collection.class);
-                messageAction = setComponentsMethod.invoke(messageAction, java.util.Collections.singletonList(actionRow));
-                
-                queueMethod = messageAction.getClass().getMethod("queue");
-                queueMethod.invoke(messageAction);
-                
-                System.out.println("✅ Application posted to channel");
-            } catch (Exception ex) {
-                System.err.println("❌ Failed to post application: " + ex.getMessage());
-                ex.printStackTrace();
+            TextChannel channel = (TextChannel) applicationsList.get(0);
+            File photoFile = isLocalPhoto ? new File(state.photoPath) : null;
+
+            if (photoFile != null && photoFile.exists()) {
+                channel.sendMessageEmbeds(embed.build())
+                        .addFiles(FileUpload.fromData(photoFile, "photo.png"))
+                        .setComponents(actionRow)
+                        .queue(
+                            msg -> System.out.println("✅ Application posted to channel"),
+                            err -> System.err.println("❌ Failed to post application: " + err.getMessage())
+                        );
+            } else {
+                channel.sendMessageEmbeds(embed.build())
+                        .setComponents(actionRow)
+                        .queue(
+                            msg -> System.out.println("✅ Application posted to channel"),
+                            err -> System.err.println("❌ Failed to post application: " + err.getMessage())
+                        );
             }
 
         } catch (Exception e) {
@@ -1013,11 +1025,12 @@ public class ApplicationHandler extends ListenerAdapter {
             {7},    // 10: Strengths (index 7)
             {8},    // 11: Weaknesses (index 8)
             {12},   // 12: What You Look For (index 12)
-            {13}    // 13: Deal Breakers (index 13)
+            {13},   // 13: Deal Breakers (index 13)
+            {9},    // 14: Photo (index 9)
         };
-        
+
         if (fieldNumber < 1 || fieldNumber > fieldMap.length) {
-            return "Invalid selection. Please reply with a number between 1 and 13.";
+            return "Invalid selection. Please reply with a number between 1 and 14.";
         }
         
         int questionIndex = fieldMap[fieldNumber - 1][0];
@@ -1042,6 +1055,7 @@ public class ApplicationHandler extends ListenerAdapter {
             case 11: return AppStep.WEAKNESSES;
             case 12: return AppStep.LOOK_FOR;
             case 13: return AppStep.DEAL_BREAKERS;
+            case 14: return AppStep.PHOTO;
             default: return null;
         }
     }
@@ -1078,6 +1092,7 @@ public class ApplicationHandler extends ListenerAdapter {
             case 11: return "Weaknesses";
             case 12: return "What They're Looking For";
             case 13: return "Deal Breakers";
+            case 14: return "Photo";
             default: return "Unknown Section";
         }
     }
@@ -1433,10 +1448,37 @@ public class ApplicationHandler extends ListenerAdapter {
                     case DEAL_BREAKERS:
                         state.dealBreakers = messageContent;
                         break;
+                    case PHOTO:
+                        if (messageContent.equalsIgnoreCase("skip")) {
+                            state.photoPath = state.sex ? "assets/female.png" : "assets/male.png";
+                            state.currentStep = AppStep.CUSTOMIZE_PROMPT;
+                            generateProfileCard(state, event);
+                        } else if (!event.getMessage().getAttachments().isEmpty()) {
+                            Message.Attachment attachment = event.getMessage().getAttachments().get(0);
+                            if (attachment.isImage()) {
+                                File directory = new File("user_content/images/");
+                                if (!directory.exists()) directory.mkdirs();
+                                String extension = attachment.getFileExtension();
+                                File destFile = new File(directory, userId + "." + extension);
+                                attachment.getProxy().downloadToFile(destFile).thenAccept(file -> {
+                                    state.photoPath = file.getAbsolutePath();
+                                    state.currentStep = AppStep.CUSTOMIZE_PROMPT;
+                                    generateProfileCard(state, event);
+                                }).exceptionally(ex -> {
+                                    event.getChannel().sendMessage("❌ Something went wrong saving your image.").queue();
+                                    return null;
+                                });
+                            } else {
+                                event.getChannel().sendMessage("⚠️ That doesn't look like an image. Please upload a picture or type **skip**.").queue();
+                            }
+                        } else {
+                            event.getChannel().sendMessage("⚠️ Please upload an image file, or type **skip** to use a placeholder.").queue();
+                        }
+                        return; // Async or re-prompt — skip the state transition below
                     default:
                         break;
                 }
-                
+
                 // After editing, regenerate the preview image
                 state.currentStep = AppStep.CUSTOMIZE_PROMPT;
                 generateProfileCard(state, event);
@@ -1475,7 +1517,7 @@ public class ApplicationHandler extends ListenerAdapter {
         }
         
         // Check if it's a matchmaker review button
-        if (buttonId.startsWith("app_accept_") || buttonId.startsWith("app_request_change_") || buttonId.startsWith("app_reject_")) {
+        if (buttonId.startsWith("app_accept_") || buttonId.startsWith("app_request_change_") || buttonId.startsWith("app_request_photo_change_") || buttonId.startsWith("app_reject_")) {
             handleMatchmakerAction(event);
             return;
         }
@@ -1555,14 +1597,25 @@ public class ApplicationHandler extends ListenerAdapter {
         // Extract the userId from the button ID (e.g., "app_reject_123456789")
         String targetUserId = buttonId.substring(buttonId.lastIndexOf("_") + 1);
 
-        if (buttonId.startsWith("app_request_change_")) {
+        if (buttonId.startsWith("app_request_photo_change_")) {
+            TextInput reason = TextInput.create("reason", "Reason for Photo Change", TextInputStyle.PARAGRAPH)
+                .setPlaceholder("Why does the photo need to be changed?")
+                .setRequired(true)
+                .build();
+
+            Modal modal = Modal.create("modal_request_photo_change_" + targetUserId, "Request Photo Change")
+                .addActionRow(reason)
+                .build();
+
+            event.replyModal(modal).queue();
+        } else if (buttonId.startsWith("app_request_change_")) {
             // 1. Send Modal for Request Change (This acts as the interaction ACK!)
             TextInput reason = TextInput.create("reason", "Reason for Change", TextInputStyle.PARAGRAPH)
                 .setPlaceholder("What needs to be changed in their application?")
                 .setRequired(true)
                 .build();
 
-            TextInput section = TextInput.create("section_number", "Section Number (1-13)", TextInputStyle.SHORT)
+            TextInput section = TextInput.create("section_number", "Section Number (1-14)", TextInputStyle.SHORT)
                 .setPlaceholder("Which section needs editing? (e.g., 5)")
                 .setRequired(true)
                 .setMinLength(1)
@@ -1627,9 +1680,9 @@ public class ApplicationHandler extends ListenerAdapter {
             int sectionNum;
             try {
                 sectionNum = Integer.parseInt(sectionStr);
-                if (sectionNum < 1 || sectionNum > 13) throw new NumberFormatException();
+                if (sectionNum < 1 || sectionNum > 14) throw new NumberFormatException();
             } catch (NumberFormatException e) {
-                event.reply("❌ Invalid section number. Please provide a number between 1 and 13.").setEphemeral(true).queue();
+                event.reply("❌ Invalid section number. Please provide a number between 1 and 14.").setEphemeral(true).queue();
                 return;
             }
 
@@ -1670,6 +1723,44 @@ public class ApplicationHandler extends ListenerAdapter {
             }, error -> {
                 event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
             });
+        } else if (event.getModalId().startsWith("modal_request_photo_change_")) {
+            String targetUserId = event.getModalId().substring("modal_request_photo_change_".length());
+            String reason = event.getValue("reason").getAsString();
+
+            event.deferEdit().queue();
+            event.getHook().editOriginalComponents(Collections.emptyList()).queue();
+
+            File profileFile = new File("user_content/profiles/" + targetUserId + ".json");
+            if (profileFile.exists()) {
+                try {
+                    Gson gson = new Gson();
+                    AppState pState = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
+                    pState.status = "CHANGES_REQUESTED";
+                    try (FileWriter writer = new FileWriter(profileFile)) {
+                        new GsonBuilder().setPrettyPrinting().create().toJson(pState, writer);
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Error updating profile status: " + ex.getMessage());
+                }
+            }
+
+            event.getJDA().retrieveUserById(targetUserId).queue(user -> {
+                user.openPrivateChannel().queue(channel -> {
+                    Button editBtn = Button.primary("user_edit_app_14", "📷 Re-upload Photo");
+                    Button deleteBtn = Button.danger("user_delete_app", "🗑️ Delete Application");
+
+                    channel.sendMessage("⚠️ A matchmaker has requested a change to your **profile photo**.\n\n**Matchmaker Note:** " + reason + "\n\nPlease re-upload your photo using the button below.")
+                           .setComponents(ActionRow.of(editBtn, deleteBtn))
+                           .queue();
+
+                    event.getHook().sendMessage("📷 Requested photo change from " + user.getName() + " for reason: " + reason).queue();
+                }, error -> {
+                    event.getHook().sendMessage("⚠️ Processed photo change request, but could not DM user ID " + targetUserId + " (DMs closed).").queue();
+                });
+            }, error -> {
+                event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
+            });
+
         } else if (event.getModalId().startsWith("modal_convo_reply_mm_")) {
             // Handle conversation reply from matchmaker
             String[] parts = event.getModalId().substring("modal_convo_reply_mm_".length()).split("_");

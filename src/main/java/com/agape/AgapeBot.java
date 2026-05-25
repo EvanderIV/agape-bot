@@ -238,10 +238,12 @@ public class AgapeBot extends ListenerAdapter {
 
         SlashCommandData toggleQmCmd = Commands.slash("toggle-qm", "Enroll or unenroll yourself from the quickmatch pool");
 
+        SlashCommandData compatAlgoCmd = Commands.slash("compat-algo", "Rank top compatibility matches across all registered users (Matchmakers only)");
+
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -631,6 +633,133 @@ public class AgapeBot extends ListenerAdapter {
                 System.err.println("Error toggling quickmatch for " + userId + ": " + e.getMessage());
                 event.getHook().sendMessage("❌ Error updating your quickmatch status.").queue();
             }
+
+        } else if (event.getName().equals("compat-algo")) {
+            if (!hasMatchmakerRole(event)) {
+                event.reply("❌ Only matchmakers can use this command.")
+                        .setEphemeral(true).queue();
+                return;
+            }
+
+            event.deferReply().queue();
+
+            new Thread(() -> {
+                CompatibilityEngine.ScoringResult result = CompatibilityEngine.findTopMatches(10);
+
+                if (result.topPairs.isEmpty()) {
+                    event.getHook().sendMessage(
+                        "❌ Not enough accepted profiles to generate compatibility matches. "
+                        + "(Found **" + result.profileCount + "** profile(s), "
+                        + "**" + result.pairCount + "** opposite-sex pair(s).)"
+                    ).queue();
+                    return;
+                }
+
+                net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                    .setTitle("💘 Compatibility Analysis — Top Matches")
+                    .setColor(0xFF6699)
+                    .setDescription(
+                        "Analyzed **" + result.profileCount + "** profiles · "
+                        + "**" + result.pairCount + "** opposite-sex pair(s) evaluated.\n"
+                        + "Scoring: Denomination (0–" + CompatibilityEngine.MAX_DENOM + ") "
+                        + "+ Age (0–" + CompatibilityEngine.MAX_AGE + ") "
+                        + "+ Distance (" + CompatibilityEngine.MIN_DIST + "–+" + CompatibilityEngine.MAX_DIST + ") "
+                        + "= **" + CompatibilityEngine.MAX_TOTAL + " pts max**"
+                    )
+                    .setTimestamp(java.time.Instant.now());
+
+                java.util.List<net.dv8tion.jda.api.interactions.components.buttons.Button> buttons = new java.util.ArrayList<>();
+
+                for (int i = 0; i < result.topPairs.size(); i++) {
+                    CompatibilityEngine.CompatPair pair = result.topPairs.get(i);
+                    String name1 = pair.profile1.name != null ? pair.profile1.name : pair.userId1;
+                    String name2 = pair.profile2.name != null ? pair.profile2.name : pair.userId2;
+                    int rank = i + 1;
+
+                    embed.addField(
+                        "#" + rank + " · " + name1 + " & " + name2,
+                        "**Score: " + pair.totalScore + " / " + CompatibilityEngine.MAX_TOTAL + "**"
+                            + "  ·  Denom: " + pair.denom.score
+                            + "  Age: " + pair.age.score
+                            + "  Distance: " + pair.dist.score + "\n"
+                            + "<@" + pair.userId1 + "> · <@" + pair.userId2 + ">",
+                        false
+                    );
+
+                    buttons.add(net.dv8tion.jda.api.interactions.components.buttons.Button.secondary(
+                        "compat_breakdown_" + pair.userId1 + "_" + pair.userId2,
+                        "#" + rank + " Breakdown"
+                    ));
+                }
+
+                // Pack buttons into rows of up to 5
+                java.util.List<net.dv8tion.jda.api.interactions.components.ActionRow> rows = new java.util.ArrayList<>();
+                for (int i = 0; i < buttons.size(); i += 5) {
+                    rows.add(net.dv8tion.jda.api.interactions.components.ActionRow.of(
+                        buttons.subList(i, Math.min(i + 5, buttons.size()))
+                    ));
+                }
+
+                if (!rows.isEmpty()) {
+                    event.getHook().sendMessageEmbeds(embed.build()).setComponents(rows).queue();
+                } else {
+                    event.getHook().sendMessageEmbeds(embed.build()).queue();
+                }
+
+            }, "compat-algo").start();
         }
+    }
+
+    @Override
+    public void onButtonInteraction(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
+        String buttonId = event.getComponentId();
+        if (!buttonId.startsWith("compat_breakdown_")) return;
+
+        event.deferReply().queue();
+
+        // Button ID format: compat_breakdown_<uid1>_<uid2>
+        // Discord user IDs are numeric, so the first '_' after the prefix separates the two IDs.
+        String rest = buttonId.substring("compat_breakdown_".length());
+        int sep = rest.indexOf('_');
+        if (sep < 0) {
+            event.getHook().sendMessage("❌ Malformed breakdown button ID.").queue();
+            return;
+        }
+        String uid1 = rest.substring(0, sep);
+        String uid2 = rest.substring(sep + 1);
+
+        ApplicationHandler.AppState p1 = null, p2 = null;
+        try {
+            com.google.gson.Gson gson = new com.google.gson.Gson();
+            p1 = gson.fromJson(new FileReader("user_content/profiles/" + uid1 + ".json"), ApplicationHandler.AppState.class);
+            p2 = gson.fromJson(new FileReader("user_content/profiles/" + uid2 + ".json"), ApplicationHandler.AppState.class);
+        } catch (Exception e) {
+            System.err.println("CompatBreakdown: could not load profiles: " + e.getMessage());
+        }
+
+        if (p1 == null || p2 == null) {
+            event.getHook().sendMessage("❌ Could not load one or both profiles for this breakdown.").queue();
+            return;
+        }
+
+        CompatibilityEngine.ScoreDetail denom = CompatibilityEngine.scoreDenomination(p1, p2);
+        CompatibilityEngine.ScoreDetail age   = CompatibilityEngine.scoreAge(p1, p2);
+        CompatibilityEngine.ScoreDetail dist  = CompatibilityEngine.scoreDistance(p1, p2);
+        int total = denom.score + age.score + dist.score;
+
+        String name1 = p1.name != null ? p1.name : uid1;
+        String name2 = p2.name != null ? p2.name : uid2;
+
+        net.dv8tion.jda.api.EmbedBuilder breakdown = new net.dv8tion.jda.api.EmbedBuilder()
+            .setTitle("📊 Breakdown: " + name1 + " & " + name2)
+            .setDescription("<@" + uid1 + "> × <@" + uid2 + ">")
+            .setColor(0xFF9966)
+            .addField("Total Score", "**" + total + " / " + CompatibilityEngine.MAX_TOTAL + "**", false)
+            .addField("🙏 Denomination (" + denom.score + " / " + CompatibilityEngine.MAX_DENOM + ")", denom.detail, false)
+            .addField("👶 Age (" + age.score + " / " + CompatibilityEngine.MAX_AGE + ")", age.detail, false)
+            .addField("🌍 Distance (" + dist.score + " / " + CompatibilityEngine.MAX_DIST + ")", dist.detail, false)
+            .setTimestamp(java.time.Instant.now());
+
+        event.getHook().sendMessageEmbeds(breakdown.build()).queue();
     }
 }

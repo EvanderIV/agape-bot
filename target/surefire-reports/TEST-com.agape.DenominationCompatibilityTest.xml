@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.AppTest" time="0" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.DenominationCompatibilityTest" time="0.004" tests="20" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="25"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -60,5 +60,24 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="69.0"/>
   </properties>
-  <testcase name="testRunnerIsWorking" classname="com.agape.AppTest" time="0"/>
+  <testcase name="normalizeDenomination_unknownDenominationPreserved" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_oneCharSwapIsCorreected" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_missingLetterInMultiWordKey" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_nullReturnsNull" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="getCompatibleDenominations_knownDenominationReturnsSuggestions" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="getCompatibleDenominations_emptyInputReturnsEmptyList" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="getCompatibleDenominations_nullInputReturnsEmptyList" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="getCompatibleDenominations_doesNotIncludeSelf" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_shortFragmentNotMatchedToLongerKey" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_caseInsensitiveMatch" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_unknownInputReturnedAsIs" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="getCompatibleDenominations_severalKnownDenominationsHaveSuggestions" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_exactMatchReturnsCanonical" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="getCompatibleDenominations_withReasons_containsDashSeparator" classname="com.agape.DenominationCompatibilityTest" time="0.001"/>
+  <testcase name="getCompatibleDenominations_withoutReasons_containsNoDashSeparator" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_emptyReturnsEmpty" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_grotesqueMisspellingPreserved" classname="com.agape.DenominationCompatibilityTest" time="0.001"/>
+  <testcase name="normalizeDenomination_oneCharTypoInLongerWord" classname="com.agape.DenominationCompatibilityTest" time="0.001"/>
+  <testcase name="getCompatibleDenominations_caseInsensitiveInput" classname="com.agape.DenominationCompatibilityTest" time="0"/>
+  <testcase name="normalizeDenomination_oneCharTypoIsCorreected" classname="com.agape.DenominationCompatibilityTest" time="0"/>
 </testsuite>

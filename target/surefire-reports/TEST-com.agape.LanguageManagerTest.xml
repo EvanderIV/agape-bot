@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.AppTest" time="0" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.LanguageManagerTest" time="0.003" tests="20" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="25"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -60,5 +60,24 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="69.0"/>
   </properties>
-  <testcase name="testRunnerIsWorking" classname="com.agape.AppTest" time="0"/>
+  <testcase name="noQuestionIsNullOrEmpty" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="allLanguagesReturnExactly15Questions" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="toTitleCase_capitalizesFirstLetter" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="normalizeLanguageName_mapsNativeNames" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="weaknessesQuestion_optionalTagIsAfterEgSection" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="isYes_acceptsCommonInputs" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="lookForQuestion_optionalTagIsAfterEgSection" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="isSupportedLanguage_caseInsensitive" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="isFemale_rejectsMaleInputs" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="photoQuestion_optionalTagIsAfterMainText" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="isYesAndIsNoAreDisjoint" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="isNo_acceptsCommonInputs" classname="com.agape.LanguageManagerTest" time="0.001"/>
+  <testcase name="isSupportedLanguage_rejectsUnknown" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="toTitleCase_handlesNullAndEmpty" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="isFemale_recognizesFemaleInputs" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="normalizeLanguageName_handlesNull" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="strengthsQuestion_optionalTagIsAfterEgSection" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="normalizeLanguageName_caseInsensitive" classname="com.agape.LanguageManagerTest" time="0.001"/>
+  <testcase name="countryQuestion_optionalTagIsAfterMainText" classname="com.agape.LanguageManagerTest" time="0"/>
+  <testcase name="isSupportedLanguage_acceptsAllKnownLanguages" classname="com.agape.LanguageManagerTest" time="0"/>
 </testsuite>

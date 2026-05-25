@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.AppTest" time="0" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.ApplicationHandlerTest" time="0.028" tests="19" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="25"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -60,5 +60,23 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="69.0"/>
   </properties>
-  <testcase name="testRunnerIsWorking" classname="com.agape.AppTest" time="0"/>
+  <testcase name="suggestDesignCode_hikingHobbiesReturnMSRCode" classname="com.agape.ApplicationHandlerTest" time="0.007"/>
+  <testcase name="buildCardText_weaknessesAppearsWhenSet" classname="com.agape.ApplicationHandlerTest" time="0.004"/>
+  <testcase name="buildCardText_emptyLookForOmitsGreenFlagLine" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="suggestDesignCode_gamingHobbiesReturnKnownCode" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_strengthsAppearsWhenSet" classname="com.agape.ApplicationHandlerTest" time="0.001"/>
+  <testcase name="suggestDesignCode_femaleCalmStrengthsReturnExpectedCode" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_nullLookForOmitsGreenFlagLine" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_emptyStrengthsAndWeaknessesProduceNoTextFromThoseFields" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="suggestDesignCode_returnsNonNullCode" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_emptyCountryOmitted" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="suggestDesignCode_starWarsHobbiesReturnFODCode" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_alwaysContainsRedFlagLine" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="suggestDesignCode_codeContainsDash" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_lookForAppearsWithGreenFlag" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_bothStrengthsAndWeaknessesAppearWhenSet" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_alwaysContainsNameAndUsername" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_emptyWeaknessOmittedWhenStrengthSet" classname="com.agape.ApplicationHandlerTest" time="0"/>
+  <testcase name="buildCardText_countryAppearsWhenSet" classname="com.agape.ApplicationHandlerTest" time="0.001"/>
+  <testcase name="buildCardText_emptyStrengthsOmittedWhenWeaknessSet" classname="com.agape.ApplicationHandlerTest" time="0"/>
 </testsuite>

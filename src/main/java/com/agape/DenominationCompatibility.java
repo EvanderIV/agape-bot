@@ -394,9 +394,16 @@ public class DenominationCompatibility {
      * If the input fuzzy-matches a known denomination, the corrected name is returned.
      * If no match is found, the original trimmed input is returned unchanged.
      */
+    /**
+     * Corrects slight typos in a user-entered denomination name.
+     * Only auto-corrects if the input is very close to a known denomination (score ≥ 0.82,
+     * roughly ≤1–2 character edits). Intentional or unrecognized names are returned as-is.
+     * Substring matching is intentionally disabled here to avoid false corrections on
+     * short fragments (e.g. "Church" matching "Catholic Church").
+     */
     public static String normalizeDenomination(String input) {
         if (input == null || input.trim().isEmpty()) return input;
-        String matched = findClosestMatch(input.trim());
+        String matched = findClosestMatch(input.trim(), false, 0.82);
         return matched != null ? matched : input.trim();
     }
 
@@ -433,10 +440,24 @@ public class DenominationCompatibility {
     }
 
     /**
-     * Fuzzy-matches a raw input string against all keys in COMPATIBILITY_MAP.
-     * Strategy: exact → substring → word-level Levenshtein similarity.
+     * Fuzzy-matches input against all COMPATIBILITY_MAP keys.
+     * Used for broad denomination lookups (compatibility suggestions).
+     * Strategy: exact → substring → word-level Levenshtein at 0.6.
      */
     private static String findClosestMatch(String input) {
+        return findClosestMatch(input, true, 0.6);
+    }
+
+    /**
+     * Core fuzzy-match implementation.
+     *
+     * @param input             Raw user input.
+     * @param useSubstringCheck Whether to match when input is a substring of a key (or vice versa).
+     *                          Disable for typo-correction to avoid false matches on short fragments.
+     * @param minScore          Minimum average token-similarity (0–1) required to accept a match.
+     *                          Use ~0.82 for typo correction (≤1–2 edits); 0.6 for broad lookup.
+     */
+    private static String findClosestMatch(String input, boolean useSubstringCheck, double minScore) {
         String normalized = input.toLowerCase().trim();
 
         // 1. Case-insensitive exact match
@@ -444,10 +465,12 @@ public class DenominationCompatibility {
             if (key.equalsIgnoreCase(normalized)) return key;
         }
 
-        // 2. Substring: normalized is contained in a key, or vice versa
-        for (String key : COMPATIBILITY_MAP.keySet()) {
-            String keyLower = key.toLowerCase();
-            if (keyLower.contains(normalized) || normalized.contains(keyLower)) return key;
+        // 2. Substring: input is contained in a key, or vice versa (broad lookup only)
+        if (useSubstringCheck) {
+            for (String key : COMPATIBILITY_MAP.keySet()) {
+                String keyLower = key.toLowerCase();
+                if (keyLower.contains(normalized) || normalized.contains(keyLower)) return key;
+            }
         }
 
         // 3. Word-level fuzzy match using Levenshtein similarity
@@ -457,8 +480,8 @@ public class DenominationCompatibility {
 
         for (String key : COMPATIBILITY_MAP.keySet()) {
             String[] keyTokens = key.toLowerCase().split("[\\s()]+");
-            double tokenScore = 0.0;
 
+            double tokenScore = 0.0;
             for (String inputToken : inputTokens) {
                 double best = 0.0;
                 for (String keyToken : keyTokens) {
@@ -470,14 +493,22 @@ public class DenominationCompatibility {
                 tokenScore += best;
             }
 
-            tokenScore /= inputTokens.length;
+            // In strict normalization mode, divide by the larger token count so that a
+            // short input (e.g. "Church") cannot score 1.0 against a long key
+            // (e.g. "Catholic Church") just because one token matches.
+            // In broad lookup mode, divide only by input length (existing behavior).
+            int denominator = useSubstringCheck
+                ? inputTokens.length
+                : Math.max(inputTokens.length, keyTokens.length);
+            tokenScore /= denominator;
+
             if (tokenScore > bestScore) {
                 bestScore = tokenScore;
                 bestKey = key;
             }
         }
 
-        return bestScore >= 0.6 ? bestKey : null;
+        return bestScore >= minScore ? bestKey : null;
     }
 
     private static int levenshteinDistance(String a, String b) {
