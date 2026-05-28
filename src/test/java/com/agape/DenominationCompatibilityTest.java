@@ -10,16 +10,16 @@ public class DenominationCompatibilityTest {
 
     @Test
     public void normalizeDenomination_exactMatchReturnsCanonical() {
-        String result = DenominationCompatibility.normalizeDenomination("Catholic Church");
+        String result = DenominationCompatibility.normalizeDenomination("Catholic");
         assertEquals("Exact match should return the canonical name",
-            "Catholic Church", result);
+            "Catholic", result);
     }
 
     @Test
     public void normalizeDenomination_caseInsensitiveMatch() {
-        String result = DenominationCompatibility.normalizeDenomination("catholic church");
+        String result = DenominationCompatibility.normalizeDenomination("catholic");
         assertEquals("Case-insensitive match should return canonical name",
-            "Catholic Church", result);
+            "Catholic", result);
     }
 
     // Slight typos (≤1–2 edits) should be corrected
@@ -43,9 +43,9 @@ public class DenominationCompatibilityTest {
 
     @Test
     public void normalizeDenomination_missingLetterInMultiWordKey() {
-        // "Presbeterian Church" — one vowel off in "Presbyterian"
-        String result = DenominationCompatibility.normalizeDenomination("Presbeterian Church");
-        assertEquals("Presbyterian Church", result);
+        // "Presbeterian" — one vowel off in "Presbyterian"
+        String result = DenominationCompatibility.normalizeDenomination("Presbeterian");
+        assertEquals("Presbyterian", result);
     }
 
     // Grotesque / intentional misspellings must be preserved
@@ -94,21 +94,21 @@ public class DenominationCompatibilityTest {
 
     @Test
     public void getCompatibleDenominations_knownDenominationReturnsSuggestions() {
-        List<String> results = DenominationCompatibility.getCompatibleDenominations("Catholic Church", false);
+        List<String> results = DenominationCompatibility.getCompatibleDenominations("Catholic", false);
         assertNotNull("Results should not be null", results);
         assertFalse("Catholic Church should have compatible denominations", results.isEmpty());
     }
 
     @Test
     public void getCompatibleDenominations_doesNotIncludeSelf() {
-        List<String> results = DenominationCompatibility.getCompatibleDenominations("Catholic Church", false);
+        List<String> results = DenominationCompatibility.getCompatibleDenominations("Catholic", false);
         assertFalse("Results should not contain the denomination itself",
-            results.contains("Catholic Church"));
+            results.contains("Catholic"));
     }
 
     @Test
     public void getCompatibleDenominations_withReasons_containsDashSeparator() {
-        List<String> results = DenominationCompatibility.getCompatibleDenominations("Catholic Church", true);
+        List<String> results = DenominationCompatibility.getCompatibleDenominations("Catholic", true);
         assertFalse("Results with reasons should not be empty", results.isEmpty());
         // At least one result should contain a reason (indicated by " - ")
         boolean anyHasReason = results.stream().anyMatch(r -> r.contains(" - "));
@@ -117,7 +117,7 @@ public class DenominationCompatibilityTest {
 
     @Test
     public void getCompatibleDenominations_withoutReasons_containsNoDashSeparator() {
-        List<String> results = DenominationCompatibility.getCompatibleDenominations("Catholic Church", false);
+        List<String> results = DenominationCompatibility.getCompatibleDenominations("Catholic", false);
         for (String r : results) {
             assertFalse("Results without reasons should not contain ' - ' separator", r.contains(" - "));
         }
@@ -139,15 +139,15 @@ public class DenominationCompatibilityTest {
 
     @Test
     public void getCompatibleDenominations_caseInsensitiveInput() {
-        List<String> lower = DenominationCompatibility.getCompatibleDenominations("catholic church", false);
-        List<String> exact = DenominationCompatibility.getCompatibleDenominations("Catholic Church", false);
+        List<String> lower = DenominationCompatibility.getCompatibleDenominations("catholic", false);
+        List<String> exact = DenominationCompatibility.getCompatibleDenominations("Catholic", false);
         assertEquals("Results should match regardless of input case", exact.size(), lower.size());
     }
 
     @Test
     public void getCompatibleDenominations_severalKnownDenominationsHaveSuggestions() {
         String[] denominations = {
-            "Catholic Church",
+            "Catholic",
             "Eastern Orthodox",
             "Baptist",
             "Anglican",

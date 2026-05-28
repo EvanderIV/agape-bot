@@ -11,6 +11,10 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
+import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.interactions.components.text.TextInput;
+import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 
 import java.io.File;
 import java.io.FileReader;
@@ -44,15 +48,16 @@ public class AgapeBot extends ListenerAdapter {
     /**
      * Helper method to check if a member has the matchmaker role
      */
-    private boolean hasMatchmakerRole(SlashCommandInteractionEvent event) {
-        if (event.getMember() == null) return false;
-        
-        for (Role role : event.getMember().getRoles()) {
-            if (role.getName().toLowerCase().contains("matchmaker")) {
-                return true;
-            }
+    private boolean hasMatchmakerRole(net.dv8tion.jda.api.entities.Member member) {
+        if (member == null) return false;
+        for (Role role : member.getRoles()) {
+            if (role.getName().toLowerCase().contains("matchmaker")) return true;
         }
         return false;
+    }
+
+    private boolean hasMatchmakerRole(SlashCommandInteractionEvent event) {
+        return hasMatchmakerRole(event.getMember());
     }
 
     /**
@@ -240,10 +245,18 @@ public class AgapeBot extends ListenerAdapter {
 
         SlashCommandData compatAlgoCmd = Commands.slash("compat-algo", "Rank top compatibility matches across all registered users (Matchmakers only)");
 
+        SlashCommandData matchCmd = Commands.slash("match", "Manually match two users (Matchmakers only)")
+                .addOption(OptionType.USER, "user1", "First user to match", true)
+                .addOption(OptionType.USER, "user2", "Second user to match", true);
+
+        SlashCommandData qmThreadCmd = Commands.slash("qm-thread", "View the QM thread log for two users (Matchmakers only)")
+                .addOption(OptionType.USER, "user1", "First user", true)
+                .addOption(OptionType.USER, "user2", "Second user", true);
+
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -660,11 +673,7 @@ public class AgapeBot extends ListenerAdapter {
                     .setColor(0xFF6699)
                     .setDescription(
                         "Analyzed **" + result.profileCount + "** profiles · "
-                        + "**" + result.pairCount + "** opposite-sex pair(s) evaluated.\n"
-                        + "Scoring: Denomination (0–" + CompatibilityEngine.MAX_DENOM + ") "
-                        + "+ Age (0–" + CompatibilityEngine.MAX_AGE + ") "
-                        + "+ Distance (" + CompatibilityEngine.MIN_DIST + "–+" + CompatibilityEngine.MAX_DIST + ") "
-                        + "= **" + CompatibilityEngine.MAX_TOTAL + " pts max**"
+                        + "**" + result.pairCount + "** opposite-sex pair(s) evaluated."
                     )
                     .setTimestamp(java.time.Instant.now());
 
@@ -681,7 +690,9 @@ public class AgapeBot extends ListenerAdapter {
                         "**Score: " + pair.totalScore + " / " + CompatibilityEngine.MAX_TOTAL + "**"
                             + "  ·  Denom: " + pair.denom.score
                             + "  Age: " + pair.age.score
-                            + "  Distance: " + pair.dist.score + "\n"
+                            + "  Dist: " + pair.dist.score
+                            + "  Val: " + pair.values.score
+                            + "  DB: " + pair.dealBreakers.score + "\n"
                             + "<@" + pair.userId1 + "> · <@" + pair.userId2 + ">",
                         false
                     );
@@ -707,59 +718,512 @@ public class AgapeBot extends ListenerAdapter {
                 }
 
             }, "compat-algo").start();
+
+        } else if (event.getName().equals("match")) {
+            if (!hasMatchmakerRole(event)) {
+                event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
+                return;
+            }
+
+            User user1 = event.getOption("user1").getAsUser();
+            User user2 = event.getOption("user2").getAsUser();
+            String uid1 = user1.getId();
+            String uid2 = user2.getId();
+
+            if (uid1.equals(uid2)) {
+                event.reply("❌ You cannot match a user with themselves.").setEphemeral(true).queue();
+                return;
+            }
+
+            event.deferReply().queue();
+
+            new Thread(() -> {
+                ApplicationHandler.AppState p1 = null, p2 = null;
+                try {
+                    com.google.gson.Gson gson = new com.google.gson.Gson();
+                    p1 = gson.fromJson(new FileReader("user_content/profiles/" + uid1 + ".json"), ApplicationHandler.AppState.class);
+                    p2 = gson.fromJson(new FileReader("user_content/profiles/" + uid2 + ".json"), ApplicationHandler.AppState.class);
+                } catch (Exception e) {
+                    System.err.println("Match: could not load profiles: " + e.getMessage());
+                }
+
+                if (p1 == null) {
+                    event.getHook().sendMessage("❌ No profile found for <@" + uid1 + ">.").queue();
+                    return;
+                }
+                if (p2 == null) {
+                    event.getHook().sendMessage("❌ No profile found for <@" + uid2 + ">.").queue();
+                    return;
+                }
+                if (!"ACCEPTED".equals(p1.status)) {
+                    event.getHook().sendMessage("❌ <@" + uid1 + ">'s profile is not accepted (status: " + p1.status + ").").queue();
+                    return;
+                }
+                if (!"ACCEPTED".equals(p2.status)) {
+                    event.getHook().sendMessage("❌ <@" + uid2 + ">'s profile is not accepted (status: " + p2.status + ").").queue();
+                    return;
+                }
+                if (p1.sex == p2.sex) {
+                    event.getHook().sendMessage("❌ Both users are the same sex — this server only supports opposite-sex matches.").queue();
+                    return;
+                }
+
+                CompatibilityEngine.ScoreDetail denom  = CompatibilityEngine.scoreDenomination(p1, p2);
+                CompatibilityEngine.ScoreDetail age    = CompatibilityEngine.scoreAge(p1, p2);
+                CompatibilityEngine.ScoreDetail dist   = CompatibilityEngine.scoreDistance(p1, p2);
+                CompatibilityEngine.ScoreDetail values = CompatibilityEngine.scoreValues(p1, p2);
+                CompatibilityEngine.ScoreDetail db     = CompatibilityEngine.scoreDealBreakers(p1, p2);
+                int total = denom.score + age.score + dist.score + values.score + db.score;
+
+                String name1 = p1.name != null ? p1.name : uid1;
+                String name2 = p2.name != null ? p2.name : uid2;
+
+                // ── Warnings ──────────────────────────────────────────────────
+                java.util.List<String> warnings = new java.util.ArrayList<>();
+
+                if (dist.score <= -10) {
+                    warnings.add("**Extreme Distance** — These users appear to be on opposite sides of the globe. "
+                        + "The time zone gap will likely make it very hard for them to find mutual availability.");
+                }
+
+                if (db.score < 0) {
+                    warnings.add("**Flagged Deal Breakers** — The compatibility check detected one or more potential "
+                        + "deal breaker conflicts between these users' profiles. Review the details before proceeding.");
+                }
+
+                java.util.List<DenominationCompatibility.DoctrinalConflict> doctrinalConflicts =
+                    DenominationCompatibility.getDoctrinalConflicts(p1.sect, p2.sect);
+                if (!doctrinalConflicts.isEmpty()) {
+                    StringBuilder dcMsg = new StringBuilder(
+                        "**Doctrinal Conflicts** — Significant theological incompatibilities were found"
+                        + " between " + name1 + "'s and " + name2 + "'s denominations:\n");
+                    for (DenominationCompatibility.DoctrinalConflict dc : doctrinalConflicts) {
+                        dcMsg.append("• **").append(dc.issue).append("** — ")
+                             .append(dc.description).append("\n");
+                    }
+                    warnings.add(dcMsg.toString().trim());
+                }
+
+                // ── Embed ─────────────────────────────────────────────────────
+                String scoreLine = "🙏 " + denom.score
+                    + "   👶 " + age.score
+                    + "   🌍 " + dist.score
+                    + "   💛 " + values.score
+                    + "   🚩 " + db.score;
+
+                net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                    .setTitle("💘 Match Preview: " + name1 + " & " + name2)
+                    .setDescription("<@" + uid1 + "> × <@" + uid2 + ">")
+                    .setColor(warnings.isEmpty() ? 0xFF6699 : 0xFF8800)
+                    .addField("Compatibility Score",
+                        "**" + total + " / " + CompatibilityEngine.MAX_TOTAL + "**\n" + scoreLine, false);
+
+                if (!warnings.isEmpty()) {
+                    StringBuilder wb = new StringBuilder();
+                    for (String w : warnings) {
+                        wb.append("⚠️  ").append(w).append("\n\n");
+                    }
+                    embed.addField("━━━━━━━━━━━━━━━━━━\n⚠️  WARNINGS  ⚠️\n━━━━━━━━━━━━━━━━━━", wb.toString().trim(), false);
+                }
+
+                embed.setTimestamp(java.time.Instant.now());
+
+                // ── Buttons ───────────────────────────────────────────────────
+                String confirmLabel = warnings.isEmpty() ? "Continue" : "I understand, continue anyway";
+                net.dv8tion.jda.api.interactions.components.buttons.Button confirmBtn =
+                    net.dv8tion.jda.api.interactions.components.buttons.Button.success(
+                        "match_confirm_" + uid1 + "_" + uid2, confirmLabel);
+                net.dv8tion.jda.api.interactions.components.buttons.Button cancelBtn =
+                    net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
+                        "match_cancel_" + uid1 + "_" + uid2, "Cancel");
+
+                event.getHook().sendMessageEmbeds(embed.build())
+                    .setComponents(net.dv8tion.jda.api.interactions.components.ActionRow.of(confirmBtn, cancelBtn))
+                    .queue();
+
+            }, "match-preview").start();
+
+        } else if (event.getName().equals("qm-thread")) {
+            if (!hasMatchmakerRole(event)) {
+                event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
+                return;
+            }
+
+            User user1 = event.getOption("user1").getAsUser();
+            User user2 = event.getOption("user2").getAsUser();
+            String uid1 = user1.getId();
+            String uid2 = user2.getId();
+
+            event.deferReply().queue();
+
+            ThreadManager.QMThread log = ThreadManager.findThread(uid1, uid2);
+            if (log == null) {
+                event.getHook().sendMessage(
+                    "❌ No QM thread log found between <@" + uid1 + "> and <@" + uid2 + ">."
+                ).queue();
+                return;
+            }
+
+            java.util.List<String> chunks = buildQMThreadOutput(log);
+            event.getHook().sendMessage(chunks.get(0)).queue(sent -> {
+                for (int i = 1; i < chunks.size(); i++) {
+                    final String chunk = chunks.get(i);
+                    event.getChannel().sendMessage(chunk).queue();
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onModalInteraction(ModalInteractionEvent event) {
+        String modalId = event.getModalId();
+
+        if (modalId.startsWith("qm_modal_feedback_")) {
+            String rest = modalId.substring("qm_modal_feedback_".length());
+            int sep = rest.indexOf('_');
+            if (sep < 0) { event.reply("❌ Invalid submission.").setEphemeral(true).queue(); return; }
+            String userId = rest.substring(0, sep);
+            String matchedId = rest.substring(sep + 1);
+            String feedbackText = event.getValue("feedback_text").getAsString();
+            long epochMs = java.time.Instant.now().toEpochMilli();
+            String timestamp = java.time.Instant.ofEpochMilli(epochMs).toString();
+
+            saveFeedbackFile(userId, matchedId, feedbackText, timestamp, epochMs);
+            postFeedbackToMatchmakers(event.getJDA(), userId, matchedId, feedbackText, timestamp);
+            event.reply("✅ Thank you for your feedback! It has been submitted to our matchmakers.").setEphemeral(true).queue();
+
+        } else if (modalId.startsWith("qm_modal_report_")) {
+            String rest = modalId.substring("qm_modal_report_".length());
+            int sep = rest.indexOf('_');
+            if (sep < 0) { event.reply("❌ Invalid submission.").setEphemeral(true).queue(); return; }
+            String userId = rest.substring(0, sep);
+            String matchedId = rest.substring(sep + 1);
+            String reason = event.getValue("report_reason").getAsString();
+            net.dv8tion.jda.api.interactions.modals.ModalMapping detailsMapping = event.getValue("report_details");
+            String details = detailsMapping != null ? detailsMapping.getAsString() : "";
+            long epochMs = java.time.Instant.now().toEpochMilli();
+            String timestamp = java.time.Instant.ofEpochMilli(epochMs).toString();
+
+            saveReportFile(userId, matchedId, reason, details, timestamp, epochMs);
+            postReportToMatchmakers(event.getJDA(), userId, matchedId, reason, details, timestamp);
+            event.reply("✅ Your report has been submitted. Our matchmakers will review it shortly.").setEphemeral(true).queue();
+        }
+    }
+
+    private static void saveFeedbackFile(String userId, String matchedId, String feedbackText, String timestamp, long epochMs) {
+        try {
+            File dir = new File("user_content/feedback/");
+            if (!dir.exists()) dir.mkdirs();
+            com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+            obj.addProperty("userId", userId);
+            obj.addProperty("matchedUserId", matchedId);
+            obj.addProperty("feedback", feedbackText);
+            obj.addProperty("timestamp", timestamp);
+            try (FileWriter writer = new FileWriter("user_content/feedback/" + userId + "_" + epochMs + ".json")) {
+                new GsonBuilder().setPrettyPrinting().create().toJson(obj, writer);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to save feedback: " + e.getMessage());
+        }
+    }
+
+    private static void saveReportFile(String userId, String matchedId, String reason, String details, String timestamp, long epochMs) {
+        try {
+            File dir = new File("user_content/reports/");
+            if (!dir.exists()) dir.mkdirs();
+            com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+            obj.addProperty("userId", userId);
+            obj.addProperty("matchedUserId", matchedId);
+            obj.addProperty("reportReason", reason);
+            obj.addProperty("details", details);
+            obj.addProperty("timestamp", timestamp);
+            try (FileWriter writer = new FileWriter("user_content/reports/" + userId + "_" + epochMs + ".json")) {
+                new GsonBuilder().setPrettyPrinting().create().toJson(obj, writer);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to save report: " + e.getMessage());
+        }
+    }
+
+    private static net.dv8tion.jda.api.entities.channel.concrete.TextChannel findMatchmakerChannel(net.dv8tion.jda.api.entities.Guild guild) {
+        for (String name : new String[]{"matchmaker-backroom", "matchmakers", "applications", "pending-applications"}) {
+            java.util.List<net.dv8tion.jda.api.entities.channel.concrete.TextChannel> chs = guild.getTextChannelsByName(name, true);
+            if (!chs.isEmpty()) return chs.get(0);
+        }
+        return null;
+    }
+
+    private static void postFeedbackToMatchmakers(net.dv8tion.jda.api.JDA jda, String userId, String matchedId, String feedbackText, String timestamp) {
+        ThreadManager.QMThread record = ThreadManager.findThread(userId, matchedId);
+        if (record == null || record.guildId == null) return;
+        net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(record.guildId);
+        if (guild == null) return;
+        net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch = findMatchmakerChannel(guild);
+        if (ch == null) return;
+
+        net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+            .setTitle("💬 QM Feedback Received")
+            .setColor(0x5865F2)
+            .addField("From", "<@" + userId + ">", true)
+            .addField("Matched with", "<@" + matchedId + ">", true)
+            .addField("Feedback", feedbackText, false)
+            .setFooter("User ID: " + userId)
+            .setTimestamp(java.time.Instant.now());
+
+        ch.sendMessageEmbeds(embed.build()).queue();
+    }
+
+    private static void postReportToMatchmakers(net.dv8tion.jda.api.JDA jda, String userId, String matchedId, String reason, String details, String timestamp) {
+        ThreadManager.QMThread record = ThreadManager.findThread(userId, matchedId);
+        if (record == null || record.guildId == null) return;
+        net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(record.guildId);
+        if (guild == null) return;
+        net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch = findMatchmakerChannel(guild);
+        if (ch == null) return;
+
+        net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+            .setTitle("🚩 QM Report Filed")
+            .setColor(0xFF3300)
+            .addField("Reported by", "<@" + userId + ">", true)
+            .addField("Reported user", "<@" + matchedId + ">", true)
+            .addField("Reason", reason, false);
+        if (details != null && !details.isBlank()) {
+            embed.addField("Details", details, false);
+        }
+        embed.setFooter("Reporter ID: " + userId)
+             .setTimestamp(java.time.Instant.now());
+
+        ch.sendMessageEmbeds(embed.build()).queue();
+    }
+
+    private static java.util.List<String> buildQMThreadOutput(ThreadManager.QMThread log) {
+        java.util.List<String> chunks = new java.util.ArrayList<>();
+
+        StringBuilder header = new StringBuilder();
+        header.append("## QM Thread Log\n");
+        header.append("**Pair:** <@").append(log.maleId).append("> & <@").append(log.femaleId).append(">\n");
+        header.append("**Status:** ").append(log.status);
+        if (log.createdAt != null) {
+            header.append("  ·  **Opened:** `").append(log.createdAt.replace('T', ' ')).append("`");
+        }
+        if (log.closedAt != null) {
+            header.append("  ·  **Closed:** `").append(log.closedAt.replace('T', ' ')).append("`");
+        }
+        header.append("\n");
+
+        if (log.messages == null || log.messages.isEmpty()) {
+            if ("OPEN".equals(log.status)) {
+                header.append("\n*This thread is still active — messages will be logged when it closes.*");
+            } else {
+                header.append("\n*No messages were recorded in this thread.*");
+            }
+            chunks.add(header.toString());
+            return chunks;
+        }
+
+        header.append("**Messages:** ").append(log.messages.size()).append("\n");
+        header.append("━━━━━━━━━━━━━━━━━━━━\n");
+
+        StringBuilder current = new StringBuilder(header);
+
+        for (ThreadManager.ThreadMessage msg : log.messages) {
+            String ts = formatMsgTimestamp(msg.timestamp);
+            String name = msg.authorName != null ? msg.authorName : (msg.authorId != null ? msg.authorId : "Unknown");
+            String content = msg.content != null ? msg.content : "*[empty]*";
+            String line = ts + " **" + name + "** (<@" + msg.authorId + ">)\n"
+                + "> " + content.replace("\n", "\n> ") + "\n\n";
+
+            if (current.length() + line.length() > 1950) {
+                chunks.add(current.toString());
+                current = new StringBuilder();
+            }
+            current.append(line);
+        }
+
+        if (current.length() > 0) {
+            chunks.add(current.toString());
+        }
+
+        return chunks;
+    }
+
+    private static String formatMsgTimestamp(String raw) {
+        if (raw == null) return "[unknown time]";
+        try {
+            long epoch = java.time.OffsetDateTime.parse(raw).toEpochSecond();
+            return "<t:" + epoch + ":f>";
+        } catch (Exception e) {
+            return "`" + raw.replace('T', ' ') + "`";
         }
     }
 
     @Override
     public void onButtonInteraction(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
         String buttonId = event.getComponentId();
-        if (!buttonId.startsWith("compat_breakdown_")) return;
 
-        event.deferReply().queue();
+        if (buttonId.startsWith("compat_breakdown_")) {
+            event.deferReply().queue();
 
-        // Button ID format: compat_breakdown_<uid1>_<uid2>
-        // Discord user IDs are numeric, so the first '_' after the prefix separates the two IDs.
-        String rest = buttonId.substring("compat_breakdown_".length());
-        int sep = rest.indexOf('_');
-        if (sep < 0) {
-            event.getHook().sendMessage("❌ Malformed breakdown button ID.").queue();
-            return;
+            String rest = buttonId.substring("compat_breakdown_".length());
+            int sep = rest.indexOf('_');
+            if (sep < 0) {
+                event.getHook().sendMessage("❌ Malformed breakdown button ID.").queue();
+                return;
+            }
+            String uid1 = rest.substring(0, sep);
+            String uid2 = rest.substring(sep + 1);
+
+            ApplicationHandler.AppState p1 = null, p2 = null;
+            try {
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                p1 = gson.fromJson(new FileReader("user_content/profiles/" + uid1 + ".json"), ApplicationHandler.AppState.class);
+                p2 = gson.fromJson(new FileReader("user_content/profiles/" + uid2 + ".json"), ApplicationHandler.AppState.class);
+            } catch (Exception e) {
+                System.err.println("CompatBreakdown: could not load profiles: " + e.getMessage());
+            }
+
+            if (p1 == null || p2 == null) {
+                event.getHook().sendMessage("❌ Could not load one or both profiles for this breakdown.").queue();
+                return;
+            }
+
+            CompatibilityEngine.ScoreDetail denom  = CompatibilityEngine.scoreDenomination(p1, p2);
+            CompatibilityEngine.ScoreDetail age    = CompatibilityEngine.scoreAge(p1, p2);
+            CompatibilityEngine.ScoreDetail dist   = CompatibilityEngine.scoreDistance(p1, p2);
+            CompatibilityEngine.ScoreDetail values = CompatibilityEngine.scoreValues(p1, p2);
+            CompatibilityEngine.ScoreDetail db     = CompatibilityEngine.scoreDealBreakers(p1, p2);
+            int total = denom.score + age.score + dist.score + values.score + db.score;
+
+            String name1 = p1.name != null ? p1.name : uid1;
+            String name2 = p2.name != null ? p2.name : uid2;
+
+            net.dv8tion.jda.api.EmbedBuilder breakdown = new net.dv8tion.jda.api.EmbedBuilder()
+                .setTitle("📊 Breakdown: " + name1 + " & " + name2)
+                .setDescription("<@" + uid1 + "> × <@" + uid2 + ">")
+                .setColor(0xFF9966)
+                .addField("Total Score", "**" + total + " / " + CompatibilityEngine.MAX_TOTAL + "**", false)
+                .addField("🙏 Denomination (" + denom.score + " / " + CompatibilityEngine.MAX_DENOM + ")", denom.detail, false)
+                .addField("👶 Age (" + age.score + " / " + CompatibilityEngine.MAX_AGE + ")", age.detail, false)
+                .addField("🌍 Distance (" + dist.score + " / " + CompatibilityEngine.MAX_DIST + ")", dist.detail, false)
+                .addField("💛 Values (" + values.score + " / " + CompatibilityEngine.MAX_VALUES + ")", values.detail, false)
+                .addField("🚩 Deal Breakers (" + db.score + ")", db.detail, false)
+                .setTimestamp(java.time.Instant.now());
+
+            event.getHook().sendMessageEmbeds(breakdown.build()).queue();
+
+        } else if (buttonId.startsWith("match_confirm_")) {
+            if (!hasMatchmakerRole(event.getMember())) {
+                event.reply("❌ Only matchmakers can confirm a match.").setEphemeral(true).queue();
+                return;
+            }
+
+            String rest = buttonId.substring("match_confirm_".length());
+            int sep = rest.indexOf('_');
+            if (sep < 0) { event.reply("❌ Malformed button ID.").setEphemeral(true).queue(); return; }
+            String uid1 = rest.substring(0, sep);
+            String uid2 = rest.substring(sep + 1);
+
+            event.deferEdit().queue();
+
+            ApplicationHandler.AppState p1 = null, p2 = null;
+            try {
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                p1 = gson.fromJson(new FileReader("user_content/profiles/" + uid1 + ".json"), ApplicationHandler.AppState.class);
+                p2 = gson.fromJson(new FileReader("user_content/profiles/" + uid2 + ".json"), ApplicationHandler.AppState.class);
+            } catch (Exception e) {
+                System.err.println("MatchConfirm: could not load profiles: " + e.getMessage());
+            }
+
+            if (p1 == null || p2 == null) {
+                event.getHook().sendMessage("❌ Could not reload profiles to execute the match.").queue();
+                return;
+            }
+
+            net.dv8tion.jda.api.entities.Guild guild = event.getGuild();
+            if (guild == null) {
+                event.getHook().sendMessage("❌ Match must be confirmed from within a server.").queue();
+                return;
+            }
+
+            String name1 = p1.name != null ? p1.name : uid1;
+            String name2 = p2.name != null ? p2.name : uid2;
+
+            net.dv8tion.jda.api.EmbedBuilder confirmed = new net.dv8tion.jda.api.EmbedBuilder()
+                .setTitle("✅ Match Initiated: " + name1 + " & " + name2)
+                .setDescription("A match thread is being created for <@" + uid1 + "> and <@" + uid2 + ">.")
+                .setColor(0x57F287)
+                .setTimestamp(java.time.Instant.now());
+
+            event.getHook().editOriginalEmbeds(confirmed.build()).setComponents().queue();
+
+            createMatchThread(guild, uid1, !p1.sex, name1, p1, uid2, !p2.sex, name2, p2);
+
+        } else if (buttonId.startsWith("match_cancel_")) {
+            event.deferEdit().queue();
+
+            String rest = buttonId.substring("match_cancel_".length());
+            int sep = rest.indexOf('_');
+            String uid1 = sep >= 0 ? rest.substring(0, sep) : rest;
+            String uid2 = sep >= 0 ? rest.substring(sep + 1) : "";
+
+            net.dv8tion.jda.api.EmbedBuilder cancelled = new net.dv8tion.jda.api.EmbedBuilder()
+                .setTitle("Match Cancelled")
+                .setDescription("The proposed match between <@" + uid1 + "> and <@" + uid2 + "> was cancelled.")
+                .setColor(0x888888)
+                .setTimestamp(java.time.Instant.now());
+
+            event.getHook().editOriginalEmbeds(cancelled.build()).setComponents().queue();
+
+        } else if (buttonId.startsWith("qm_feedback_")) {
+            // qm_feedback_{userId}_{matchedId}
+            String rest = buttonId.substring("qm_feedback_".length());
+            int sep = rest.indexOf('_');
+            if (sep < 0) { event.reply("❌ Malformed button ID.").setEphemeral(true).queue(); return; }
+            String userId = rest.substring(0, sep);
+            String matchedId = rest.substring(sep + 1);
+
+            TextInput feedbackInput = TextInput
+                .create("feedback_text", "How did the match go?", TextInputStyle.PARAGRAPH)
+                .setPlaceholder("Share your experience, suggestions, or any concerns...")
+                .setMinLength(10)
+                .setMaxLength(1000)
+                .setRequired(true)
+                .build();
+
+            event.replyModal(
+                Modal.create("qm_modal_feedback_" + userId + "_" + matchedId, "Match Feedback")
+                    .addActionRow(feedbackInput)
+                    .build()
+            ).queue();
+
+        } else if (buttonId.startsWith("qm_report_")) {
+            // qm_report_{userId}_{matchedId}
+            String rest = buttonId.substring("qm_report_".length());
+            int sep = rest.indexOf('_');
+            if (sep < 0) { event.reply("❌ Malformed button ID.").setEphemeral(true).queue(); return; }
+            String userId = rest.substring(0, sep);
+            String matchedId = rest.substring(sep + 1);
+
+            TextInput reasonInput = TextInput
+                .create("report_reason", "What are you reporting?", TextInputStyle.SHORT)
+                .setPlaceholder("e.g. Ghosting, rude behavior, inappropriate content, other...")
+                .setMaxLength(100)
+                .setRequired(true)
+                .build();
+
+            TextInput detailsInput = TextInput
+                .create("report_details", "Additional details", TextInputStyle.PARAGRAPH)
+                .setPlaceholder("Provide any additional context or details...")
+                .setMaxLength(1000)
+                .setRequired(false)
+                .build();
+
+            event.replyModal(
+                Modal.create("qm_modal_report_" + userId + "_" + matchedId, "Report")
+                    .addActionRow(reasonInput)
+                    .addActionRow(detailsInput)
+                    .build()
+            ).queue();
         }
-        String uid1 = rest.substring(0, sep);
-        String uid2 = rest.substring(sep + 1);
-
-        ApplicationHandler.AppState p1 = null, p2 = null;
-        try {
-            com.google.gson.Gson gson = new com.google.gson.Gson();
-            p1 = gson.fromJson(new FileReader("user_content/profiles/" + uid1 + ".json"), ApplicationHandler.AppState.class);
-            p2 = gson.fromJson(new FileReader("user_content/profiles/" + uid2 + ".json"), ApplicationHandler.AppState.class);
-        } catch (Exception e) {
-            System.err.println("CompatBreakdown: could not load profiles: " + e.getMessage());
-        }
-
-        if (p1 == null || p2 == null) {
-            event.getHook().sendMessage("❌ Could not load one or both profiles for this breakdown.").queue();
-            return;
-        }
-
-        CompatibilityEngine.ScoreDetail denom = CompatibilityEngine.scoreDenomination(p1, p2);
-        CompatibilityEngine.ScoreDetail age   = CompatibilityEngine.scoreAge(p1, p2);
-        CompatibilityEngine.ScoreDetail dist  = CompatibilityEngine.scoreDistance(p1, p2);
-        int total = denom.score + age.score + dist.score;
-
-        String name1 = p1.name != null ? p1.name : uid1;
-        String name2 = p2.name != null ? p2.name : uid2;
-
-        net.dv8tion.jda.api.EmbedBuilder breakdown = new net.dv8tion.jda.api.EmbedBuilder()
-            .setTitle("📊 Breakdown: " + name1 + " & " + name2)
-            .setDescription("<@" + uid1 + "> × <@" + uid2 + ">")
-            .setColor(0xFF9966)
-            .addField("Total Score", "**" + total + " / " + CompatibilityEngine.MAX_TOTAL + "**", false)
-            .addField("🙏 Denomination (" + denom.score + " / " + CompatibilityEngine.MAX_DENOM + ")", denom.detail, false)
-            .addField("👶 Age (" + age.score + " / " + CompatibilityEngine.MAX_AGE + ")", age.detail, false)
-            .addField("🌍 Distance (" + dist.score + " / " + CompatibilityEngine.MAX_DIST + ")", dist.detail, false)
-            .setTimestamp(java.time.Instant.now());
-
-        event.getHook().sendMessageEmbeds(breakdown.build()).queue();
     }
 }

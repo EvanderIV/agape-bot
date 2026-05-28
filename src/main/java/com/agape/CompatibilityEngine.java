@@ -15,11 +15,86 @@ public class CompatibilityEngine {
     private static final String PROFILES_DIR = "user_content/profiles/";
     private static final Gson GSON = new Gson();
 
-    public static final int MAX_DENOM = 50; // 40 base + up to 5+5 targetSect bonus
-    public static final int MAX_AGE   = 40;
-    public static final int MAX_DIST  = 20;
-    public static final int MIN_DIST  = -15;
-    public static final int MAX_TOTAL = MAX_DENOM + MAX_AGE + MAX_DIST; // 110
+    public static final int MAX_DENOM   = 30; // 20 base + up to 5+5 targetSect bonus
+    public static final int MAX_AGE     = 50;
+    public static final int MAX_DIST    = 10;
+    public static final int MIN_DIST    = -15;
+    public static final int MAX_VALUES  = 20;
+    public static final int MAX_TOTAL   = MAX_DENOM + MAX_AGE + MAX_DIST + MAX_VALUES; // 110
+
+    // ─── Deal-breaker keyword tables ─────────────────────────────────────────
+    // Each row: triggers checked in the person's dealBreakers text (lowercase substrings),
+    //           signals checked in the partner's hobbies+weaknesses text.
+
+    private static final String[][] DB_TRIGGERS = {
+        { "smok" },
+        { "drink", "alcohol" },
+        { "drug", "substance" },
+        { "children", "kids", "has kid" },
+        { "divorc" },
+        { "dishonest", "liar", "lying" },
+        { "disrespect", "mean", "rude" },
+        { "dramatic", "emotional instab", "overl" },
+        { "selfish" },
+        { "materialist" },
+    };
+    private static final String[][] DB_SIGNALS = {
+        { "smoke", "smoking", "smoker", "cigarette", "tobacco", "vape", "vaping" },
+        { "drinking", "drinker", "alcohol", "drunk", "beer", "wine", "liquor" },
+        { "drug", "marijuana", "weed", "cannabis", "cocaine", "420" },
+        { "my kids", "my children", "my son", "my daughter", "single parent", "baby mama", "baby daddy" },
+        { "divorced", "divorce" },
+        { "dishonest", "lying", "liar", "deceptive", "manipulat" },
+        { "disrespectful", "disrespect", "rude", "mean ", "bully" },
+        { "dramatic", "overreact", "explosive", "anger issue", "easily angered", "emotional outburst" },
+        { "selfish", "self-centered", "self centered" },
+        { "materialist", "luxury brands", "designer" },
+    };
+    private static final String[] DB_LABELS = {
+        "smoking", "alcohol", "drug use", "having children", "being divorced",
+        "dishonesty", "disrespect", "emotional instability", "selfishness", "materialism",
+    };
+
+    // ─── Values / lookFor keyword tables ─────────────────────────────────────
+    // Triggers checked in the person's lookFor text; signals checked in partner's strengths+hobbies.
+
+    private static final String[][] VAL_TRIGGERS = {
+        { "faith", "christ", "god", "jesus", "spiritual", "priorit" },
+        { "kind", "warm", "caring", "compassion" },
+        { "respect" },
+        { "empathy", "empath", "compassionate" },
+        { "communicat", "listen", "conversation" },
+        { "leader", "leadership" },
+        { "intellig", "smart", "wisdom", "wise" },
+        { "passion" },
+        { "patient", "patience" },
+        { "humble", "humility" },
+        { "honest", "sincer", "genuine", "authentic" },
+        { "sport", "active", "athletic", "fitness", "exercise" },
+        { "funny", "humor", "laugh" },
+        { "nurtur", "support" },
+    };
+    private static final String[][] VAL_SIGNALS = {
+        { "faith", "faithful", "christian", "god", "jesus", "christ", "church", "prayer", "spiritual", "bible", "holy", "devotion" },
+        { "kind", "caring", "warmth", "warm", "compassionate", "loving", "gentle" },
+        { "respectful", "respect", "polite", "courteous" },
+        { "empathetic", "empathy", "compassionate", "compassion", "understanding" },
+        { "communicat", "listen", "dialogue", "conversation" },
+        { "leader", "leadership", "initiative", "driven", "takes charge" },
+        { "intelligent", "intellect", "smart", "wisdom", "wise", "knowledge" },
+        { "passionate", "passion", "enthusiast" },
+        { "patient", "patience" },
+        { "humble", "humility" },
+        { "honest", "honesty", "sincere", "sincerity", "genuine", "authentic" },
+        { "sport", "athletic", "active", "fitness", "gym", "exercise", "run", "football", "basketball", "workout" },
+        { "funny", "humor", "humour", "laugh", "joke", "witty" },
+        { "nurtur", "support", "encouraging" },
+    };
+    private static final String[] VAL_LABELS = {
+        "faith/spirituality", "kindness/warmth", "respectfulness", "empathy/compassion",
+        "communication", "leadership", "intelligence", "passion", "patience", "humility",
+        "honesty/sincerity", "active/athletic", "humor", "nurturing/support",
+    };
 
     // ─── Public result types ──────────────────────────────────────────────────
 
@@ -33,14 +108,16 @@ public class CompatibilityEngine {
         public final String userId1, userId2;
         public final ApplicationHandler.AppState profile1, profile2;
         public final int totalScore;
-        public final ScoreDetail denom, age, dist;
+        public final ScoreDetail denom, age, dist, values, dealBreakers;
 
         CompatPair(String u1, String u2, ApplicationHandler.AppState p1, ApplicationHandler.AppState p2,
-                   ScoreDetail denom, ScoreDetail age, ScoreDetail dist) {
+                   ScoreDetail denom, ScoreDetail age, ScoreDetail dist,
+                   ScoreDetail values, ScoreDetail dealBreakers) {
             this.userId1 = u1; this.userId2 = u2;
             this.profile1 = p1; this.profile2 = p2;
             this.denom = denom; this.age = age; this.dist = dist;
-            this.totalScore = denom.score + age.score + dist.score;
+            this.values = values; this.dealBreakers = dealBreakers;
+            this.totalScore = denom.score + age.score + dist.score + values.score + dealBreakers.score;
         }
     }
 
@@ -84,7 +161,8 @@ public class CompatibilityEngine {
                 if (a.sex == b.sex) continue; // opposite-sex pairs only
                 pairs.add(new CompatPair(
                     ids.get(i), ids.get(j), a, b,
-                    scoreDenomination(a, b), scoreAge(a, b), scoreDistance(a, b)
+                    scoreDenomination(a, b), scoreAge(a, b), scoreDistance(a, b),
+                    scoreValues(a, b), scoreDealBreakers(a, b)
                 ));
             }
         }
@@ -94,7 +172,7 @@ public class CompatibilityEngine {
         return new ScoringResult(top, profiles.size(), pairs.size());
     }
 
-    // ─── Denomination scoring (0–50) ─────────────────────────────────────────
+    // ─── Denomination scoring (-5–30) ────────────────────────────────────────
 
     public static ScoreDetail scoreDenomination(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
         String n1 = a.name != null ? a.name : "User 1";
@@ -116,7 +194,7 @@ public class CompatibilityEngine {
         String compatNote;
 
         if (denomA.equalsIgnoreCase(denomB)) {
-            score = 40;
+            score = 20;
             compatNote = "Same denomination ✅";
         } else {
             List<String> compatA = DenominationCompatibility.getCompatibleDenominations(denomA, false);
@@ -126,17 +204,17 @@ public class CompatibilityEngine {
             boolean aInB = compatB.stream().anyMatch(c -> c.equalsIgnoreCase(denomA));
 
             if (bInA && aInB) {
-                score = 40;
+                score = 20;
                 compatNote = "Mutually compatible ✅";
             } else if (bInA) {
-                score = 25;
+                score = 12;
                 compatNote = denomB + " lists " + denomA + " as compatible (one-way) ⚠️";
             } else if (aInB) {
-                score = 25;
+                score = 12;
                 compatNote = denomA + " lists " + denomB + " as compatible (one-way) ⚠️";
             } else {
-                score = 0;
-                compatNote = "No listed compatibility ❌";
+                score = -5;
+                compatNote = "No listed compatibility (-5) ❌";
             }
         }
 
@@ -163,7 +241,7 @@ public class CompatibilityEngine {
         return false;
     }
 
-    // ─── Age scoring (0–40) ───────────────────────────────────────────────────
+    // ─── Age scoring (0–50) ───────────────────────────────────────────────────
 
     public static ScoreDetail scoreAge(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
         String n1 = a.name != null ? a.name : "User 1";
@@ -177,7 +255,7 @@ public class CompatibilityEngine {
         if (rangeA == null && rangeB == null)
             return new ScoreDetail(0, "No age preferences set for either user.");
 
-        int half = 20;
+        int half = 25;
         int scoreA = 0, scoreB = 0;
         String noteA, noteB;
 
@@ -241,7 +319,7 @@ public class CompatibilityEngine {
         } catch (Exception e) { return 0; }
     }
 
-    // ─── Distance / geography scoring (−15 to +20) ───────────────────────────
+    // ─── Distance / geography scoring (−15 to +10) ───────────────────────────
 
     private enum Continent { NA, SA, EU, AF, AS, OC }
 
@@ -281,15 +359,98 @@ public class CompatibilityEngine {
         }
 
         if (contA == contB) {
-            return new ScoreDetail(10,
+            return new ScoreDetail(5,
                 "**" + n1 + "**: " + labelA + "\n**" + n2 + "**: " + labelB
-                + "\nSame continent (+10)");
+                + "\nSame continent (+5)");
         }
 
         int penalty = CONTINENT_PENALTY[contA.ordinal()][contB.ordinal()];
         return new ScoreDetail(penalty,
             "**" + n1 + "**: " + labelA + "\n**" + n2 + "**: " + labelB
             + "\nDifferent continents (" + (penalty >= 0 ? "+" : "") + penalty + " pts)");
+    }
+
+    // ─── Deal-breaker scoring (≤0, floor −30) ────────────────────────────────
+
+    public static ScoreDetail scoreDealBreakers(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
+        String n1 = a.name != null ? a.name : "User 1";
+        String n2 = b.name != null ? b.name : "User 2";
+
+        String dbA = a.dealBreakers != null ? a.dealBreakers.toLowerCase() : "";
+        String dbB = b.dealBreakers != null ? b.dealBreakers.toLowerCase() : "";
+        String profileA = ((a.hobbies != null ? a.hobbies : "") + " " + (a.weaknesses != null ? a.weaknesses : "")).toLowerCase();
+        String profileB = ((b.hobbies != null ? b.hobbies : "") + " " + (b.weaknesses != null ? b.weaknesses : "")).toLowerCase();
+
+        List<String> hitsAtoB = new ArrayList<>();
+        List<String> hitsBtoA = new ArrayList<>();
+
+        for (int i = 0; i < DB_TRIGGERS.length; i++) {
+            if (containsAny(dbA, DB_TRIGGERS[i]) && containsAny(profileB, DB_SIGNALS[i]))
+                hitsAtoB.add(DB_LABELS[i]);
+            if (containsAny(dbB, DB_TRIGGERS[i]) && containsAny(profileA, DB_SIGNALS[i]))
+                hitsBtoA.add(DB_LABELS[i]);
+        }
+
+        int scoreAtoB = Math.max(-15, hitsAtoB.size() * -10);
+        int scoreBtoA = Math.max(-15, hitsBtoA.size() * -10);
+        int total     = Math.max(-30, scoreAtoB + scoreBtoA);
+
+        StringBuilder sb = new StringBuilder();
+        if (hitsAtoB.isEmpty() && hitsBtoA.isEmpty()) {
+            sb.append("No deal breaker conflicts detected ✅");
+        } else {
+            if (!hitsAtoB.isEmpty())
+                sb.append(n1).append(" flags ").append(n2).append(": ").append(String.join(", ", hitsAtoB));
+            if (!hitsBtoA.isEmpty()) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append(n2).append(" flags ").append(n1).append(": ").append(String.join(", ", hitsBtoA));
+            }
+        }
+        return new ScoreDetail(total, sb.toString());
+    }
+
+    // ─── Values / lookFor scoring (0–20) ─────────────────────────────────────
+
+    public static ScoreDetail scoreValues(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
+        String n1 = a.name != null ? a.name : "User 1";
+        String n2 = b.name != null ? b.name : "User 2";
+
+        String lookA = a.lookFor != null ? a.lookFor.toLowerCase() : "";
+        String lookB = b.lookFor != null ? b.lookFor.toLowerCase() : "";
+        String profileA = ((a.strengths != null ? a.strengths : "") + " " + (a.hobbies != null ? a.hobbies : "")).toLowerCase();
+        String profileB = ((b.strengths != null ? b.strengths : "") + " " + (b.hobbies != null ? b.hobbies : "")).toLowerCase();
+
+        List<String> matchesAtoB = new ArrayList<>();
+        List<String> matchesBtoA = new ArrayList<>();
+
+        for (int i = 0; i < VAL_TRIGGERS.length; i++) {
+            if (containsAny(lookA, VAL_TRIGGERS[i]) && containsAny(profileB, VAL_SIGNALS[i]))
+                matchesAtoB.add(VAL_LABELS[i]);
+            if (containsAny(lookB, VAL_TRIGGERS[i]) && containsAny(profileA, VAL_SIGNALS[i]))
+                matchesBtoA.add(VAL_LABELS[i]);
+        }
+
+        int scoreA = Math.min(10, matchesAtoB.size() * 4);
+        int scoreB = Math.min(10, matchesBtoA.size() * 4);
+        int total  = scoreA + scoreB;
+
+        StringBuilder sb = new StringBuilder();
+        if (matchesAtoB.isEmpty() && matchesBtoA.isEmpty()) {
+            sb.append("No value alignment detected.");
+        } else {
+            if (!matchesAtoB.isEmpty())
+                sb.append(n2).append(" fits what ").append(n1).append(" looks for: ").append(String.join(", ", matchesAtoB));
+            if (!matchesBtoA.isEmpty()) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append(n1).append(" fits what ").append(n2).append(" looks for: ").append(String.join(", ", matchesBtoA));
+            }
+        }
+        return new ScoreDetail(total, sb.toString());
+    }
+
+    private static boolean containsAny(String text, String[] terms) {
+        for (String t : terms) if (text.contains(t)) return true;
+        return false;
     }
 
     private static Continent getContinent(String country) {

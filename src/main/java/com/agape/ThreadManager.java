@@ -90,7 +90,29 @@ public class ThreadManager {
         }
     }
 
+    // ─── Public API (continued) ───────────────────────────────────────────────
+
+    /**
+     * Finds the QMThread log for the given pair (either ordering).
+     * Returns {@code null} if no log file exists for the pair.
+     */
+    public static QMThread findThread(String userId1, String userId2) {
+        QMThread r = tryLoad(userId1, userId2);
+        return r != null ? r : tryLoad(userId2, userId1);
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────────
+
+    private static QMThread tryLoad(String id1, String id2) {
+        File f = new File(THREADS_DIR + id1 + "_" + id2 + ".json");
+        if (!f.exists()) return null;
+        try (FileReader reader = new FileReader(f)) {
+            return GSON.fromJson(reader, QMThread.class);
+        } catch (Exception e) {
+            System.err.println("ThreadManager: Failed to load " + f.getName() + ": " + e.getMessage());
+            return null;
+        }
+    }
 
     private static void archiveAndDelete(QMThread record, JDA jda) {
         ThreadChannel thread = jda.getThreadChannelById(record.threadId);
@@ -100,6 +122,7 @@ public class ThreadManager {
             record.status   = "ARCHIVED";
             record.closedAt = LocalDateTime.now().format(FMT);
             save(record.maleId, record.femaleId, record);
+            sendPostMatchDMs(jda, record);
             System.out.println("ThreadManager: Thread " + record.threadId + " not found in cache; marked archived.");
             return;
         }
@@ -122,6 +145,7 @@ public class ThreadManager {
             record.status   = "ARCHIVED";
             record.closedAt = LocalDateTime.now().format(FMT);
             save(record.maleId, record.femaleId, record);
+            sendPostMatchDMs(jda, record);
 
             thread.delete().queue(
                 v   -> System.out.println("ThreadManager: Archived and deleted thread " + record.threadId + "."),
@@ -133,8 +157,54 @@ public class ThreadManager {
             record.status   = "ARCHIVED";
             record.closedAt = LocalDateTime.now().format(FMT);
             save(record.maleId, record.femaleId, record);
+            sendPostMatchDMs(jda, record);
             thread.delete().queue();
         });
+    }
+
+    private static void sendPostMatchDMs(JDA jda, QMThread record) {
+        sendPostMatchDM(jda, record.maleId, record.femaleId);
+        sendPostMatchDM(jda, record.femaleId, record.maleId);
+    }
+
+    private static void sendPostMatchDM(JDA jda, String userId, String matchedId) {
+        String matchedName = getProfileName(matchedId);
+        String displayName = matchedName != null ? "**" + matchedName + "**" : "<@" + matchedId + ">";
+
+        net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+            .setTitle("💬 How did your match go?")
+            .setColor(0xFF6699)
+            .setDescription("Your Quick Match thread with " + displayName + " has ended!\n\n"
+                + "We'd love to hear how the experience went. "
+                + "Share your thoughts or report any issues using the buttons below.")
+            .setFooter("Agape Matchmaking • Your feedback helps us improve!");
+
+        net.dv8tion.jda.api.interactions.components.buttons.Button feedbackBtn =
+            net.dv8tion.jda.api.interactions.components.buttons.Button.primary(
+                "qm_feedback_" + userId + "_" + matchedId, "💬 Give Feedback");
+        net.dv8tion.jda.api.interactions.components.buttons.Button reportBtn =
+            net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
+                "qm_report_" + userId + "_" + matchedId, "🚩 Report");
+
+        jda.openPrivateChannelById(userId).queue(
+            ch -> ch.sendMessageEmbeds(embed.build())
+                    .setComponents(net.dv8tion.jda.api.interactions.components.ActionRow.of(feedbackBtn, reportBtn))
+                    .queue(
+                        s  -> System.out.println("ThreadManager: Sent post-match DM to " + userId),
+                        e  -> System.err.println("ThreadManager: Failed to send post-match DM to " + userId + ": " + e.getMessage())
+                    ),
+            e -> System.err.println("ThreadManager: Could not open DM for " + userId + ": " + e.getMessage())
+        );
+    }
+
+    private static String getProfileName(String userId) {
+        File f = new File("user_content/profiles/" + userId + ".json");
+        if (!f.exists()) return null;
+        try (FileReader reader = new FileReader(f)) {
+            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+            if (obj.has("name") && !obj.get("name").isJsonNull()) return obj.get("name").getAsString();
+        } catch (Exception ignored) {}
+        return null;
     }
 
     private static void save(String maleId, String femaleId, QMThread record) {
