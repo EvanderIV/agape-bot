@@ -207,7 +207,16 @@ public class AgapeBot extends ListenerAdapter {
 
     @Override
     public void onReady(ReadyEvent event) {
+        System.out.println("================================================================================");
         System.out.println("Bot is ready! Logged in as: " + event.getJDA().getSelfUser().getName());
+        System.out.println("Environment: " + EnvironmentManager.getEnvironmentName());
+        System.out.println("Allowed Guild ID: " + EnvironmentManager.getAllowedGuildId());
+        System.out.println("Available Guilds:");
+        event.getJDA().getGuilds().forEach(guild -> {
+            String marker = EnvironmentManager.isGuildAllowed(guild.getId()) ? "✅" : "❌";
+            System.out.println("  " + marker + " " + guild.getName() + " (ID: " + guild.getId() + ")");
+        });
+        System.out.println("================================================================================");
 
         // Archive any threads that expired while the bot was offline
         ThreadManager.checkExpiredThreads(event.getJDA());
@@ -267,6 +276,13 @@ public class AgapeBot extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
+        // Validate guild for this environment
+        if (event.getGuild() != null && !EnvironmentManager.isGuildAllowed(event.getGuild().getId())) {
+            event.reply("❌ This command is not available in this server.").setEphemeral(true).queue();
+            System.out.println("[SECURITY] Rejected command '" + event.getName() + "' from guild " + event.getGuild().getId() + " in " + EnvironmentManager.getEnvironmentName() + " environment");
+            return;
+        }
+        
         // Check if the command used is "/generate"
         if (event.getName().equals("generate")) {
 
@@ -876,6 +892,13 @@ public class AgapeBot extends ListenerAdapter {
 
     @Override
     public void onModalInteraction(ModalInteractionEvent event) {
+        // Validate guild for this environment
+        if (event.getGuild() != null && !EnvironmentManager.isGuildAllowed(event.getGuild().getId())) {
+            event.reply("❌ This interaction is not available in this server.").setEphemeral(true).queue();
+            System.out.println("[SECURITY] Rejected modal interaction from guild " + event.getGuild().getId() + " in " + EnvironmentManager.getEnvironmentName() + " environment");
+            return;
+        }
+        
         String modalId = event.getModalId();
 
         if (modalId.startsWith("qm_modal_feedback_")) {
@@ -1059,6 +1082,13 @@ public class AgapeBot extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent event) {
+        // Validate guild for this environment
+        if (event.getGuild() != null && !EnvironmentManager.isGuildAllowed(event.getGuild().getId())) {
+            event.reply("❌ This interaction is not available in this server.").setEphemeral(true).queue();
+            System.out.println("[SECURITY] Rejected button interaction from guild " + event.getGuild().getId() + " in " + EnvironmentManager.getEnvironmentName() + " environment");
+            return;
+        }
+        
         String buttonId = event.getComponentId();
 
         if (buttonId.startsWith("compat_breakdown_")) {

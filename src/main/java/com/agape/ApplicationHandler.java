@@ -1155,6 +1155,15 @@ public class ApplicationHandler extends ListenerAdapter {
         if (!activeApplications.containsKey(userId)) return;
 
         AppState state = activeApplications.get(userId);
+        
+        // 4. Validate guild context if the user has a stored guild ID
+        if (state.guildId != null && !EnvironmentManager.isGuildAllowed(state.guildId)) {
+            event.getChannel().sendMessage("❌ Your application was initiated in a server that is not available in the current environment. Please try again in the correct server.").queue();
+            System.out.println("[SECURITY] Rejected DM response from user " + userId + " with mismatched guild " + state.guildId + " in " + EnvironmentManager.getEnvironmentName() + " environment");
+            activeApplications.remove(userId);
+            return;
+        }
+        
         String messageContent = event.getMessage().getContentRaw().trim();
         String[] currentQuestions = LanguageManager.getQuestions(state.language);
 
@@ -1504,6 +1513,13 @@ public class ApplicationHandler extends ListenerAdapter {
 
     @Override
     public void onButtonInteraction(ButtonInteractionEvent event) {
+        // Validate guild for this environment (if in a guild)
+        if (event.getGuild() != null && !EnvironmentManager.isGuildAllowed(event.getGuild().getId())) {
+            event.reply("❌ This interaction is not available in this server.").setEphemeral(true).queue();
+            System.out.println("[SECURITY] Rejected button interaction from guild " + event.getGuild().getId() + " in " + EnvironmentManager.getEnvironmentName() + " environment");
+            return;
+        }
+        
         String buttonId = event.getComponentId();
         String userId = event.getUser().getId();
         
@@ -1672,6 +1688,13 @@ public class ApplicationHandler extends ListenerAdapter {
 
     @Override
     public void onModalInteraction(ModalInteractionEvent event) {
+        // Validate guild for this environment (if in a guild)
+        if (event.getGuild() != null && !EnvironmentManager.isGuildAllowed(event.getGuild().getId())) {
+            event.reply("❌ This interaction is not available in this server.").setEphemeral(true).queue();
+            System.out.println("[SECURITY] Rejected modal interaction from guild " + event.getGuild().getId() + " in " + EnvironmentManager.getEnvironmentName() + " environment");
+            return;
+        }
+        
         if (event.getModalId().startsWith("modal_request_change_")) {
             String targetUserId = event.getModalId().substring(event.getModalId().lastIndexOf("_") + 1);
             String reason = event.getValue("reason").getAsString();

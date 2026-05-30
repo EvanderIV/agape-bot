@@ -26,5 +26,6 @@ com\agape\ApplicationHandler.class
 com\agape\ThreadManager$ThreadMessage.class
 com\agape\ImageGenerator$EmojiLoader.class
 com\agape\DenominationCompatibility.class
+com\agape\EnvironmentManager.class
 com\agape\CompatibilityEngine$Continent.class
 com\agape\ImageGenerator$1.class
