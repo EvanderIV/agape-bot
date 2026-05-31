@@ -333,12 +333,22 @@ public class AgapeBot extends ListenerAdapter {
                     // Use the actual profile data to build the card text
                     cardText = ApplicationHandler.buildCardText(state);
                     
-                    // Use the profile's photoPath if available
+                    // Use the profile's photoPath if available and it's not a placeholder
                     if (state.photoPath != null && !state.photoPath.isEmpty()) {
-                        if (state.photoPath.startsWith("http")) {
+                        // Check if it's a sex-based placeholder that should be replaced with actual gender placeholder
+                        if (state.photoPath.equalsIgnoreCase("assets/male.png") || state.photoPath.equalsIgnoreCase("assets/female.png")) {
+                            // Use sex-based placeholder (female if sex=true, male if sex=false)
+                            String placeholderPath = state.sex ? "assets/female.png" : "assets/male.png";
+                            try {
+                                avatarUrl = new File(placeholderPath).toURI().toURL().toString();
+                                System.out.println("ℹ️ Using sex-specific placeholder: " + placeholderPath);
+                            } catch (Exception e) {
+                                System.err.println("⚠️ Failed to convert placeholder path to URL: " + placeholderPath);
+                            }
+                        } else if (state.photoPath.startsWith("http")) {
                             // It's already a URL, use it directly
                             avatarUrl = state.photoPath;
-                        } else if (!state.photoPath.startsWith("assets/")) {
+                        } else {
                             // It's a local file path, convert to URL
                             try {
                                 avatarUrl = new File(state.photoPath).toURI().toURL().toString();
