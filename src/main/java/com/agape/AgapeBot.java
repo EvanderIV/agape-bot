@@ -314,12 +314,12 @@ public class AgapeBot extends ListenerAdapter {
 
             // 2. Extract the target user from the slash command option
             User targetUser = event.getOption("target").getAsUser();
-            String avatarUrl = targetUser.getEffectiveAvatarUrl();
             String userId = targetUser.getId();
             String displayName = targetUser.getEffectiveName();
 
             // 3. Load user profile and build text from actual profile data, or use placeholder
             String cardText;
+            String avatarUrl = targetUser.getEffectiveAvatarUrl(); // Default to Discord PFP
             String backgroundPath = "assets/backgrounds/default.png";
             String framePath = "assets/frames/default.png";
             String fontPath = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
@@ -332,6 +332,22 @@ public class AgapeBot extends ListenerAdapter {
                     
                     // Use the actual profile data to build the card text
                     cardText = ApplicationHandler.buildCardText(state);
+                    
+                    // Use the profile's photoPath if available
+                    if (state.photoPath != null && !state.photoPath.isEmpty()) {
+                        if (state.photoPath.startsWith("http")) {
+                            // It's already a URL, use it directly
+                            avatarUrl = state.photoPath;
+                        } else if (!state.photoPath.startsWith("assets/")) {
+                            // It's a local file path, convert to URL
+                            try {
+                                avatarUrl = new File(state.photoPath).toURI().toURL().toString();
+                            } catch (Exception e) {
+                                System.err.println("⚠️ Failed to convert photo path to URL: " + state.photoPath);
+                                // Keep default Discord PFP if conversion fails
+                            }
+                        }
+                    }
                     
                     // Load their custom Design Code if it exists
                     if (state.designCode != null && !state.designCode.isEmpty()) {
@@ -392,11 +408,12 @@ public class AgapeBot extends ListenerAdapter {
             final String fmPath = framePath;
             final String ftPath = fontPath;
             final String profileCardText = cardText;
+            final String photoUrl = avatarUrl;
 
             // 4. Run the generation in a new thread so it doesn't block JDA's main event
             // loop
             new Thread(() -> {
-                File generatedImage = ImageGenerator.generateForUser(bgPath, avatarUrl, fmPath, ftPath,
+                File generatedImage = ImageGenerator.generateForUser(bgPath, photoUrl, fmPath, ftPath,
                         profileCardText, userId);
 
                 // 5. Send the result back to Discord
