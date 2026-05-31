@@ -318,43 +318,61 @@ public class AgapeBot extends ListenerAdapter {
             String userId = targetUser.getId();
             String displayName = targetUser.getEffectiveName();
 
-            // 3. Build the placeholder text based on your reference design requirements
-            // Note: In a real app, you'd fetch this data from a database based on the
-            // userId
-            String placeholderText = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}"
-                    + displayName
-                    + "{/}*\n"
-                    + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}@"
-                    + targetUser.getName() + "{/}*\n\n"
-                    + "20 | 2005\n"
-                    + "M\n"
-                    + "DISCORD USER\n"
-                    + "EARTH / ENGLISH\n"
-                    + "PROGRAMMER\n\n"
-                    + "LOVE TO CHAT, PLAY GAMES, AND BUILD BOTS. 🧠\n\n"
-                    + "{img:green_flag.png} PARTNER: KIND, COMMUNICATIVE, FUN\n"
-                    + "{img:red_flag.png} PARTNER: TOXIC, UNAVAILABLE.";
-
-            // Assuming your template is sitting in the root folder of your project
+            // 3. Load user profile and build text from actual profile data, or use placeholder
+            String cardText;
             String backgroundPath = "assets/backgrounds/default.png";
             String framePath = "assets/frames/default.png";
             String fontPath = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
 
-            // Dynamically pull the user's custom Design Code if they completed the application!
             File profileFile = new File("user_content/profiles/" + userId + ".json");
             if (profileFile.exists()) {
                 try (FileReader reader = new FileReader(profileFile)) {
                     Gson gson = new Gson();
                     ApplicationHandler.AppState state = gson.fromJson(reader, ApplicationHandler.AppState.class);
+                    
+                    // Use the actual profile data to build the card text
+                    cardText = ApplicationHandler.buildCardText(state);
+                    
+                    // Load their custom Design Code if it exists
                     if (state.designCode != null && !state.designCode.isEmpty()) {
-                        // Decode the shortcode (e.g. "DEF-DEF") into actual file paths!
                         String[] decodedPaths = ImageGenerator.decodeDesignCode(state.designCode);
                         backgroundPath = decodedPaths[0];
                         framePath = decodedPaths[1];
                     }
+                    System.out.println("✅ Generating profile image for " + state.name + " (ID: " + userId + ") using actual profile data");
                 } catch (Exception e) {
-                    System.err.println("Failed to load user profile for design code.");
+                    System.err.println("⚠️ Failed to load profile for " + userId + ", using placeholder: " + e.getMessage());
+                    // Fall back to placeholder text if profile loading fails
+                    cardText = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}"
+                            + displayName
+                            + "{/}*\n"
+                            + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}@"
+                            + targetUser.getName() + "{/}*\n\n"
+                            + "20 | 2005\n"
+                            + "M\n"
+                            + "DISCORD USER\n"
+                            + "EARTH / ENGLISH\n"
+                            + "PROGRAMMER\n\n"
+                            + "LOVE TO CHAT, PLAY GAMES, AND BUILD BOTS. 🧠\n\n"
+                            + "{img:green_flag.png} PARTNER: KIND, COMMUNICATIVE, FUN\n"
+                            + "{img:red_flag.png} PARTNER: TOXIC, UNAVAILABLE.";
                 }
+            } else {
+                // No profile found, use placeholder text
+                cardText = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}"
+                        + displayName
+                        + "{/}*\n"
+                        + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:2}{f:Arial Rounded MT Bold}@"
+                        + targetUser.getName() + "{/}*\n\n"
+                        + "20 | 2005\n"
+                        + "M\n"
+                        + "DISCORD USER\n"
+                        + "EARTH / ENGLISH\n"
+                        + "PROGRAMMER\n\n"
+                        + "LOVE TO CHAT, PLAY GAMES, AND BUILD BOTS. 🧠\n\n"
+                        + "{img:green_flag.png} PARTNER: KIND, COMMUNICATIVE, FUN\n"
+                        + "{img:red_flag.png} PARTNER: TOXIC, UNAVAILABLE.";
+                System.out.println("ℹ️ No profile found for " + userId + ", using placeholder text");
             }
 
             // Print files in the specified path for debugging purposes
@@ -373,12 +391,13 @@ public class AgapeBot extends ListenerAdapter {
             final String bgPath = backgroundPath;
             final String fmPath = framePath;
             final String ftPath = fontPath;
+            final String profileCardText = cardText;
 
             // 4. Run the generation in a new thread so it doesn't block JDA's main event
             // loop
             new Thread(() -> {
                 File generatedImage = ImageGenerator.generateForUser(bgPath, avatarUrl, fmPath, ftPath,
-                        placeholderText, userId);
+                        profileCardText, userId);
 
                 // 5. Send the result back to Discord
                 if (generatedImage != null && generatedImage.exists()) {
