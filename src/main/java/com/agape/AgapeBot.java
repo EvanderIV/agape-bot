@@ -459,11 +459,54 @@ public class AgapeBot extends ListenerAdapter {
             }
             // ------------------------
 
-            // Defer the reply ephemerally (only the user will see the bot's loading/response)
             event.deferReply(true).queue();
 
-            // Fire off the state-machine logic in the new handler class, passing the event so it can reply
-            ApplicationHandler.startApplication(event.getUser(), event);
+            String userId = event.getUser().getId();
+            File profileFile = new File("user_content/profiles/" + userId + ".json");
+
+            if (!profileFile.exists()) {
+                // No existing profile — start fresh immediately
+                ApplicationHandler.startApplication(event.getUser(), event);
+            } else {
+                // Existing profile found — warn the user before overwriting
+                String currentStatus = "PENDING";
+                try {
+                    ApplicationHandler.AppState existing = new com.google.gson.Gson().fromJson(
+                        new FileReader(profileFile), ApplicationHandler.AppState.class);
+                    if (existing.status != null) currentStatus = existing.status;
+                } catch (Exception ignored) {}
+
+                final String statusDisplay = currentStatus;
+                event.getUser().openPrivateChannel().queue(channel -> {
+                    net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                        .setTitle("⚠️ You Already Have a Profile")
+                        .setColor(0xFF8800)
+                        .setDescription("You already have a profile in our system.\n\n"
+                            + "**Current status:** " + statusDisplay + "\n\n"
+                            + "What would you like to do?\n\n"
+                            + "• **Edit Current Profile** — update specific fields and re-submit for review\n"
+                            + "• **Delete and Continue** — permanently delete your profile and start over\n"
+                            + "• **Cancel** — keep things as they are")
+                        .setFooter("Agape Matchmaking");
+
+                    net.dv8tion.jda.api.interactions.components.buttons.Button editBtn =
+                        net.dv8tion.jda.api.interactions.components.buttons.Button.primary(
+                            "reapply_edit_" + userId, "✏️ Edit Current Profile");
+                    net.dv8tion.jda.api.interactions.components.buttons.Button deleteBtn =
+                        net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
+                            "reapply_delete_" + userId, "🗑️ Delete and Continue");
+                    net.dv8tion.jda.api.interactions.components.buttons.Button cancelBtn =
+                        net.dv8tion.jda.api.interactions.components.buttons.Button.secondary(
+                            "reapply_cancel_" + userId, "❌ Cancel");
+
+                    channel.sendMessageEmbeds(embed.build())
+                        .setComponents(net.dv8tion.jda.api.interactions.components.ActionRow.of(editBtn, deleteBtn, cancelBtn))
+                        .queue(
+                            s -> event.getHook().sendMessage("✅ Check your DMs — I've sent you options for your existing profile.").queue(),
+                            e -> event.getHook().sendMessage("❌ I couldn't send you a DM. Please ensure your DMs are open and try again.").queue()
+                        );
+                }, err -> event.getHook().sendMessage("❌ I couldn't open a DM with you. Please ensure your DMs are open and try again.").queue());
+            }
 
         } else if (event.getName().equals("admin-message")) {
             // MATCHMAKER COMMAND: Send a message to an applicant
@@ -823,6 +866,22 @@ public class AgapeBot extends ListenerAdapter {
                 }
                 if (!"ACCEPTED".equals(p2.status)) {
                     event.getHook().sendMessage("❌ <@" + uid2 + ">'s profile is not accepted (status: " + p2.status + ").").queue();
+                    return;
+                }
+                if (p1.softDeleted) {
+                    event.getHook().sendMessage("❌ <@" + uid1 + ">'s profile is soft-deleted and cannot be matched.").queue();
+                    return;
+                }
+                if (p2.softDeleted) {
+                    event.getHook().sendMessage("❌ <@" + uid2 + ">'s profile is soft-deleted and cannot be matched.").queue();
+                    return;
+                }
+                if (!p1.manualMatchEnrolled) {
+                    event.getHook().sendMessage("❌ <@" + uid1 + "> is not enrolled in manual matchmaking.").queue();
+                    return;
+                }
+                if (!p2.manualMatchEnrolled) {
+                    event.getHook().sendMessage("❌ <@" + uid2 + "> is not enrolled in manual matchmaking.").queue();
                     return;
                 }
                 if (p1.sex == p2.sex) {

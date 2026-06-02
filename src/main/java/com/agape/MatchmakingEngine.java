@@ -27,8 +27,8 @@ public class MatchmakingEngine {
     private static final int QUICKMATCH_SPINS_BASIC   = 1;
     private static final int QUICKMATCH_SPINS_PREMIUM = 5;
 
-    // Anchor for biweekly windows — must be a Friday; all windows are 14-day multiples from this date.
-    private static final java.time.LocalDate WINDOW_ANCHOR = java.time.LocalDate.of(2025, 1, 3);
+    // Anchor for biweekly windows — must be a Monday; all windows are 14-day multiples from this date.
+    private static final java.time.LocalDate WINDOW_ANCHOR = java.time.LocalDate.of(2025, 1, 6);
 
     // ─── Public result type ───────────────────────────────────────────────────
 
@@ -92,6 +92,11 @@ public class MatchmakingEngine {
             logBlocked(userId, userLog, "Profile not accepted");
             return null;
         }
+        if (user.softDeleted) {
+            System.out.println("Quickmatch: User " + userId + " has a soft-deleted profile.");
+            logBlocked(userId, userLog, "Profile soft-deleted");
+            return null;
+        }
         if (!user.quickmatchEnrolled) {
             System.out.println("Quickmatch: User " + userId + " is not enrolled in quickmatch.");
             logBlocked(userId, userLog, "Not enrolled in quickmatch");
@@ -142,6 +147,7 @@ public class MatchmakingEngine {
             ApplicationHandler.AppState candidate = loadProfile(candidateId);
             if (candidate == null) continue;
             if (!"ACCEPTED".equals(candidate.status)) continue;
+            if (candidate.softDeleted) continue;
             if (!candidate.quickmatchEnrolled) continue;
 
             int candidateAge = calculateAge(candidate.birthday);
@@ -206,7 +212,7 @@ public class MatchmakingEngine {
         saveMatchLog(userId, log);
     }
 
-    /** Returns the start (Friday midnight) of the current biweekly window. */
+    /** Returns the start (Monday midnight) of the current biweekly window. */
     private static LocalDateTime currentWindowStart() {
         long daysSinceAnchor = ChronoUnit.DAYS.between(WINDOW_ANCHOR, java.time.LocalDate.now());
         long windowIndex = Math.max(0, daysSinceAnchor / 14);

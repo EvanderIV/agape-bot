@@ -92,7 +92,13 @@ public class ApplicationHandler extends ListenerAdapter {
         // Quickmatch system
         public boolean quickmatchEnrolled = false;
         public boolean quickmatchPromptSent = false;
-        
+
+        // Soft-delete: when true, the profile is invisible to all matchmaking systems
+        public boolean softDeleted = false;
+
+        // Manual matchmaking opt-in; false blocks /match and compat-algo but not quickmatch
+        public boolean manualMatchEnrolled = true;
+
         // Track which field is being edited
         public String fieldBeingEdited; // Store the AppStep enum name of the field being edited
     }
@@ -219,6 +225,31 @@ public class ApplicationHandler extends ListenerAdapter {
             event.getHook().sendMessage("❌ I couldn't open a DM with you. Please make sure your DMs are open and try again.").queue();
             activeApplications.remove(user.getId());
         });
+    }
+
+    /**
+     * Starts a fresh application from a DM button context (no slash-command event required).
+     * Used when a user chooses "Delete and Continue" during re-apply.
+     */
+    public static void startApplicationFromDM(User user, String guildId) {
+        AppState newState = new AppState();
+        newState.username = user.getName();
+        newState.guildId = guildId;
+        activeApplications.put(user.getId(), newState);
+        System.out.println("Started re-application for user: " + user.getName() + " (ID: " + user.getId() + ")");
+        user.openPrivateChannel().queue(
+            channel -> channel.sendMessage(LanguageManager.getWelcomeMessage()).queue(
+                s -> {},
+                e -> {
+                    System.err.println("Failed to send welcome to " + user.getName() + ": " + e.getMessage());
+                    activeApplications.remove(user.getId());
+                }
+            ),
+            e -> {
+                System.err.println("Failed to open DM for " + user.getName() + ": " + e.getMessage());
+                activeApplications.remove(user.getId());
+            }
+        );
     }
 
     /**
@@ -1544,6 +1575,12 @@ public class ApplicationHandler extends ListenerAdapter {
             return;
         }
 
+        // Re-apply flow (existing profile found on /apply)
+        if (buttonId.startsWith("reapply_")) {
+            handleReapplyAction(event);
+            return;
+        }
+
         // NEW: Check if it's a user application edit/delete button
         if (buttonId.startsWith("user_edit_app_") || buttonId.equals("user_delete_app")) {
             handleUserAppAction(event);
@@ -1838,6 +1875,87 @@ public class ApplicationHandler extends ListenerAdapter {
             );
             
             event.getHook().sendMessage("✅ Your reply has been sent to the matchmaker.").queue();
+        }
+    }
+
+    /**
+     * Handles the three re-apply options sent when the user runs /apply with an existing profile.
+     */
+    private void handleReapplyAction(ButtonInteractionEvent event) {
+        String buttonId = event.getComponentId();
+        String userId = event.getUser().getId();
+
+        // Security: the button owner must be the one pressing it
+        String ownerId = buttonId.substring(buttonId.lastIndexOf('_') + 1);
+        if (!ownerId.equals(userId)) {
+            event.reply("❌ These options belong to a different user.").setEphemeral(true).queue();
+            return;
+        }
+
+        event.deferEdit().queue();
+        event.getHook().editOriginalComponents(Collections.emptyList()).queue();
+
+        if (buttonId.startsWith("reapply_edit_")) {
+            File profileFile = new File("user_content/profiles/" + userId + ".json");
+            if (!profileFile.exists()) {
+                event.getHook().sendMessage("❌ Could not find your profile. It may have already been deleted.").queue();
+                return;
+            }
+            try {
+                AppState state = new Gson().fromJson(new java.io.FileReader(profileFile), AppState.class);
+                // Mark as pending review so they're invisible to matchmaking during editing
+                state.status = "CHANGES_REQUESTED";
+                activeApplications.put(userId, state);
+                saveProfileJson(state, userId);
+            } catch (Exception e) {
+                event.getHook().sendMessage("❌ Failed to load your profile data.").queue();
+                return;
+            }
+
+            // 14 section buttons across 3 rows (5 + 5 + 4)
+            java.util.List<Button> btns = java.util.Arrays.asList(
+                Button.secondary("user_edit_app_1",  "Name"),
+                Button.secondary("user_edit_app_2",  "Birthday"),
+                Button.secondary("user_edit_app_3",  "Location"),
+                Button.secondary("user_edit_app_4",  "Gender"),
+                Button.secondary("user_edit_app_5",  "Denomination"),
+                Button.secondary("user_edit_app_6",  "Target Age"),
+                Button.secondary("user_edit_app_7",  "Target Denom."),
+                Button.secondary("user_edit_app_8",  "Physical Desc."),
+                Button.secondary("user_edit_app_9",  "Hobbies"),
+                Button.secondary("user_edit_app_10", "Strengths"),
+                Button.secondary("user_edit_app_11", "Weaknesses"),
+                Button.secondary("user_edit_app_12", "Looking For"),
+                Button.secondary("user_edit_app_13", "Deal Breakers"),
+                Button.secondary("user_edit_app_14", "Photo")
+            );
+
+            event.getChannel()
+                .sendMessage("Select a section to update. When you're satisfied, use the **submit** option to send your profile for review again.")
+                .setComponents(
+                    ActionRow.of(btns.subList(0, 5)),
+                    ActionRow.of(btns.subList(5, 10)),
+                    ActionRow.of(btns.subList(10, 14))
+                )
+                .queue();
+
+        } else if (buttonId.startsWith("reapply_delete_")) {
+            String guildId = null;
+            File profileFile = new File("user_content/profiles/" + userId + ".json");
+            if (profileFile.exists()) {
+                try {
+                    AppState existing = new Gson().fromJson(new java.io.FileReader(profileFile), AppState.class);
+                    guildId = existing.guildId;
+                } catch (Exception ignored) {}
+                profileFile.delete();
+            }
+            activeApplications.remove(userId);
+
+            event.getHook().sendMessage("✅ Your previous profile has been deleted. Starting your new application now...").queue();
+            startApplicationFromDM(event.getUser(), guildId);
+
+        } else if (buttonId.startsWith("reapply_cancel_")) {
+            event.getHook().sendMessage("👍 No changes were made to your profile.").queue();
         }
     }
 

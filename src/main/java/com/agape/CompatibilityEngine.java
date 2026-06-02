@@ -147,7 +147,7 @@ public class CompatibilityEngine {
         for (File f : files) {
             String uid = f.getName().replace(".json", "");
             ApplicationHandler.AppState p = loadProfile(uid);
-            if (p != null && "ACCEPTED".equals(p.status)) {
+            if (p != null && "ACCEPTED".equals(p.status) && !p.softDeleted && p.manualMatchEnrolled) {
                 ids.add(uid);
                 profiles.add(p);
             }
