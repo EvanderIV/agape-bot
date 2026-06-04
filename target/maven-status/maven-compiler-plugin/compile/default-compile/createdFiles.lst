@@ -9,6 +9,7 @@ com\agape\ImageGenerator$TextRun.class
 com\agape\ThreadManager$QMThread.class
 com\agape\CompatibilityEngine$CompatPair.class
 com\agape\MatchmakingEngine$MatchEntry.class
+com\agape\ThreadManager$UserStrikes.class
 com\agape\MatchmakingEngine$MatchLog.class
 com\agape\CompatibilityEngine$ScoringResult.class
 com\agape\ApplicationHandler$DesignPaths.class
@@ -23,6 +24,7 @@ com\agape\ApplicationHandler$AppState.class
 com\agape\CompatibilityEngine.class
 com\agape\ImageGenerator$LineData.class
 com\agape\ApplicationHandler.class
+com\agape\ThreadManager$Strike.class
 com\agape\ThreadManager$ThreadMessage.class
 com\agape\ImageGenerator$EmojiLoader.class
 com\agape\DenominationCompatibility.class

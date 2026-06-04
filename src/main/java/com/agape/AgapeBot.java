@@ -82,18 +82,24 @@ public class AgapeBot extends ListenerAdapter {
     private void createMatchThread(
             net.dv8tion.jda.api.entities.Guild guild,
             String user1Id, boolean user1IsMale, String user1Name, ApplicationHandler.AppState user1Profile,
-            String user2Id, boolean user2IsMale, String user2Name, ApplicationHandler.AppState user2Profile) {
+            String user2Id, boolean user2IsMale, String user2Name, ApplicationHandler.AppState user2Profile,
+            boolean isManualMatch) {
 
-        // Find the channel (normalize "quick-match" → "quickmatch" for comparison)
+        // Find the appropriate parent channel
         net.dv8tion.jda.api.entities.channel.concrete.TextChannel qmChannel = null;
         for (net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch : guild.getTextChannels()) {
-            if (ch.getName().toLowerCase().replace("-", "").equals("quickmatch")) {
+            String normalized = ch.getName().toLowerCase().replace("-", "");
+            boolean matches = isManualMatch
+                ? normalized.startsWith("matchmaking")
+                : normalized.equals("quickmatch");
+            if (matches) {
                 qmChannel = ch;
                 break;
             }
         }
         if (qmChannel == null) {
-            System.err.println("Quickmatch: No 'quick-match' or 'quickmatch' channel found in guild " + guild.getId());
+            String expected = isManualMatch ? "'matchmaking' / 'match-making' / 'matchmaking-1'" : "'quick-match' or 'quickmatch'";
+            System.err.println("Quickmatch: No " + expected + " channel found in guild " + guild.getId());
             return;
         }
 
@@ -111,12 +117,12 @@ public class AgapeBot extends ListenerAdapter {
             femaleId = user2Id; femaleName = user2Name; femaleProfile = user2Profile;
         }
 
-        String threadName = maleName + " + " + femaleName + " (Agape QM)";
+        String threadName = maleName + " + " + femaleName + (isManualMatch ? " (Agape MM)" : " (Agape QM)");
 
         qmChannel.createThreadChannel(threadName, true)
             .setAutoArchiveDuration(net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel.AutoArchiveDuration.TIME_24_HOURS)
             .queue(thread -> {
-                ThreadManager.registerThread(thread.getId(), guild.getId(), maleId, femaleId);
+                ThreadManager.registerThread(thread.getId(), guild.getId(), maleId, femaleId, isManualMatch ? "MANUAL" : "QUICKMATCH");
 
                 thread.addThreadMemberById(maleId).queue();
                 thread.addThreadMemberById(femaleId).queue();
@@ -144,12 +150,24 @@ public class AgapeBot extends ListenerAdapter {
                 }
 
                 long closeTimestamp = java.time.Instant.now().getEpochSecond() + 86400L;
-                final String message = "## Match Found!\n\n"
-                    + "Take this opportunity to get to know each other—we want to see how you both will connect, "
-                    + "and whether you are interested in potentially pursuing a relationship together.\n\n"
-                    + guidelinesRef
-                    + "-# This thread will automatically close <t:" + closeTimestamp + ":R>.\n"
-                    + "||<@" + maleId + "> <@" + femaleId + ">||";
+                final String message;
+                if (isManualMatch) {
+                    message = "In evaluating the match, you both should briefly discuss your top 3-5 dealbreakers in a partner *here in this thread*. Be realistic and only include the **dealbreakers/non-negotiables**.\n\n"
+                        + "When you have finished discussing (should take <15 minutes), you must confirm or decline the match:\n\n"
+                        + "`/confirm` - You think this match is a viable fit, and you're interested in pursuing a relationship. *(both parties must */confirm* to match)*\n"
+                        + "`/decline` - You think this match is strictly incompatible, and you are uninterested in pursuing a relationship. *(you will be required to explain your decision)*\n\n"
+                        + guidelinesRef
+                        + "-# This thread will automatically close <t:" + closeTimestamp + ":R>.\n"
+                        + "||<@" + maleId + "> <@" + femaleId + ">||";
+                } else {
+                    message = "## Match Found!\n\n"
+                        + "Take this opportunity to get to know each other—we want to see how you both will connect, "
+                        + "and whether you are interested in potentially pursuing a relationship together.\n\n"
+                        + "**Once you've had a chance to get to know the other person, UPDATE DESCRIPTION HERE**\n\n"
+                        + guidelinesRef
+                        + "-# This thread will automatically close <t:" + closeTimestamp + ":R>.\n"
+                        + "||<@" + maleId + "> <@" + femaleId + ">||";
+                }
 
                 // Generate profile cards on a background thread, then send the intro message with attachments
                 final String fontPath = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
@@ -218,16 +236,20 @@ public class AgapeBot extends ListenerAdapter {
         });
         System.out.println("================================================================================");
 
-        // Archive any threads that expired while the bot was offline
+        // Archive any threads that expired while the bot was offline, and catch up on notifications
         ThreadManager.checkExpiredThreads(event.getJDA());
+        ThreadManager.checkManualMatchNotifications(event.getJDA());
 
-        // Schedule ongoing expiry checks every 5 minutes
+        // Schedule ongoing expiry and notification checks every 5 minutes
         java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "qm-thread-manager");
             t.setDaemon(true);
             return t;
         }).scheduleAtFixedRate(
-            () -> ThreadManager.checkExpiredThreads(event.getJDA()),
+            () -> {
+                ThreadManager.checkExpiredThreads(event.getJDA());
+                ThreadManager.checkManualMatchNotifications(event.getJDA());
+            },
             5, 5, java.util.concurrent.TimeUnit.MINUTES
         );
 
@@ -262,10 +284,13 @@ public class AgapeBot extends ListenerAdapter {
                 .addOption(OptionType.USER, "user1", "First user", true)
                 .addOption(OptionType.USER, "user2", "Second user", true);
 
+        SlashCommandData confirmCmd = Commands.slash("confirm", "Confirm this match (use inside a match thread)");
+        SlashCommandData declineCmd = Commands.slash("decline", "Decline this match (use inside a match thread)");
+
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, confirmCmd, declineCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -713,7 +738,8 @@ public class AgapeBot extends ListenerAdapter {
                 createMatchThread(
                     event.getGuild(),
                     userId, runnerIsMale, runnerName, runnerProfile,
-                    result.matchedUserId, matchedIsMale, matchedName, result.matchedProfile
+                    result.matchedUserId, matchedIsMale, matchedName, result.matchedProfile,
+                    false
                 );
             }
 
@@ -734,6 +760,17 @@ public class AgapeBot extends ListenerAdapter {
                 if (!"ACCEPTED".equals(state.status)) {
                     event.getHook().sendMessage("❌ Your profile must be accepted before you can manage quickmatch enrollment.").queue();
                     return;
+                }
+
+                if (!state.quickmatchEnrolled) {
+                    int recentStrikes = ThreadManager.getRecentStrikeCount(userId);
+                    if (recentStrikes >= 3) {
+                        event.getHook().sendMessage(
+                            "❌ You cannot re-enroll in quickmatch — you have **" + recentStrikes
+                            + " strikes** within the past 6 months. Strikes expire after 6 months."
+                        ).queue();
+                        return;
+                    }
                 }
 
                 state.quickmatchEnrolled = !state.quickmatchEnrolled;
@@ -992,6 +1029,117 @@ public class AgapeBot extends ListenerAdapter {
                     event.getChannel().sendMessage(chunk).queue();
                 }
             });
+
+        } else if (event.getName().equals("confirm")) {
+            if (!(event.getChannel() instanceof net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel)) {
+                event.reply("❌ This command can only be used inside a match thread.").setEphemeral(true).queue();
+                return;
+            }
+
+            String threadId = event.getChannel().getId();
+            String userId = event.getUser().getId();
+
+            ThreadManager.QMThread record = ThreadManager.findThreadByChannelId(threadId);
+            if (record == null || (!"MANUAL".equals(record.matchType) && !"QUICKMATCH".equals(record.matchType))) {
+                event.reply("❌ This command can only be used inside a match thread.").setEphemeral(true).queue();
+                return;
+            }
+            if (!"OPEN".equals(record.status)) {
+                event.reply("❌ This thread is no longer active.").setEphemeral(true).queue();
+                return;
+            }
+            if (!userId.equals(record.maleId) && !userId.equals(record.femaleId)) {
+                event.reply("❌ Only the two matched users can use this command.").setEphemeral(true).queue();
+                return;
+            }
+            if (record.confirmedBy != null && record.confirmedBy.contains(userId)) {
+                event.reply("✅ You have already confirmed this match.").setEphemeral(true).queue();
+                return;
+            }
+
+            boolean bothConfirmed = ThreadManager.recordConfirmation(threadId, userId);
+
+            String displayName = event.getMember() != null
+                ? event.getMember().getEffectiveName()
+                : event.getUser().getEffectiveName();
+            event.reply("✅ **" + displayName + "** has confirmed the match!").queue();
+
+            if (bothConfirmed && "MANUAL".equals(record.matchType) && event.getGuild() != null) {
+                net.dv8tion.jda.api.entities.Guild guild = event.getGuild();
+                final String finalMaleId = record.maleId;
+                final String finalFemaleId = record.femaleId;
+
+                event.getChannel().sendMessage(
+                    "## 💍 It's a Match!\n\n"
+                    + "<@" + finalMaleId + "> and <@" + finalFemaleId + "> have both confirmed! "
+                    + "Congratulations — we're all rooting for you! 🎉"
+                ).queue();
+
+                net.dv8tion.jda.api.entities.Role matchedRole = null;
+                for (net.dv8tion.jda.api.entities.Role role : guild.getRoles()) {
+                    if (role.getName().toLowerCase().contains("matched")) {
+                        matchedRole = role;
+                        break;
+                    }
+                }
+
+                if (matchedRole != null) {
+                    final net.dv8tion.jda.api.entities.Role finalRole = matchedRole;
+                    guild.retrieveMemberById(finalMaleId).queue(
+                        m -> guild.addRoleToMember(m, finalRole).queue(
+                            v  -> System.out.println("Match: Added 'Matched' role to " + finalMaleId),
+                            e  -> System.err.println("Match: Could not add role to " + finalMaleId + ": " + e.getMessage())
+                        ),
+                        e -> System.err.println("Match: Could not retrieve member " + finalMaleId + ": " + e.getMessage())
+                    );
+                    guild.retrieveMemberById(finalFemaleId).queue(
+                        m -> guild.addRoleToMember(m, finalRole).queue(
+                            v  -> System.out.println("Match: Added 'Matched' role to " + finalFemaleId),
+                            e  -> System.err.println("Match: Could not add role to " + finalFemaleId + ": " + e.getMessage())
+                        ),
+                        e -> System.err.println("Match: Could not retrieve member " + finalFemaleId + ": " + e.getMessage())
+                    );
+                } else {
+                    System.err.println("Match: No role containing 'matched' found in guild " + guild.getId());
+                }
+            }
+
+        } else if (event.getName().equals("decline")) {
+            if (!(event.getChannel() instanceof net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel)) {
+                event.reply("❌ This command can only be used inside a match thread.").setEphemeral(true).queue();
+                return;
+            }
+
+            String threadId = event.getChannel().getId();
+            String userId = event.getUser().getId();
+
+            ThreadManager.QMThread record = ThreadManager.findThreadByChannelId(threadId);
+            if (record == null || (!"MANUAL".equals(record.matchType) && !"QUICKMATCH".equals(record.matchType))) {
+                event.reply("❌ This command can only be used inside a match thread.").setEphemeral(true).queue();
+                return;
+            }
+            if (!"OPEN".equals(record.status)) {
+                event.reply("❌ This thread is no longer active.").setEphemeral(true).queue();
+                return;
+            }
+            if (!userId.equals(record.maleId) && !userId.equals(record.femaleId)) {
+                event.reply("❌ Only the two matched users can use this command.").setEphemeral(true).queue();
+                return;
+            }
+
+            TextInput reasonsInput = TextInput
+                .create("decline_reasons", "Reasons for declining (list at least 3)", TextInputStyle.PARAGRAPH)
+                .setPlaceholder("1. \n2. \n3. ")
+                .setMinLength(30)
+                .setMaxLength(1000)
+                .setRequired(true)
+                .build();
+
+            event.replyModal(
+                Modal.create("match_decline_" + threadId, "Decline Match")
+                    .addActionRow(reasonsInput)
+                    .build()
+            ).queue();
         }
     }
 
@@ -1035,6 +1183,58 @@ public class AgapeBot extends ListenerAdapter {
             saveReportFile(userId, matchedId, reason, details, timestamp, epochMs);
             postReportToMatchmakers(event.getJDA(), userId, matchedId, reason, details, timestamp);
             event.reply("✅ Your report has been submitted. Our matchmakers will review it shortly.").setEphemeral(true).queue();
+
+        } else if (modalId.startsWith("match_decline_")) {
+            String threadId = modalId.substring("match_decline_".length());
+            String userId = event.getUser().getId();
+            String reasons = event.getValue("decline_reasons").getAsString();
+
+            ThreadManager.recordDecline(threadId, userId);
+
+            // Acknowledge the submission immediately
+            event.reply("✅ Your decline has been submitted. Matchmakers have been notified.").setEphemeral(true).queue();
+
+            // Post a visible message in the thread
+            net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel thread =
+                event.getJDA().getThreadChannelById(threadId);
+            if (thread != null) {
+                thread.sendMessage("❌ <@" + userId + "> has declined this match.").queue();
+            }
+
+            // Alert matchmakers
+            ThreadManager.QMThread record = ThreadManager.findThreadByChannelId(threadId);
+            if (record != null && record.guildId != null) {
+                net.dv8tion.jda.api.entities.Guild guild = event.getJDA().getGuildById(record.guildId);
+                if (guild != null) {
+                    net.dv8tion.jda.api.entities.channel.concrete.TextChannel mmChannel = findMatchmakerChannel(guild);
+                    if (mmChannel != null) {
+                        // Find a matchmaker role to ping
+                        String ping = "";
+                        for (net.dv8tion.jda.api.entities.Role role : guild.getRoles()) {
+                            if (role.getName().toLowerCase().contains("matchmaker")) {
+                                ping = role.getAsMention();
+                                break;
+                            }
+                        }
+
+                        String otherUserId = userId.equals(record.maleId) ? record.femaleId : record.maleId;
+                        String threadLink = thread != null ? thread.getJumpUrl() : "`" + threadId + "`";
+
+                        net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                            .setTitle("❌ Manual Match Declined")
+                            .setColor(0xFF3300)
+                            .setDescription("<@" + userId + "> has declined their manual match.")
+                            .addField("Declined user", "<@" + userId + ">", true)
+                            .addField("Other user", "<@" + otherUserId + ">", true)
+                            .addField("Match Thread", "[View Thread](" + threadLink + ")", false)
+                            .addField("Reasons given", reasons, false)
+                            .setFooter("User ID: " + userId)
+                            .setTimestamp(java.time.Instant.now());
+
+                        mmChannel.sendMessage(ping).setEmbeds(embed.build()).queue();
+                    }
+                }
+            }
         }
     }
 
@@ -1291,7 +1491,7 @@ public class AgapeBot extends ListenerAdapter {
 
             event.getHook().editOriginalEmbeds(confirmed.build()).setComponents().queue();
 
-            createMatchThread(guild, uid1, !p1.sex, name1, p1, uid2, !p2.sex, name2, p2);
+            createMatchThread(guild, uid1, !p1.sex, name1, p1, uid2, !p2.sex, name2, p2, true);
 
         } else if (buttonId.startsWith("match_cancel_")) {
             event.deferEdit().queue();
