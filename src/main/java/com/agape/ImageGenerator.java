@@ -395,7 +395,7 @@ public class ImageGenerator {
                 blankLine.startY = currentY;
                 finalLines.add(blankLine);
                 
-                currentY += blankLine.height - 4;
+                currentY += blankLine.height / 2;
                 previousWasBlob = hasBlob;
                 continue;
             }
@@ -424,7 +424,7 @@ public class ImageGenerator {
                         currentLine.startY = currentY;
                         finalLines.add(currentLine);
                         
-                        currentY += currentLine.height - 4;
+                        currentY += currentLine.height - 8;
                         currentLine = new LineData();
                         currentLine.hasBlob = hasBlob;
                         currentLineWidth = 0;
@@ -451,7 +451,7 @@ public class ImageGenerator {
                         currentLine.startY = currentY;
                         finalLines.add(currentLine);
                         
-                        currentY += currentLine.height - 4;
+                        currentY += currentLine.height - 8;
                         currentLine = new LineData();
                         currentLine.hasBlob = hasBlob;
                         currentLineWidth = 0;
@@ -491,7 +491,7 @@ public class ImageGenerator {
                             currentLine.startY = currentY;
                             finalLines.add(currentLine);
                             
-                            currentY += currentLine.height - 4;
+                            currentY += currentLine.height - 8;
                             currentLine = new LineData();
                             currentLine.hasBlob = hasBlob;
                             currentLineWidth = 0;
@@ -527,7 +527,7 @@ public class ImageGenerator {
                 currentLine.startX = startX;
                 currentLine.startY = currentY;
                 finalLines.add(currentLine);
-                currentY += currentLine.height - 4;
+                currentY += currentLine.height - 8;
             }
             
             previousWasBlob = hasBlob;

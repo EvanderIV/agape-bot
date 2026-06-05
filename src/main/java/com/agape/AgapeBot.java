@@ -249,18 +249,34 @@ public class AgapeBot extends ListenerAdapter {
         ThreadManager.checkExpiredThreads(event.getJDA());
         ThreadManager.checkManualMatchNotifications(event.getJDA());
 
+        // Restore any applications that were in-flight when the bot last shut down
+        ApplicationHandler.recoverInProgressApplications(event.getJDA());
+
         // Schedule ongoing expiry and notification checks every 5 minutes
-        java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "qm-thread-manager");
-            t.setDaemon(true);
-            return t;
-        }).scheduleAtFixedRate(
+        final java.util.concurrent.ScheduledExecutorService scheduler =
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "qm-thread-manager");
+                t.setDaemon(true);
+                return t;
+            });
+        scheduler.scheduleAtFixedRate(
             () -> {
                 ThreadManager.checkExpiredThreads(event.getJDA());
                 ThreadManager.checkManualMatchNotifications(event.getJDA());
             },
             5, 5, java.util.concurrent.TimeUnit.MINUTES
         );
+
+        // Register a JVM shutdown hook so SIGTERM (e.g. systemctl restart/stop) waits
+        // for any in-progress thread archival to finish before the process exits.
+        final net.dv8tion.jda.api.JDA jda = event.getJDA();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("AgapeBot: Shutdown signal received — stopping scheduler...");
+            scheduler.shutdown();
+            ThreadManager.initiateShutdown(10_000);
+            jda.shutdown();
+            System.out.println("AgapeBot: Shutdown complete.");
+        }, "agape-shutdown-hook"));
 
         // Define your command(s) here
         SlashCommandData generateCmd = Commands.slash("generate", "Generates a matchmaking profile image for a user.")

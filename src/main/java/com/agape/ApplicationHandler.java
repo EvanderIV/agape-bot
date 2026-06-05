@@ -119,6 +119,72 @@ public class ApplicationHandler extends ListenerAdapter {
     // This HashMap acts as the bot's short-term memory. Key = User ID, Value = Their AppState
     private static final Map<String, AppState> activeApplications = new HashMap<>();
 
+    // ─── In-progress persistence ───────────────────────────────────────────────
+
+    private static final String IN_PROGRESS_DIR = "user_content/in_progress/";
+
+    private static void saveInProgress(String userId, AppState state) {
+        new File(IN_PROGRESS_DIR).mkdirs();
+        try (FileWriter w = new FileWriter(new File(IN_PROGRESS_DIR + userId + ".json"))) {
+            new GsonBuilder().setPrettyPrinting().create().toJson(state, w);
+        } catch (IOException e) {
+            System.err.println("ApplicationHandler: Failed to save in-progress state for " + userId + ": " + e.getMessage());
+        }
+    }
+
+    private static void deleteInProgress(String userId) {
+        File f = new File(IN_PROGRESS_DIR + userId + ".json");
+        if (f.exists()) f.delete();
+    }
+
+    /**
+     * On bot startup, restores any applications that were mid-flight when the bot last shut down.
+     * Loads each in-progress state back into activeApplications and sends a DM notifying the user.
+     */
+    public static void recoverInProgressApplications(net.dv8tion.jda.api.JDA jda) {
+        File dir = new File(IN_PROGRESS_DIR);
+        if (!dir.exists()) return;
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        if (files == null || files.length == 0) return;
+
+        int recovered = 0;
+        for (File f : files) {
+            String userId = f.getName().replace(".json", "");
+            try {
+                AppState state = new Gson().fromJson(new java.io.FileReader(f), AppState.class);
+                if (state == null || state.currentStep == null || state.currentStep == AppStep.COMPLETED) {
+                    f.delete();
+                    continue;
+                }
+                activeApplications.put(userId, state);
+                recovered++;
+
+                jda.retrieveUserById(userId).queue(user -> {
+                    user.openPrivateChannel().queue(dm -> {
+                        net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                            .setTitle("🔄 System Restarted")
+                            .setColor(0xFF6699)
+                            .setDescription(
+                                "We sincerely apologize for the inconvenience — the Agape Matchmaking bot was temporarily restarted.\n\n"
+                                + "**Your information is safe.** Your application progress has been fully preserved and you can continue right where you left off.\n\n"
+                                + "Simply reply to this DM with your next answer to pick back up.")
+                            .setFooter("Agape Matchmaking • We appreciate your patience!");
+                        dm.sendMessageEmbeds(embed.build()).queue(
+                            s -> System.out.println("ApplicationHandler: Sent reboot notice to " + userId),
+                            e -> System.err.println("ApplicationHandler: Could not DM reboot notice to " + userId + ": " + e.getMessage())
+                        );
+                    }, e -> System.err.println("ApplicationHandler: Could not open DM for reboot notice to " + userId));
+                }, e -> System.err.println("ApplicationHandler: Could not retrieve user " + userId + " for reboot notice"));
+
+            } catch (Exception e) {
+                System.err.println("ApplicationHandler: Failed to recover in-progress state for " + userId + ": " + e.getMessage());
+            }
+        }
+        if (recovered > 0) {
+            System.out.println("ApplicationHandler: Recovered " + recovered + " in-progress application(s).");
+        }
+    }
+
     // Compile pattern once to save resources. Matches ISFP, ENTJ-A, etc.
     private static final java.util.regex.Pattern MBTI_PATTERN = java.util.regex.Pattern.compile("(?i)\\b(I|E)(N|S)(F|T)(J|P)(-[TA])?\\b");
 
@@ -199,12 +265,13 @@ public class ApplicationHandler extends ListenerAdapter {
         newState.username = user.getName(); // Capture their handle immediately
         newState.guildId = event.getGuild() != null ? event.getGuild().getId() : null;
         activeApplications.put(user.getId(), newState);
-        
+        deleteInProgress(user.getId()); // clear any old recovery file — fresh start
+
         System.out.println("Started application for user: " + user.getName() + " (ID: " + user.getId() + ")");
-        
+
         // Open a DM channel and send the very first question to kick off the chain!
         user.openPrivateChannel().queue(channel -> {
-            
+
             // Send the message, providing both success and failure callbacks directly to queue()
             channel.sendMessage(LanguageManager.getWelcomeMessage()).queue(
                 success -> {
@@ -216,14 +283,16 @@ public class ApplicationHandler extends ListenerAdapter {
                     event.getHook().sendMessage("❌ I couldn't send you a DM. Please make sure your privacy settings allow direct messages from server members and try again.").queue();
                     // Clean up the application state since we can't proceed without DM access
                     activeApplications.remove(user.getId());
+                    deleteInProgress(user.getId());
                 }
             );
-            
+
         }, error -> {
             // This catches if Discord blocks us from even opening the channel
             System.err.println("❌ Failed to open DM channel for user: " + user.getName() + " (ID: " + user.getId() + ")");
             event.getHook().sendMessage("❌ I couldn't open a DM with you. Please make sure your DMs are open and try again.").queue();
             activeApplications.remove(user.getId());
+            deleteInProgress(user.getId());
         });
     }
 
@@ -236,6 +305,7 @@ public class ApplicationHandler extends ListenerAdapter {
         newState.username = user.getName();
         newState.guildId = guildId;
         activeApplications.put(user.getId(), newState);
+        deleteInProgress(user.getId()); // clear any old recovery file — fresh start
         System.out.println("Started re-application for user: " + user.getName() + " (ID: " + user.getId() + ")");
         user.openPrivateChannel().queue(
             channel -> channel.sendMessage(LanguageManager.getWelcomeMessage()).queue(
@@ -243,11 +313,13 @@ public class ApplicationHandler extends ListenerAdapter {
                 e -> {
                     System.err.println("Failed to send welcome to " + user.getName() + ": " + e.getMessage());
                     activeApplications.remove(user.getId());
+                    deleteInProgress(user.getId());
                 }
             ),
             e -> {
                 System.err.println("Failed to open DM for " + user.getName() + ": " + e.getMessage());
                 activeApplications.remove(user.getId());
+                deleteInProgress(user.getId());
             }
         );
     }
@@ -522,6 +594,7 @@ public class ApplicationHandler extends ListenerAdapter {
             state.designCode = suggestDesignCode(state);
         }
         activeApplications.remove(userId);
+        deleteInProgress(userId);
         
         channel.sendMessage("✅ **" + LanguageManager.getCompletionMessage(state.language) + "**").queue();
 
@@ -1192,6 +1265,7 @@ public class ApplicationHandler extends ListenerAdapter {
             event.getChannel().sendMessage("❌ Your application was initiated in a server that is not available in the current environment. Please try again in the correct server.").queue();
             System.out.println("[SECURITY] Rejected DM response from user " + userId + " with mismatched guild " + state.guildId + " in " + EnvironmentManager.getEnvironmentName() + " environment");
             activeApplications.remove(userId);
+            deleteInProgress(userId);
             return;
         }
         
@@ -1247,6 +1321,7 @@ public class ApplicationHandler extends ListenerAdapter {
                 if (calculateAge(parsedBirthday) < 18) {
                     event.getChannel().sendMessage("❌ " + LanguageManager.getUnderageWarning(state.language)).queue();
                     activeApplications.remove(userId);
+                    deleteInProgress(userId);
                     return;
                 }
                 state.birthday = parsedBirthday;
@@ -1320,10 +1395,12 @@ public class ApplicationHandler extends ListenerAdapter {
                         attachment.getProxy().downloadToFile(destFile).thenAccept(file -> {
                             state.photoPath = file.getAbsolutePath();
                             advanceToTargetAge(state, event);
+                            saveInProgress(userId, state);
                         }).exceptionally(ex -> {
                             event.getChannel().sendMessage("❌ Something went wrong saving your image. We'll use a placeholder profile picture instead.").queue();
                             state.photoPath = state.sex ? "assets/female.png" : "assets/male.png";
                             advanceToTargetAge(state, event);
+                            saveInProgress(userId, state);
                             return null;
                         });
                     } else {
@@ -1410,6 +1487,7 @@ public class ApplicationHandler extends ListenerAdapter {
                 if (LanguageManager.isCancel(messageContent)) {
                     state.currentStep = AppStep.CUSTOMIZE_PROMPT;
                     sendCustomizationPromptWithButtons(event, state.language);
+                    saveInProgress(userId, state);
                     return;
                 }
                 try {
@@ -1447,6 +1525,7 @@ public class ApplicationHandler extends ListenerAdapter {
                         if (calculateAge(editedBirthday) < 18) {
                             event.getChannel().sendMessage("❌ " + LanguageManager.getUnderageWarning(state.language)).queue();
                             activeApplications.remove(userId);
+                            deleteInProgress(userId);
                             return;
                         }
                         state.birthday = editedBirthday;
@@ -1504,6 +1583,7 @@ public class ApplicationHandler extends ListenerAdapter {
                                     state.photoPath = file.getAbsolutePath();
                                     state.currentStep = AppStep.CUSTOMIZE_PROMPT;
                                     generateProfileCard(state, event);
+                                    saveInProgress(userId, state);
                                 }).exceptionally(ex -> {
                                     event.getChannel().sendMessage("❌ Something went wrong saving your image.").queue();
                                     return null;
@@ -1539,6 +1619,11 @@ public class ApplicationHandler extends ListenerAdapter {
                 // Application is complete, ignore further messages
                 event.getChannel().sendMessage("Your application has already been submitted. Please wait for a matchmaker to review it.").queue();
                 break;
+        }
+
+        // Persist state after every step so it survives a bot restart
+        if (activeApplications.containsKey(userId)) {
+            saveInProgress(userId, activeApplications.get(userId));
         }
     }
 
@@ -1625,10 +1710,12 @@ public class ApplicationHandler extends ListenerAdapter {
                 System.err.println("❌ Failed to save temp profile JSON for user: " + userId);
                 e.printStackTrace();
             }
+            saveInProgress(userId, state);
         } else if (buttonId.equals("edit_answers")) {
             // Trigger "edit" action
             state.currentStep = AppStep.EDIT_WHICH_FIELD;
             event.getChannel().sendMessage(displayAnswersForEditing(state)).queue();
+            saveInProgress(userId, state);
         } else if (buttonId.equals("submit_application")) {
             // Trigger "no" action (submit)
             completeApplicationFromButton(state, userId, event);
@@ -1907,6 +1994,7 @@ public class ApplicationHandler extends ListenerAdapter {
                 state.status = "CHANGES_REQUESTED";
                 activeApplications.put(userId, state);
                 saveProfileJson(state, userId);
+                saveInProgress(userId, state);
             } catch (Exception e) {
                 event.getHook().sendMessage("❌ Failed to load your profile data.").queue();
                 return;
@@ -1950,6 +2038,7 @@ public class ApplicationHandler extends ListenerAdapter {
                 profileFile.delete();
             }
             activeApplications.remove(userId);
+            deleteInProgress(userId);
 
             event.getHook().sendMessage("✅ Your previous profile has been deleted. Starting your new application now...").queue();
             startApplicationFromDM(event.getUser(), guildId);
@@ -2001,7 +2090,8 @@ public class ApplicationHandler extends ListenerAdapter {
             
             state.fieldBeingEdited = editStep.toString();
             event.getChannel().sendMessage(getEditQuestionPrompt(sectionNum, state.language)).queue();
-        } 
+            saveInProgress(userId, state);
+        }
         else if (buttonId.equals("user_delete_app")) {
             File profileFile = new File("user_content/profiles/" + userId + ".json");
             String guildIdToNotify = null;
@@ -2018,8 +2108,9 @@ public class ApplicationHandler extends ListenerAdapter {
                 }
                 profileFile.delete(); // Physically delete the application
             }
-            
+
             activeApplications.remove(userId);
+            deleteInProgress(userId);
             event.getHook().sendMessage("🗑️ Your application has been successfully deleted.").queue();
             
             // Notify matchmaker channel that the application was withdrawn

@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -25,6 +26,10 @@ public class ThreadManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final DateTimeFormatter FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     static final long THREAD_LIFESPAN_HOURS = 24;
+
+    // ─── Shutdown coordination ─────────────────────────────────────────────────
+    static volatile boolean shuttingDown = false;
+    private static final AtomicInteger activeClosures = new AtomicInteger(0);
 
     // ─── Data structures ──────────────────────────────────────────────────────
 
@@ -61,6 +66,30 @@ public class ThreadManager {
         List<ThreadMessage> messages = new ArrayList<>();
     }
 
+    // ─── Shutdown management ──────────────────────────────────────────────────
+
+    /**
+     * Signals shutdown and blocks until all in-progress archiveAndDelete calls complete
+     * or {@code timeoutMs} elapses. Call this from a JVM shutdown hook before exiting.
+     */
+    public static void initiateShutdown(long timeoutMs) {
+        shuttingDown = true;
+        int pending = activeClosures.get();
+        if (pending > 0) {
+            System.out.println("ThreadManager: Shutdown initiated — waiting for " + pending + " active closure(s)...");
+        }
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (activeClosures.get() > 0 && System.currentTimeMillis() < deadline) {
+            try { Thread.sleep(100); } catch (InterruptedException ignored) { break; }
+        }
+        int remaining = activeClosures.get();
+        if (remaining > 0) {
+            System.err.println("ThreadManager: Shutdown timed out — " + remaining + " closure(s) may be incomplete.");
+        } else {
+            System.out.println("ThreadManager: All closures complete, safe to exit.");
+        }
+    }
+
     // ─── Public API ───────────────────────────────────────────────────────────
 
     /** Called immediately after a match thread is created in Discord. */
@@ -82,6 +111,7 @@ public class ThreadManager {
      * Safe to call on boot and on a recurring schedule.
      */
     public static void checkExpiredThreads(JDA jda) {
+        if (shuttingDown) return;
         LocalDateTime cutoff = LocalDateTime.now().minusHours(THREAD_LIFESPAN_HOURS);
         int expired = 0;
 
@@ -458,6 +488,9 @@ public class ThreadManager {
     }
 
     private static void archiveAndDelete(QMThread record, JDA jda) {
+        if (shuttingDown) return;
+        activeClosures.incrementAndGet();
+
         ThreadChannel thread = jda.getThreadChannelById(record.threadId);
 
         if (thread == null) {
@@ -468,11 +501,12 @@ public class ThreadManager {
             issueQuickmatchStrikes(record, jda);
             softDeleteNonResponders(record, jda);
             sendPostMatchDMs(jda, record);
+            activeClosures.decrementAndGet();
             System.out.println("ThreadManager: Thread " + record.threadId + " not found in cache; marked archived.");
             return;
         }
 
-        // Fetch message history, save, then lock + archive the thread
+        // Fetch message history, save, then delete the thread
         thread.getHistoryFromBeginning(100).queue(history -> {
             List<Message> msgs = new ArrayList<>(history.getRetrievedHistory());
             msgs.sort(Comparator.comparing(Message::getTimeCreated)); // oldest first
@@ -495,11 +529,17 @@ public class ThreadManager {
             sendPostMatchDMs(jda, record);
 
             thread.delete().queue(
-                v   -> System.out.println("ThreadManager: Archived and deleted thread " + record.threadId + "."),
-                err -> System.err.println("ThreadManager: Could not delete thread " + record.threadId + ": " + err.getMessage())
+                v   -> {
+                    activeClosures.decrementAndGet();
+                    System.out.println("ThreadManager: Archived and deleted thread " + record.threadId + ".");
+                },
+                err -> {
+                    activeClosures.decrementAndGet();
+                    System.err.println("ThreadManager: Could not delete thread " + record.threadId + ": " + err.getMessage());
+                }
             );
         }, err -> {
-            // History fetch failed — still lock it
+            // History fetch failed — still archive and delete
             System.err.println("ThreadManager: Could not fetch history for thread " + record.threadId + ": " + err.getMessage());
             record.status   = "ARCHIVED";
             record.closedAt = LocalDateTime.now().format(FMT);
@@ -507,7 +547,10 @@ public class ThreadManager {
             issueQuickmatchStrikes(record, jda);
             softDeleteNonResponders(record, jda);
             sendPostMatchDMs(jda, record);
-            thread.delete().queue();
+            thread.delete().queue(
+                v   -> activeClosures.decrementAndGet(),
+                err2 -> activeClosures.decrementAndGet()
+            );
         });
     }
 
