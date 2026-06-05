@@ -67,7 +67,7 @@ public class AgapeBot extends ListenerAdapter {
         if (event.getMember() == null) return false;
         
         for (Role role : event.getMember().getRoles()) {
-            if (role.getName().toLowerCase().contains("single")) {
+            if (role.getName().toLowerCase().contains("single") && !role.getName().toLowerCase().contains("not") && !role.getName().toLowerCase().contains("but")) {
                 return true;
             }
         }
