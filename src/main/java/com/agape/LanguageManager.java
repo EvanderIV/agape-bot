@@ -84,224 +84,224 @@ public class LanguageManager {
         switch (language.toLowerCase()) {
             case "spanish":
                 return new String[] {
-                    "¿Cómo prefieres que te llamen?\n-# Este es el nombre que aparecerá en tu tarjeta de perfil y que verán tus posibles parejas.",
+                    "**¿Cómo prefieres que te llamen?**\n-# Este es el nombre que aparecerá en tu tarjeta de perfil y que verán tus posibles parejas.",
                     "¿En qué país vives?\n\n-# **OPCIONAL:** Usado para mejorar el emparejamiento — Puedes escribir **skip**",
-                    "¿Cuál es tu fecha de nacimiento?\n-# Por favor, escríbela en formato M/D/A (ej., 5/21/1998)\n-# También puedes escribir solo tu edad (ej., 25)",
-                    "¿Cuál es tu sexo?\n-# (Masculino / Femenino)",
-                    "¿Cuál es tu denominación cristiana?\n-# ej., Bautista / Pentecostal / Sin denominación",
-                    "Describe brevemente tu apariencia física.\n-# ej., \"1.70m y delgado\", \"1.90m 68 kg\"",
-                    "¿Qué pasatiempos o intereses tienes que te gustaría compartir?\n-# ej., \"senderismo, cocinar, juegos de mesa\"",
+                    "**¿Cuál es tu fecha de nacimiento?**\n-# Por favor, escríbela en formato M/D/A (ej., 5/21/1998)\n-# También puedes escribir solo tu edad (ej., 25)",
+                    "**¿Cuál es tu sexo?**\n-# (Masculino / Femenino)",
+                    "**¿Cuál es tu denominación cristiana?**\n-# ej., Bautista / Pentecostal / Sin denominación",
+                    "**Describe brevemente tu apariencia física.**\n-# ej., \"1.70m y delgado\", \"1.90m 68 kg\"",
+                    "**¿Qué pasatiempos o intereses tienes que te gustaría compartir?**\n-# ej., \"senderismo, cocinar, juegos de mesa\"",
                     "¿Cuáles son algunas de tus fortalezas?\n-# ej., \"sé escuchar, tengo un gran sentido del humor, de buen corazón\"\n\n-# **OPCIONAL:** Usado para mejorar el emparejamiento — Puedes escribir **skip**",
                     "¿Cuáles son algunas de tus debilidades o áreas en las que estás trabajando para mejorar?\n-# ej., \"tímido/a al conocer gente, tiendo a pensar demasiado, a menudo soy impaciente\"\n\n-# **OPCIONAL:** Usado para mejorar el emparejamiento — Puedes escribir **skip**",
                     "¡Por favor sube una foto tuya para usar en tu tarjeta de perfil!\n\n-# **OPCIONAL:** Si prefieres usar solo una foto de perfil de marcador de posición, escribe **skip**",
-                    "## ¡Genial! Ahora que te conozco mejor, vamos a ayudarte a encontrar una buena pareja.\n\n__PROGRESS_MAP__ ¿Qué rango de edad considerarías para posibles parejas?\n-# ej., 25-32, 18-24",
-                    "¿Qué denominaciones cristianas considerarías para posibles parejas?\n-# ej., Bautista, Pentecostal, Sin denominación",
+                    "## ¡Genial! Ahora que te conozco mejor, vamos a ayudarte a encontrar una buena pareja.\n\n__PROGRESS_MAP__ **¿Qué rango de edad considerarías para posibles parejas?**\n-# ej., 25-32, 18-24",
+                    "**¿Qué denominaciones cristianas considerarías para posibles parejas?**\n-# ej., Bautista, Pentecostal, Sin denominación",
                     "¿Cuáles son tres cosas que buscas en una pareja?\n-# ej., \"amable, paciente, que sepa escuchar\"\n\n-# **OPCIONAL:** Usado para mejorar el emparejamiento — Puedes escribir **skip**",
-                    "¿Cuáles son tres 'líneas rojas' (red flags) que no tolerarías en una pareja?\n-# ej., \"fumar, decir groserías, manipulador/a\""
+                    "**¿Cuáles son tres 'líneas rojas' (red flags) que no tolerarías en una pareja?**\n-# ej., \"fumar, decir groserías, manipulador/a\""
                 };
             case "french":
                 return new String[] {
-                    "Comment préférez-vous qu'on vous appelle?\n-# C'est le nom qui apparaîtra sur votre carte de profil et que verront vos correspondances potentielles.",
+                    "**Comment préférez-vous qu'on vous appelle?**\n-# C'est le nom qui apparaîtra sur votre carte de profil et que verront vos correspondances potentielles.",
                     "Dans quel pays vivez-vous?\n\n-# **OPTIONNEL :** Utilisé pour améliorer les correspondances — Vous pouvez taper **skip**",
-                    "Quelle est votre date de naissance?\n-# Veuillez l'écrire au format J/M/A (ex., 21/5/1998)\n-# Vous pouvez aussi simplement écrire votre âge (ex., 25)",
-                    "Quel est votre sexe?\n-# (Masculin / Féminin)",
-                    "Quelle est votre confession chrétienne?\n-# ex., Baptiste / Pentecôtiste / Non confessionnelle",
-                    "Décrivez brièvement votre apparence physique.\n-# ex., \"1m70 et mince\", \"1m90 68 kg\"",
-                    "Quels passe-temps ou intérêts aimeriez-vous partager?\n-# ex., \"randonnée, cuisine, jeux de société\"",
+                    "**Quelle est votre date de naissance?**\n-# Veuillez l'écrire au format J/M/A (ex., 21/5/1998)\n-# Vous pouvez aussi simplement écrire votre âge (ex., 25)",
+                    "**Quel est votre sexe?**\n-# (Masculin / Féminin)",
+                    "**Quelle est votre confession chrétienne?**\n-# ex., Baptiste / Pentecôtiste / Non confessionnelle",
+                    "**Décrivez brièvement votre apparence physique.**\n-# ex., \"1m70 et mince\", \"1m90 68 kg\"",
+                    "**Quels passe-temps ou intérêts aimeriez-vous partager?**\n-# ex., \"randonnée, cuisine, jeux de société\"",
                     "Quelles sont quelques-unes de vos qualités?\n-# ex., \"à l'écoute, j'ai un bon sens de l'humour, grand cœur\"\n\n-# **OPTIONNEL :** Utilisé pour améliorer les correspondances — Vous pouvez taper **skip**",
                     "Quels sont vos points faibles ou les domaines que vous cherchez à améliorer?\n-# ex., \"timide au premier abord, j'ai tendance à trop réfléchir, je suis souvent impatient(e)\"\n\n-# **OPTIONNEL :** Utilisé pour améliorer les correspondances — Vous pouvez taper **skip**",
                     "Veuillez envoyer une photo de vous pour l'utiliser sur votre carte de profil!\n\n-# **OPTIONNEL :** Si vous préférez utiliser uniquement une photo de profil, tapez **skip**",
-                    "## Super! Maintenant que je vous connais un peu mieux, aidons-vous à trouver un bon partenaire.\n\n__PROGRESS_MAP__ Quelle tranche d'âge considéreriez-vous pour un partenaire potentiel?\n-# ex., 25-32, 18-24",
-                    "Quelles confessions chrétiennes considéreriez-vous pour des partenaires potentiels?\n-# ex., Baptiste, Pentecôtiste, Non confessionnelle",
+                    "## Super! Maintenant que je vous connais un peu mieux, aidons-vous à trouver un bon partenaire.\n\n__PROGRESS_MAP__ **Quelle tranche d'âge considéreriez-vous pour un partenaire potentiel?**\n-# ex., 25-32, 18-24",
+                    "**Quelles confessions chrétiennes considéreriez-vous pour des partenaires potentiels?**\n-# ex., Baptiste, Pentecôtiste, Non confessionnelle",
                     "Quelles sont trois choses que vous recherchez chez un partenaire?\n-# ex., \"gentil, patient, à l'écoute\"\n\n-# **OPTIONNEL :** Utilisé pour améliorer les correspondances — Vous pouvez taper **skip**",
-                    "Quels sont trois critères rédhibitoires (red flags) pour vous chez un partenaire?\n-# ex., \"fumeur, grossier, manipulateur\""
+                    "**Quels sont trois critères rédhibitoires (red flags) pour vous chez un partenaire?**\n-# ex., \"fumeur, grossier, manipulateur\""
                 };
             case "portuguese":
                 return new String[] {
-                    "Como você prefere ser chamado(a)?\n-# Este é o nome que aparecerá no seu cartão de perfil e que os possíveis parceiros verão.",
+                    "**Como você prefere ser chamado(a)?**\n-# Este é o nome que aparecerá no seu cartão de perfil e que os possíveis parceiros verão.",
                     "Em que país você mora?\n\n-# **OPCIONAL:** Usado para melhorar o emparelhamento — Você pode digitar **skip**",
-                    "Qual é a sua data de nascimento?\n-# Por favor, escreva no formato M/D/A (ex., 5/21/1998)\n-# Você também pode simplesmente digitar sua idade (ex., 25)",
-                    "Qual é o seu sexo?\n-# (Masculino / Feminino)",
-                    "Qual é a sua denominação cristã?\n-# ex., Batista / Pentecostal / Não denominacional",
-                    "Descreva brevemente sua aparência física.\n-# ex., \"1,70m e magro\", \"1,90m 68 kg\"",
-                    "Quais hobbies ou interesses você tem e gostaria de compartilhar?\n-# ex., \"fazer trilhas, cozinhar, jogar jogos de tabuleiro\"",
+                    "**Qual é a sua data de nascimento?**\n-# Por favor, escreva no formato M/D/A (ex., 5/21/1998)\n-# Você também pode simplesmente digitar sua idade (ex., 25)",
+                    "**Qual é o seu sexo?**\n-# (Masculino / Feminino)",
+                    "**Qual é a sua denominação cristã?**\n-# ex., Batista / Pentecostal / Não denominacional",
+                    "**Descreva brevemente sua aparência física.**\n-# ex., \"1,70m e magro\", \"1,90m 68 kg\"",
+                    "**Quais hobbies ou interesses você tem e gostaria de compartilhar?**\n-# ex., \"fazer trilhas, cozinhar, jogar jogos de tabuleiro\"",
                     "Quais são algumas qualidades que você possui?\n-# ex., \"bom ouvinte, tenho um ótimo senso de humor, bondoso(a)\"\n\n-# **OPCIONAL:** Usado para melhorar o emparelhamento — Você pode digitar **skip**",
                     "Quais são alguns pontos fracos ou áreas que você está tentando melhorar?\n-# ex., \"tímido(a) ao conhecer pessoas, costumo pensar demais, sou frequentemente impaciente\"\n\n-# **OPCIONAL:** Usado para melhorar o emparelhamento — Você pode digitar **skip**",
                     "Por favor, envie uma foto sua para ser usada em seu cartão de perfil!\n\n-# **OPCIONAL:** Se preferir usar apenas uma foto de perfil de espaço reservado, digite **skip**",
-                    "## Ótimo! Agora que já conheço você melhor, vamos ajudar a encontrar um bom par.\n\n__PROGRESS_MAP__ Qual faixa etária você consideraria para possíveis parceiros?\n-# ex., 25-32, 18-24",
-                    "Quais denominações cristãs você consideraria para possíveis parceiros?\n-# ex., Batista, Pentecostal, Não denominacional",
+                    "## Ótimo! Agora que já conheço você melhor, vamos ajudar a encontrar um bom par.\n\n__PROGRESS_MAP__ **Qual faixa etária você consideraria para possíveis parceiros?**\n-# ex., 25-32, 18-24",
+                    "**Quais denominações cristãs você consideraria para possíveis parceiros?**\n-# ex., Batista, Pentecostal, Não denominacional",
                     "Quais são três coisas que você procura em um parceiro?\n-# ex., \"gentil, paciente, bom ouvinte\"\n\n-# **OPCIONAL:** Usado para melhorar o emparelhamento — Você pode digitar **skip**",
-                    "Quais são três sinais de alerta (red flags) que você não tolera em um parceiro?\n-# ex., \"fumar, falar palavrões, manipulador(a)\""
+                    "**Quais são três sinais de alerta (red flags) que você não tolera em um parceiro?**\n-# ex., \"fumar, falar palavrões, manipulador(a)\""
                 };
             case "dutch":
                 return new String[] {
-                    "Hoe word je het liefst genoemd?\n-# Dit is de naam die op je profielkaart verschijnt en die potentiële matches zullen zien.",
+                    "**Hoe word je het liefst genoemd?**\n-# Dit is de naam die op je profielkaart verschijnt en die potentiële matches zullen zien.",
                     "In welk land woon je?\n\n-# **OPTIONEEL:** Gebruikt om matching te verbeteren — Je kunt **skip** typen",
-                    "Wat is je geboortedatum?\n-# Schrijf dit in het formaat M/D/J (bijv., 5/21/1998)\n-# Je kunt ook gewoon je leeftijd invoeren (bijv., 25)",
-                    "Wat is je geslacht?\n-# (Man / Vrouw)",
-                    "Wat is je christelijke stroming?\n-# bijv., Baptist / Pinkstergemeente / Niet-gebonden",
-                    "Beschrijf kort je uiterlijk.\n-# bijv., \"1,70m en slank\", \"1,90m 68 kg\"",
-                    "Welke hobby's of interesses heb je die je wilt delen?\n-# bijv., \"wandelen, koken, bordspellen spelen\"",
+                    "**Wat is je geboortedatum?**\n-# Schrijf dit in het formaat M/D/J (bijv., 5/21/1998)\n-# Je kunt ook gewoon je leeftijd invoeren (bijv., 25)",
+                    "**Wat is je geslacht?**\n-# (Man / Vrouw)",
+                    "**Wat is je christelijke stroming?**\n-# bijv., Baptist / Pinkstergemeente / Niet-gebonden",
+                    "**Beschrijf kort je uiterlijk.**\n-# bijv., \"1,70m en slank\", \"1,90m 68 kg\"",
+                    "**Welke hobby's of interesses heb je die je wilt delen?**\n-# bijv., \"wandelen, koken, bordspellen spelen\"",
                     "Wat zijn een paar sterke punten van jezelf?\n-# bijv., \"kan goed luisteren, ik heb een goed gevoel voor humor, goedhartig\"\n\n-# **OPTIONEEL:** Gebruikt om matching te verbeteren — Je kunt **skip** typen",
                     "Wat zijn enkele zwakke punten of gebieden waaraan je werkt om te verbeteren?\n-# bijv., \"verlegen bij een eerste ontmoeting, ik denk vaak te veel na, ik ben vaak ongeduldig\"\n\n-# **OPTIONEEL:** Gebruikt om matching te verbeteren — Je kunt **skip** typen",
                     "Upload een foto van jezelf om te gebruiken op je profielkaart!\n\n-# **OPTIONEEL:** Als je liever alleen een tijdelijke profielfoto gebruikt, typ dan **skip**",
-                    "## Geweldig! Nu ik je wat beter heb leren kennen, gaan we je helpen een goede match te vinden.\n\n__PROGRESS_MAP__ Welke leeftijdscategorie zou je overwegen voor potentiële matches?\n-# bijv., 25-32, 18-24",
-                    "Welke christelijke stromingen zou je overwegen voor potentiële matches?\n-# bijv., Baptist, Pinkstergemeente, Niet-gebonden",
+                    "## Geweldig! Nu ik je wat beter heb leren kennen, gaan we je helpen een goede match te vinden.\n\n__PROGRESS_MAP__ **Welke leeftijdscategorie zou je overwegen voor potentiële matches?**\n-# bijv., 25-32, 18-24",
+                    "**Welke christelijke stromingen zou je overwegen voor potentiële matches?**\n-# bijv., Baptist, Pinkstergemeente, Niet-gebonden",
                     "Wat zijn drie dingen waar je naar op zoek bent in een partner?\n-# bijv., \"aardig, geduldig, kan goed luisteren\"\n\n-# **OPTIONEEL:** Gebruikt om matching te verbeteren — Je kunt **skip** typen",
-                    "Wat zijn drie absolute afknappers (red flags) voor jou in een partner?\n-# bijv., \"roken, vloeken, manipulatief\""
+                    "**Wat zijn drie absolute afknappers (red flags) voor jou in een partner?**\n-# bijv., \"roken, vloeken, manipulatief\""
                 };
             case "german":
                 return new String[] {
-                    "Wie möchtest du genannt werden?\n-# Dies ist der Name, der auf deiner Profilkarte erscheint.",
+                    "**Wie möchtest du genannt werden?**\n-# Dies ist der Name, der auf deiner Profilkarte erscheint.",
                     "In welchem Land lebst du?\n\n-# **OPTIONAL:** Wird zur Verbesserung des Matchings verwendet — Du kannst **skip** eingeben",
-                    "Was ist dein Geburtstag?\n-# Bitte schreibe ihn im Format T/M/J (z.B., 21/5/1998)\n-# Du kannst auch einfach dein Alter eingeben (z.B., 25)",
-                    "Was ist dein Geschlecht?\n-# (Männlich / Weiblich)",
-                    "Was ist deine christliche Konfession?\n-# z.B. Baptist / Pfingstler / Konfessionslos",
-                    "Beschreibe kurz dein Aussehen.\n-# z.B. \"1,70 m und schlank\", \"1,90 m, 75 kg\"",
-                    "Welche Hobbys oder Interessen möchtest du teilen?\n-# z.B. \"Wandern, Kochen, Brettspiele\"",
+                    "**Was ist dein Geburtstag?**\n-# Bitte schreibe ihn im Format T/M/J (z.B., 21/5/1998)\n-# Du kannst auch einfach dein Alter eingeben (z.B., 25)",
+                    "**Was ist dein Geschlecht?**\n-# (Männlich / Weiblich)",
+                    "**Was ist deine christliche Konfession?**\n-# z.B. Baptist / Pfingstler / Konfessionslos",
+                    "**Beschreibe kurz dein Aussehen.**\n-# z.B. \"1,70 m und schlank\", \"1,90 m, 75 kg\"",
+                    "**Welche Hobbys oder Interessen möchtest du teilen?**\n-# z.B. \"Wandern, Kochen, Brettspiele\"",
                     "Was sind einige deiner Stärken?\n-# z.B. \"Guter Zuhörer, toller Humor, gutherzig\"\n\n-# **OPTIONAL:** Wird zur Verbesserung des Matchings verwendet — Du kannst **skip** eingeben",
                     "Was sind einige Schwächen, an denen du arbeitest?\n-# z.B. \"Schüchtern am Anfang, denke zu viel nach, oft ungeduldig\"\n\n-# **OPTIONAL:** Wird zur Verbesserung des Matchings verwendet — Du kannst **skip** eingeben",
                     "Bitte lade ein Bild von dir hoch, das auf deiner Profilkarte verwendet wird!\n\n-# **OPTIONAL:** Wenn du lieber nur ein Platzhalterbild verwenden möchtest, tippe **skip**",
-                    "## Super! Jetzt, da ich dich besser kenne, lass uns einen guten Partner finden.\n\n__PROGRESS_MAP__ Welche Altersgruppe würdest du in Betracht ziehen?\n-# z.B. 25-32, 18-24",
-                    "Welche christlichen Konfessionen würdest du in Betracht ziehen?\n-# z.B. Baptist, Pfingstler, Konfessionslos",
+                    "## Super! Jetzt, da ich dich besser kenne, lass uns einen guten Partner finden.\n\n__PROGRESS_MAP__ **Welche Altersgruppe würdest du in Betracht ziehen?**\n-# z.B. 25-32, 18-24",
+                    "**Welche christlichen Konfessionen würdest du in Betracht ziehen?**\n-# z.B. Baptist, Pfingstler, Konfessionslos",
                     "Nenne drei Dinge, die du in einem Partner suchst.\n-# z.B. \"freundlich, geduldig, guter Zuhörer\"\n\n-# **OPTIONAL:** Wird zur Verbesserung des Matchings verwendet — Du kannst **skip** eingeben",
-                    "Nenne drei absolute Ausschlusskriterien (Red Flags) bei einem Partner.\n-# z.B. \"Rauchen, Fluchen, manipulativ\""
+                    "**Nenne drei absolute Ausschlusskriterien (Red Flags) bei einem Partner.**\n-# z.B. \"Rauchen, Fluchen, manipulativ\""
                 };
             case "italian":
                 return new String[] {
-                    "Come preferisci essere chiamato/a?\n-# Questo è il nome che apparirà sulla tua scheda profilo.",
+                    "**Come preferisci essere chiamato/a?**\n-# Questo è il nome che apparirà sulla tua scheda profilo.",
                     "In quale paese vivi?\n\n-# **OPZIONALE:** Usato per migliorare il matching — Puoi digitare **skip**",
-                    "Qual è la tua data di nascita?\n-# Scrivila nel formato G/M/A (es., 21/5/1998)\n-# Puoi anche semplicemente inserire la tua età (es., 25)",
-                    "Qual è il tuo sesso?\n-# (Maschio / Femmina)",
-                    "Qual è la tua confessione cristiana?\n-# es., Battista / Pentecostale / Aconfessionale",
-                    "Descrivi brevemente il tuo aspetto fisico.\n-# es., \"1.70m e magro/a\", \"1.90m 75 kg\"",
-                    "Quali hobby o interessi vorresti condividere?\n-# es., \"escursionismo, cucinare, giochi da tavolo\"",
+                    "**Qual è la tua data di nascita?**\n-# Scrivila nel formato G/M/A (es., 21/5/1998)\n-# Puoi anche semplicemente inserire la tua età (es., 25)",
+                    "**Qual è il tuo sesso?**\n-# (Maschio / Femmina)",
+                    "**Qual è la tua confessione cristiana?**\n-# es., Battista / Pentecostale / Aconfessionale",
+                    "**Descrivi brevemente il tuo aspetto fisico.**\n-# es., \"1.70m e magro/a\", \"1.90m 75 kg\"",
+                    "**Quali hobby o interessi vorresti condividere?**\n-# es., \"escursionismo, cucinare, giochi da tavolo\"",
                     "Quali sono alcuni dei tuoi punti di forza?\n-# es., \"so ascoltare, ho un grande senso dell'umorismo, di buon cuore\"\n\n-# **OPZIONALE:** Usato per migliorare il matching — Puoi digitare **skip**",
                     "Quali sono alcuni punti deboli su cui stai lavorando?\n-# es., \"timido/a all'inizio, penso troppo, spesso impaziente\"\n\n-# **OPZIONALE:** Usato per migliorare il matching — Puoi digitare **skip**",
                     "Carica una tua foto da usare sulla scheda del profilo!\n\n-# **OPZIONALE:** Se preferisci usare solo un'immagine segnaposto, digita **skip**",
-                    "## Ottimo! Ora che ti conosco meglio, troviamo il partner giusto.\n\n__PROGRESS_MAP__ Che fascia d'età considereresti per un partner?\n-# es., 25-32, 18-24",
-                    "Quali confessioni cristiane considereresti per un partner?\n-# es., Battista, Pentecostale, Aconfessionale",
+                    "## Ottimo! Ora che ti conosco meglio, troviamo il partner giusto.\n\n__PROGRESS_MAP__ **Che fascia d'età considereresti per un partner?**\n-# es., 25-32, 18-24",
+                    "**Quali confessioni cristiane considereresti per un partner?**\n-# es., Battista, Pentecostale, Aconfessionale",
                     "Quali sono tre cose che cerchi in un partner?\n-# es., \"gentile, paziente, sa ascoltare\"\n\n-# **OPZIONALE:** Usato per migliorare il matching — Puoi digitare **skip**",
-                    "Quali sono tre segnali di allarme (red flags) inaccettabili in un partner?\n-# es., \"fuma, dice parolacce, manipolatore/trice\""
+                    "**Quali sono tre segnali di allarme (red flags) inaccettabili in un partner?**\n-# es., \"fuma, dice parolacce, manipolatore/trice\""
                 };
             case "tagalog":
                 return new String[] {
-                    "Ano ang gusto mong itawag sa iyo?\n-# Ito ang pangalan na lalabas sa iyong profile card na makikita ng potential matches.",
+                    "**Ano ang gusto mong itawag sa iyo?**\n-# Ito ang pangalan na lalabas sa iyong profile card na makikita ng potential matches.",
                     "Saang bansa ka nakatira?\n\n-# **OPSYONAL:** Ginagamit para mapabuti ang matching — Maaari kang mag-type ng **skip**",
-                    "Ano ang iyong kaarawan?\n-# Ilagay sa format na B/A/T (hal., 5/21/1998)\n-# Maaari ka ring mag-type ng iyong edad (hal., 25)",
-                    "Ano ang iyong kasarian?\n-# (Lalaki / Babae)",
-                    "Ano ang iyong denominasyong Kristiyano?\n-# hal., Baptist / Pentecostal / Non-denominational",
-                    "Ilarawan nang maikli ang iyong pisikal na anyo.\n-# hal., \"5'7 at payat\", \"6'3 150 lbs\"",
-                    "Anong mga hobby o interes ang gusto mong ibahagi?\n-# hal., \"hiking, pagluluto, board games\"",
+                    "**Ano ang iyong kaarawan?**\n-# Ilagay sa format na B/A/T (hal., 5/21/1998)\n-# Maaari ka ring mag-type ng iyong edad (hal., 25)",
+                    "**Ano ang iyong kasarian?**\n-# (Lalaki / Babae)",
+                    "**Ano ang iyong denominasyong Kristiyano?**\n-# hal., Baptist / Pentecostal / Non-denominational",
+                    "**Ilarawan nang maikli ang iyong pisikal na anyo.**\n-# hal., \"5'7 at payat\", \"6'3 150 lbs\"",
+                    "**Anong mga hobby o interes ang gusto mong ibahagi?**\n-# hal., \"hiking, pagluluto, board games\"",
                     "Ano ang ilang mga kalakasan mo?\n-# hal., \"magaling makinig, may sense of humor, mabait\"\n\n-# **OPSYONAL:** Ginagamit para mapabuti ang matching — Maaari kang mag-type ng **skip**",
                     "Ano ang ilang mga kahinaan o aspeto na pinapabuti mo pa?\n-# hal., \"mahiyain sa simula, overthinker, madaling mainip\"\n\n-# **OPSYONAL:** Ginagamit para mapabuti ang matching — Maaari kang mag-type ng **skip**",
                     "Mangyaring mag-upload ng larawan mo para sa iyong profile card!\n\n-# **OPSYONAL:** Kung gusto mong gumamit ng placeholder profile picture, i-type ang **skip**",
-                    "## Ayos! Ngayong kilala na kita, humanap tayo ng magandang match para sa'yo.\n\n__PROGRESS_MAP__ Anong age range ang kinokonsidera mo para sa isang partner?\n-# hal., 25-32, 18-24",
-                    "Anong mga denominasyong Kristiyano ang kinokonsidera mo para sa isang partner?\n-# hal., Baptist, Pentecostal, Non-denominational",
+                    "## Ayos! Ngayong kilala na kita, humanap tayo ng magandang match para sa'yo.\n\n__PROGRESS_MAP__ **Anong age range ang kinokonsidera mo para sa isang partner?**\n-# hal., 25-32, 18-24",
+                    "**Anong mga denominasyong Kristiyano ang kinokonsidera mo para sa isang partner?**\n-# hal., Baptist, Pentecostal, Non-denominational",
                     "Magbigay ng tatlong bagay na hinahanap mo sa isang partner.\n-# hal., \"mabait, pasensyoso, magaling makinig\"\n\n-# **OPSYONAL:** Ginagamit para mapabuti ang matching — Maaari kang mag-type ng **skip**",
-                    "Magbigay ng tatlong deal breakers (red flags) na ayaw mo sa isang partner.\n-# hal., \"naninigarilyo, nagmumura, mapanlinlang (manipulative)\""
+                    "**Magbigay ng tatlong deal breakers (red flags) na ayaw mo sa isang partner.**\n-# hal., \"naninigarilyo, nagmumura, mapanlinlang (manipulative)\""
                 };
             case "japanese":
                 return new String[] {
-                    "どのようにお呼びすればよろしいですか？\n-# これはプロフィールカードに表示される名前です。",
+                    "**どのようにお呼びすればよろしいですか？**\n-# これはプロフィールカードに表示される名前です。",
                     "お住まいの国はどこですか？\n\n-# **任意：** マッチングの向上に使用 — **skip** と入力できます",
-                    "生年月日を教えてください。\n-# 月/日/年の形式で入力してください（例：5/21/1998）\n-# 年齢だけを入力することもできます（例：25）",
-                    "性別を教えてください。\n-# (男性 / 女性)",
-                    "あなたのキリスト教の教派は何ですか？\n-# 例：バプテスト / ペンテコステ派 / 無教派",
-                    "あなたの外見を簡単に説明してください。\n-# 例：「身長170cmで細身」、「身長180cmで体重70kg」",
-                    "共有したい趣味や興味は何ですか？\n-# 例：「ハイキング、料理、ボードゲーム」",
+                    "**生年月日を教えてください。**\n-# 月/日/年の形式で入力してください（例：5/21/1998）\n-# 年齢だけを入力することもできます（例：25）",
+                    "**性別を教えてください。**\n-# (男性 / 女性)",
+                    "**あなたのキリスト教の教派は何ですか？**\n-# 例：バプテスト / ペンテコステ派 / 無教派",
+                    "**あなたの外見を簡単に説明してください。**\n-# 例：「身長170cmで細身」、「身長180cmで体重70kg」",
+                    "**共有したい趣味や興味は何ですか？**\n-# 例：「ハイキング、料理、ボードゲーム」",
                     "あなたの長所をいくつか教えてください。\n-# 例：「聞き上手、ユーモアのセンスがある、優しい」\n\n-# **任意：** マッチングの向上に使用 — **skip** と入力できます",
                     "改善しようとしている短所や弱点はありますか？\n-# 例：「初対面で人見知りする、考えすぎる、せっかち」\n\n-# **任意：** マッチングの向上に使用 — **skip** と入力できます",
                     "プロフィールカードに使用するあなたの写真をアップロードしてください！\n\n-# **任意：** プレースホルダーのプロフィール画像を使用する場合は、**skip**と入力してください",
-                    "## 素晴らしい！あなたのことがよく分かりました。ぴったりのお相手を見つけましょう。\n\n__PROGRESS_MAP__ お相手の希望年齢層を教えてください。\n-# 例：25-32、18-24",
-                    "お相手の希望する教派は何ですか？\n-# 例：バプテスト、ペンテコステ派、無教派",
+                    "## 素晴らしい！あなたのことがよく分かりました。ぴったりのお相手を見つけましょう。\n\n__PROGRESS_MAP__ **お相手の希望年齢層を教えてください。**\n-# 例：25-32、18-24",
+                    "**お相手の希望する教派は何ですか？**\n-# 例：バプテスト、ペンテコステ派、無教派",
                     "パートナーに求める3つの条件は何ですか？\n-# 例：「優しい、忍耐強い、聞き上手」\n\n-# **任意：** マッチングの向上に使用 — **skip** と入力できます",
-                    "パートナーとして絶対に受け入れられない条件（レッドフラッグ）を3つ教えてください。\n-# 例：「喫煙、暴言、操作的」"
+                    "**パートナーとして絶対に受け入れられない条件（レッドフラッグ）を3つ教えてください。**\n-# 例：「喫煙、暴言、操作的」"
                 };
             case "chinese":
                 return new String[] {
-                    "你希望大家怎么称呼你？\n-# 这是将显示在您的个人资料卡上的名字。",
+                    "**你希望大家怎么称呼你？**\n-# 这是将显示在您的个人资料卡上的名字。",
                     "你居住在哪个国家？\n\n-# **可选：** 用于改善匹配 — 您可以输入 **skip**",
-                    "你的生日是什么时候？\n-# 请按月/日/年格式输入（例如：5/21/1998）\n-# 您也可以直接输入您的年龄（例如：25）",
-                    "你的性别是？\n-# (男 / 女)",
-                    "你的基督教教派是什么？\n-# 例如：浸信会 / 五旬节派 / 非宗派",
-                    "简要描述你的外貌。\n-# 例如：\"170厘米，苗条\"，\"185厘米，70公斤\"",
-                    "你有哪些想分享的爱好或兴趣？\n-# 例如：\"远足，烹饪，玩棋盘游戏\"",
+                    "**你的生日是什么时候？**\n-# 请按月/日/年格式输入（例如：5/21/1998）\n-# 您也可以直接输入您的年龄（例如：25）",
+                    "**你的性别是？**\n-# (男 / 女)",
+                    "**你的基督教教派是什么？**\n-# 例如：浸信会 / 五旬节派 / 非宗派",
+                    "**简要描述你的外貌。**\n-# 例如：\"170厘米，苗条\"，\"185厘米，70公斤\"",
+                    "**你有哪些想分享的爱好或兴趣？**\n-# 例如：\"远足，烹饪，玩棋盘游戏\"",
                     "你有哪些优点？\n-# 例如：\"善于倾听，有幽默感，心地善良\"\n\n-# **可选：** 用于改善匹配 — 您可以输入 **skip**",
                     "你有哪些缺点或正在努力改进的地方？\n-# 例如：\"初次见面容易害羞，容易想太多，有时缺乏耐心\"\n\n-# **可选：** 用于改善匹配 — 您可以输入 **skip**",
                     "请上传一张你的照片，用于你的个人资料卡！\n\n-# **可选：** 如果你只想使用占位符头像，请输入 **skip**",
-                    "## 太棒了！现在我对你有了更多了解，让我们帮你寻找合适的伴侣吧。\n\n__PROGRESS_MAP__ 你希望伴侣的年龄范围是多少？\n-# 例如：25-32，18-24",
-                    "你会考虑哪些基督教教派的伴侣？\n-# 例如：浸信会，五旬节派，非宗派",
+                    "## 太棒了！现在我对你有了更多了解，让我们帮你寻找合适的伴侣吧。\n\n__PROGRESS_MAP__ **你希望伴侣的年龄范围是多少？**\n-# 例如：25-32，18-24",
+                    "**你会考虑哪些基督教教派的伴侣？**\n-# 例如：浸信会，五旬节派，非宗派",
                     "你在寻找伴侣时看重的三点是什么？\n-# 例如：\"善良，有耐心，善于倾听\"\n\n-# **可选：** 用于改善匹配 — 您可以输入 **skip**",
-                    "伴侣身上的哪三个缺点是你绝对无法容忍的（红旗）？\n-# 例如：\"抽烟，说脏话，喜欢操纵别人\""
+                    "**伴侣身上的哪三个缺点是你绝对无法容忍的（红旗）？**\n-# 例如：\"抽烟，说脏话，喜欢操纵别人\""
                 };
             case "swahili":
                 return new String[] {
-                    "Ungependa kuitwa nani?\n-# Hili ni jina litakaloonekana kwenye kadi yako ya wasifu.",
+                    "**Ungependa kuitwa nani?**\n-# Hili ni jina litakaloonekana kwenye kadi yako ya wasifu.",
                     "Unaishi nchi gani?\n\n-# **HIARI:** Inatumika kuboresha ulinganishaji — Unaweza kuandika **skip**",
-                    "Tarehe yako ya kuzaliwa ni nini?\n-# Tafadhali andika kwa muundo wa M/D/M (mf., 5/21/1998)\n-# Unaweza pia tu kuandika umri wako (mf., 25)",
-                    "Jinsia yako ni nini?\n-# (Mwanamume / Mwanamke)",
-                    "Dhehebu lako la Kikristo ni lipi?\n-# mf., Baptist / Pentekoste / Asiye na dhehebu",
-                    "Eleza kwa ufupi mwonekano wako wa kimwili.\n-# mf., \"Mita 1.70 na mwembamba\", \"Mita 1.90 kilo 68\"",
-                    "Una mapendeleo au maslahi gani ambayo ungependa kushiriki?\n-# mf., \"kutembea mlimani, kupika, michezo ya bodi\"",
+                    "**Tarehe yako ya kuzaliwa ni nini?**\n-# Tafadhali andika kwa muundo wa M/D/M (mf., 5/21/1998)\n-# Unaweza pia tu kuandika umri wako (mf., 25)",
+                    "**Jinsia yako ni nini?**\n-# (Mwanamume / Mwanamke)",
+                    "**Dhehebu lako la Kikristo ni lipi?**\n-# mf., Baptist / Pentekoste / Asiye na dhehebu",
+                    "**Eleza kwa ufupi mwonekano wako wa kimwili.**\n-# mf., \"Mita 1.70 na mwembamba\", \"Mita 1.90 kilo 68\"",
+                    "**Una mapendeleo au maslahi gani ambayo ungependa kushiriki?**\n-# mf., \"kutembea mlimani, kupika, michezo ya bodi\"",
                     "Je, ni baadhi ya nguvu zako zipi?\n-# mf., \"msikilizaji mzuri, mcheshi, mwenye moyo mzuri\"\n\n-# **HIARI:** Inatumika kuboresha ulinganishaji — Unaweza kuandika **skip**",
                     "Je, ni udhaifu gani unaofanyia kazi kuuboresha?\n-# mf., \"mwenye aibu mwanzoni, kufikiria sana, mara nyingi hukosa subira\"\n\n-# **HIARI:** Inatumika kuboresha ulinganishaji — Unaweza kuandika **skip**",
                     "Tafadhali pakia picha yako itakayotumika kwenye kadi yako ya wasifu!\n\n-# **HIARI:** Ikiwa unapendelea kutumia picha ya nafasi tu, andika **skip**",
-                    "## Vizuri! Sasa kwa kuwa nimekufahamu vizuri, hebu tukusaidie kupata mchumba mzuri.\n\n__PROGRESS_MAP__ Unapendelea mchumba wa umri gani?\n-# mf., 25-32, 18-24",
-                    "Ungependa mchumba wa madhehebu gani ya Kikristo?\n-# mf., Baptist, Pentekoste, Asiye na dhehebu",
+                    "## Vizuri! Sasa kwa kuwa nimekufahamu vizuri, hebu tukusaidie kupata mchumba mzuri.\n\n__PROGRESS_MAP__ **Unapendelea mchumba wa umri gani?**\n-# mf., 25-32, 18-24",
+                    "**Ungependa mchumba wa madhehebu gani ya Kikristo?**\n-# mf., Baptist, Pentekoste, Asiye na dhehebu",
                     "Je, ni mambo gani matatu unayotafuta kwa mchumba?\n-# mf., \"mkarimu, mvumilivu, msikilizaji mzuri\"\n\n-# **HIARI:** Inatumika kuboresha ulinganishaji — Unaweza kuandika **skip**",
-                    "Je, ni mambo gani matatu ambayo huwezi kuvumilia (red flags) kwa mchumba?\n-# mf., \"kuvuta sigara, kutukana, mjanja\""
+                    "**Je, ni mambo gani matatu ambayo huwezi kuvumilia (red flags) kwa mchumba?**\n-# mf., \"kuvuta sigara, kutukana, mjanja\""
                 };
             case "afrikaans":
                 return new String[] {
-                    "Wat wil jy graag genoem word?\n-# Dit is die naam wat op jou profielkaart sal verskyn.",
+                    "**Wat wil jy graag genoem word?**\n-# Dit is die naam wat op jou profielkaart sal verskyn.",
                     "In watter land woon jy?\n\n-# **OPSIONEEL:** Gebruik om passing te verbeter — Jy kan **skip** tik",
-                    "Wat is jou geboortedatum?\n-# Skryf dit in die formaat M/D/J (bv., 5/21/1998)\n-# Jy kan ook net jou ouderdom tik (bv., 25)",
-                    "Wat is jou geslag?\n-# (Man / Vrou)",
-                    "Wat is jou Christelike denominasie?\n-# bv., Baptis / Pinkster / Nie-denominasioneel",
-                    "Beskryf kortliks jou fisiese voorkoms.\n-# bv., \"1.70m en skraal\", \"1.90m 68 kg\"",
-                    "Watter stokperdjies of belangstellings het jy wat jy wil deel?\n-# bv., \"stap, kook, bordspeletjies\"",
+                    "**Wat is jou geboortedatum?**\n-# Skryf dit in die formaat M/D/J (bv., 5/21/1998)\n-# Jy kan ook net jou ouderdom tik (bv., 25)",
+                    "**Wat is jou geslag?**\n-# (Man / Vrou)",
+                    "**Wat is jou Christelike denominasie?**\n-# bv., Baptis / Pinkster / Nie-denominasioneel",
+                    "**Beskryf kortliks jou fisiese voorkoms.**\n-# bv., \"1.70m en skraal\", \"1.90m 68 kg\"",
+                    "**Watter stokperdjies of belangstellings het jy wat jy wil deel?**\n-# bv., \"stap, kook, bordspeletjies\"",
                     "Wat is 'n paar van jou sterkpunte?\n-# bv., \"goeie luisteraar, goeie sin vir humor, saggeaard\"\n\n-# **OPSIONEEL:** Gebruik om passing te verbeter — Jy kan **skip** tik",
                     "Wat is sommige swakpunte waaraan jy werk?\n-# bv., \"skaam as ek mense ontmoet, dink te veel, dikwels ongeduldig\"\n\n-# **OPSIONEEL:** Gebruik om passing te verbeter — Jy kan **skip** tik",
                     "Laai asseblief 'n foto van jouself op vir jou profielkaart!\n\n-# **OPSIONEEL:** As jy liewer net 'n plekhouer-profielfoto wil gebruik, tik **skip**",
-                    "## Wonderlik! Noudat ek jou beter leer ken het, kom ons help om vir jou 'n goeie pasmaat te vind.\n\n__PROGRESS_MAP__ Watter ouderdomsgroep sal jy oorweeg vir moontlike pasmaats?\n-# bv., 25-32, 18-24",
-                    "Watter Christelike denominasies sal jy oorweeg vir moontlike pasmaats?\n-# bv., Baptis, Pinkster, Nie-denominasioneel",
+                    "## Wonderlik! Noudat ek jou beter leer ken het, kom ons help om vir jou 'n goeie pasmaat te vind.\n\n__PROGRESS_MAP__ **Watter ouderdomsgroep sal jy oorweeg vir moontlike pasmaats?**\n-# bv., 25-32, 18-24",
+                    "**Watter Christelike denominasies sal jy oorweeg vir moontlike pasmaats?**\n-# bv., Baptis, Pinkster, Nie-denominasioneel",
                     "Wat is drie dinge waarna jy soek in 'n lewensmaat?\n-# bv., \"vriendelik, geduldig, goeie luisteraar\"\n\n-# **OPSIONEEL:** Gebruik om passing te verbeter — Jy kan **skip** tik",
-                    "Wat is drie rooi vlae wat onaanvaarbaar vir jou in 'n lewensmaat sal wees?\n-# bv., \"rook, vloek, manipulerend\""
+                    "**Wat is drie rooi vlae wat onaanvaarbaar vir jou in 'n lewensmaat sal wees?**\n-# bv., \"rook, vloek, manipulerend\""
                 };
             case "romanian":
                 return new String[] {
-                    "Cum preferi să fii numit(ă)?\n-# Acesta este numele care va apărea pe cardul tău de profil.",
+                    "**Cum preferi să fii numit(ă)?**\n-# Acesta este numele care va apărea pe cardul tău de profil.",
                     "În ce țară locuiești?\n\n-# **OPȚIONAL:** Folosit pentru a îmbunătăți potrivirea — Poți scrie **skip**",
-                    "Care este data ta de naștere?\n-# Scrie-o în formatul Z/L/A (ex., 21/5/1998)\n-# Poți introduce și direct vârsta ta (ex., 25)",
-                    "Care este sexul tău?\n-# (Bărbat / Femeie)",
-                    "Care este confesiunea ta creștină?\n-# ex., Baptist / Penticostal / Nedenominațional",
-                    "Descrie pe scurt aspectul tău fizic.\n-# ex., \"1.70m și slab(ă)\", \"1.90m 75 kg\"",
-                    "Ce hobby-uri sau interese ai și ai dori să le împărtășești?\n-# ex., \"drumeții, gătit, jocuri de societate\"",
+                    "**Care este data ta de naștere?**\n-# Scrie-o în formatul Z/L/A (ex., 21/5/1998)\n-# Poți introduce și direct vârsta ta (ex., 25)",
+                    "**Care este sexul tău?**\n-# (Bărbat / Femeie)",
+                    "**Care este confesiunea ta creștină?**\n-# ex., Baptist / Penticostal / Nedenominațional",
+                    "**Descrie pe scurt aspectul tău fizic.**\n-# ex., \"1.70m și slab(ă)\", \"1.90m 75 kg\"",
+                    "**Ce hobby-uri sau interese ai și ai dori să le împărtășești?**\n-# ex., \"drumeții, gătit, jocuri de societate\"",
                     "Care sunt câteva dintre punctele tale forte?\n-# ex., \"ascultător bun, am un simț al umorului excelent, suflet bun\"\n\n-# **OPȚIONAL:** Folosit pentru a îmbunătăți potrivirea — Poți scrie **skip**",
                     "Care sunt câteva dintre punctele tale slabe la care lucrezi?\n-# ex., \"timid(ă) la prima vedere, mă gândesc prea mult, adesea nerăbdător/oare\"\n\n-# **OPȚIONAL:** Folosit pentru a îmbunătăți potrivirea — Poți scrie **skip**",
                     "Te rugăm să încarci o poză cu tine pentru a fi folosită pe cardul de profil!\n\n-# **OPȚIONAL:** Dacă preferi să folosești doar o fotografie de profil substituent, tastează **skip**",
-                    "## Super! Acum că te cunosc mai bine, hai să te ajutăm să-ți găsești o pereche potrivită.\n\n__PROGRESS_MAP__ Ce interval de vârstă ai lua în considerare pentru o potențială pereche?\n-# ex., 25-32, 18-24",
-                    "Ce confesiuni creștine ai lua în considerare pentru o potențială pereche?\n-# ex., Baptist, Penticostal, Nedenominațional",
+                    "## Super! Acum că te cunosc mai bine, hai să te ajutăm să-ți găsești o pereche potrivită.\n\n__PROGRESS_MAP__ **Ce interval de vârstă ai lua în considerare pentru o potențială pereche?**\n-# ex., 25-32, 18-24",
+                    "**Ce confesiuni creștine ai lua în considerare pentru o potențială pereche?**\n-# ex., Baptist, Penticostal, Nedenominațional",
                     "Care sunt trei lucruri pe care le cauți la un partener?\n-# ex., \"bun, răbdător, ascultător bun\"\n\n-# **OPȚIONAL:** Folosit pentru a îmbunătăți potrivirea — Poți scrie **skip**",
-                    "Care sunt trei semnale de alarmă (red flags) pe care nu le-ai accepta la un partener?\n-# ex., \"fumează, înjură, manipulator\""
+                    "**Care sunt trei semnale de alarmă (red flags) pe care nu le-ai accepta la un partener?**\n-# ex., \"fumează, înjură, manipulator\""
                 };
             default:
                 return new String[] {
-                    "What is your preferred name?\n-# This is the name that will appear on your profile card and that potential matches will see.",
+                    "**What is your preferred name?**\n-# This is the name that will appear on your profile card and that potential matches will see.",
                     "What country do you live in?\n\n-# **OPTIONAL:** Used to improve matching—You may type **skip**",
-                    "What is your birthday?\n-# Please enter in M/D/Y format (e.g., 5/21/1998)\n-# You may also simply type your age (e.g., 25)",
-                    "What is your sex?\n-# (Male / Female)",
-                    "What is your Christian denomination?\n-# e.g., Baptist / Pentecostal / Non-denominational",
-                    "Briefly describe your physical appearance.\n-# e.g., \"5'7\" and slim\", \"6'3 150 lbs\"",
-                    "What hobbies or interests do you have that you'd like to share?\n-# e.g., \"hiking, cooking, playing board games\"",
+                    "**What is your birthday?**\n-# Please enter in M/D/Y format (e.g., 5/21/1998)\n-# You may also simply type your age (e.g., 25)",
+                    "**What is your sex?**\n-# (Male / Female)",
+                    "**What is your Christian denomination?**\n-# e.g., Baptist / Pentecostal / Non-denominational",
+                    "**Briefly describe your physical appearance.**\n-# e.g., \"5'7\" and slim\", \"6'3 150 lbs\"",
+                    "**What hobbies or interests do you have that you'd like to share?**\n-# e.g., \"hiking, cooking, playing board games\"",
                     "What are a few strengths you possess?\n-# e.g., \"good listener, I have a great sense of humor, kind-hearted\"\n\n-# **OPTIONAL:** Used to improve matching—You may type **skip**",
                     "What are some weaknesses or areas you're working on improving?\n-# e.g., \"shy when first meeting, I tend to overthink things, I'm often impatient\"\n\n-# **OPTIONAL:** Used to improve matching—You may type **skip**",
                     "Please upload a picture of yourself to be used on your profile card!\n\n-# **OPTIONAL:** If you prefer to just use a placeholder profile picture, type **skip**",
-                    "## Great! Now that I've gotten to know you better, let's help you find a good match.\n\n__PROGRESS_MAP__ What age range would you consider for potential matches?\n-# e.g., 25-32, 18-24",
-                    "What Christian denominations would you consider for potential matches?\n-# e.g., Baptist, Pentecostal, Non-denominational",
+                    "## Great! Now that I've gotten to know you better, let's help you find a good match.\n\n__PROGRESS_MAP__ **What age range would you consider for potential matches?**\n-# e.g., 25-32, 18-24",
+                    "**What Christian denominations would you consider for potential matches?**\n-# e.g., Baptist, Pentecostal, Non-denominational",
                     "What are three things you look for in a partner?\n-# e.g., \"kind, patient, good listener\"\n\n-# **OPTIONAL:** Used to improve matching—You may type **skip**",
-                    "What are three red flags you might see in a partner?\n-# e.g., \"smoking, swearing, manipulative\""
+                    "**What are three red flags you might see in a partner?**\n-# e.g., \"smoking, swearing, manipulative\""
                 };
         }
     }
