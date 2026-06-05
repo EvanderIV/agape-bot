@@ -1393,7 +1393,7 @@ public class AgapeBot extends ListenerAdapter {
             net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
                 .setTitle("🎉 Congratulations on the match!")
                 .setColor(0xFF6699)
-                .setDescription("We encourage you to remain in contact with your match via DMs.\n\n"
+                .setDescription("Per the rules of engagement, you should remain in contact with your match via DMs. Love is commitment, not just a feeling.\n\n"
                     + "-# As always, remember to read the " + ref + ". Ghosting and abuse are strictly forbidden.")
                 .setFooter("Agape Matchmaking • Your feedback helps us improve!");
 
@@ -1402,7 +1402,7 @@ public class AgapeBot extends ListenerAdapter {
                     "qm_feedback_" + userId + "_" + matchedId, "💬 Give Feedback");
             net.dv8tion.jda.api.interactions.components.buttons.Button reportBtn =
                 net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
-                    "qm_report_" + userId + "_" + matchedId, "🚩 Report");
+                    "qm_report_" + userId + "_" + matchedId, "🚩 Report  User Behavior");
 
             guild.getJDA().openPrivateChannelById(userId).queue(
                 ch -> ch.sendMessageEmbeds(embed.build())

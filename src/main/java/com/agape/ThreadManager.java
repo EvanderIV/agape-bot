@@ -558,18 +558,34 @@ public class ThreadManager {
 
     private static void sendPostMatchDMs(JDA jda, QMThread record) {
         if (!"QUICKMATCH".equals(record.matchType)) return;
-        sendPostMatchDM(jda, record.maleId, record.femaleId);
-        sendPostMatchDM(jda, record.femaleId, record.maleId);
+        String guidelinesRef = "the guidelines";
+        if (record.guildId != null) {
+            net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(record.guildId);
+            if (guild != null) {
+                for (net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch : guild.getTextChannels()) {
+                    if (ch.getName().toLowerCase().replace("-", "").contains("guideline")) {
+                        guidelinesRef = "<#" + ch.getId() + ">";
+                        break;
+                    }
+                }
+            }
+        }
+        sendPostMatchDM(jda, record.maleId, record.femaleId, guidelinesRef);
+        sendPostMatchDM(jda, record.femaleId, record.maleId, guidelinesRef);
     }
 
-    private static void sendPostMatchDM(JDA jda, String userId, String matchedId) {
+    private static void sendPostMatchDM(JDA jda, String userId, String matchedId, String guidelinesRef) {
+        final String ref = guidelinesRef;
+
         String matchedName = getProfileName(matchedId);
         String displayName = matchedName != null ? "**" + matchedName + "**" : "<@" + matchedId + ">";
 
         net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
             .setTitle("💬 How did your match go?")
             .setColor(0xFF6699)
-            .setDescription("Your Quick Match thread with " + displayName + " has ended!\n\n"
+            .setDescription("Your Quick Match thread with " + displayName + " has closed!\n\n"
+                + "Per the rules of engagement, you should remain in contact with your match via DMs. Love is commitment, not just a feeling.\n\n"
+                    + "-# As always, remember to read the " + ref + ". Ghosting and abuse are strictly forbidden.\n\n"
                 + "We'd love to hear how the experience went. "
                 + "Share your thoughts or report any issues using the buttons below.")
             .setFooter("Agape Matchmaking • Your feedback helps us improve!");
@@ -579,7 +595,7 @@ public class ThreadManager {
                 "qm_feedback_" + userId + "_" + matchedId, "💬 Give Feedback");
         net.dv8tion.jda.api.interactions.components.buttons.Button reportBtn =
             net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
-                "qm_report_" + userId + "_" + matchedId, "🚩 Report");
+                "qm_report_" + userId + "_" + matchedId, "🚩 Report User Behavior");
 
         jda.openPrivateChannelById(userId).queue(
             ch -> ch.sendMessageEmbeds(embed.build())
