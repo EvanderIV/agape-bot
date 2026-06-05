@@ -163,7 +163,7 @@ public class AgapeBot extends ListenerAdapter {
                     message = "## Match Found!\n\n"
                         + "Take this opportunity to get to know each other—we want to see how you both will connect, "
                         + "and whether you are interested in potentially pursuing a relationship together.\n\n"
-                        + "**Once you've had a chance to get to know the other person, UPDATE DESCRIPTION HERE**\n\n"
+                        + "**We require you both to reach out via direct message (DM) to each other. Once you have attempted to do so, type the `/confirm` command to let us know.**\n\n"
                         + guidelinesRef
                         + "-# This thread will automatically close <t:" + closeTimestamp + ":R>.\n"
                         + "||<@" + maleId + "> <@" + femaleId + ">||";
@@ -1114,8 +1114,8 @@ public class AgapeBot extends ListenerAdapter {
             String userId = event.getUser().getId();
 
             ThreadManager.QMThread record = ThreadManager.findThreadByChannelId(threadId);
-            if (record == null || (!"MANUAL".equals(record.matchType) && !"QUICKMATCH".equals(record.matchType))) {
-                event.reply("❌ This command can only be used inside a match thread.").setEphemeral(true).queue();
+            if (record == null || !"MANUAL".equals(record.matchType)) {
+                event.reply("❌ `/decline` is only available in manual match threads.").setEphemeral(true).queue();
                 return;
             }
             if (!"OPEN".equals(record.status)) {
