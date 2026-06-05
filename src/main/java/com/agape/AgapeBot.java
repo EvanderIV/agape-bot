@@ -143,8 +143,18 @@ public class AgapeBot extends ListenerAdapter {
                 String guidelinesRef = "";
                 for (net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch : guild.getTextChannels()) {
                     String normalized = ch.getName().toLowerCase().replace("-", "");
-                    if (normalized.equals("howitworks") || normalized.equals("quickmatchrules")) {
+                    if (normalized.equals("howitworks") || normalized.equals("matchmakingguidelines") || normalized.equals("matchmakingrules")) {
                         guidelinesRef = "-# As always, please review the guidelines in <#" + ch.getId() + ">.\n\n";
+                        break;
+                    }
+                }
+
+                // Find a guidelines channel to reference in the intro message
+                String quickmatchRules = "";
+                for (net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch : guild.getTextChannels()) {
+                    String normalized = ch.getName().toLowerCase().replace("-", "");
+                    if (normalized.equals("quickmatch") || normalized.equals("quickmatchrules")) {
+                        quickmatchRules = "-# As always, please review the guidelines in <#" + ch.getId() + ">.\n\n";
                         break;
                     }
                 }
@@ -152,20 +162,19 @@ public class AgapeBot extends ListenerAdapter {
                 long closeTimestamp = java.time.Instant.now().getEpochSecond() + 86400L;
                 final String message;
                 if (isManualMatch) {
-                    message = "In evaluating the match, you both should briefly discuss your top 3-5 dealbreakers in a partner *here in this thread*. Be realistic and only include the **dealbreakers/non-negotiables**.\n\n"
+                    message = "## Match Found!\n\n"
+                        + "In evaluating the match, you both should briefly discuss your top 3-5 dealbreakers in a partner *here in this thread*. Be realistic and only include the **dealbreakers/non-negotiables**.\n\n"
                         + "When you have finished discussing (should take <15 minutes), you must confirm or decline the match:\n\n"
-                        + "`/confirm` - You think this match is a viable fit, and you're interested in pursuing a relationship. *(both parties must */confirm* to match)*\n"
+                        + "`/confirm` - You think this match is a viable fit, and you're interested in pursuing a relationship. *(both parties must* /confirm *to match)*\n"
                         + "`/decline` - You think this match is strictly incompatible, and you are uninterested in pursuing a relationship. *(you will be required to explain your decision)*\n\n"
                         + guidelinesRef
-                        + "-# This thread will automatically close <t:" + closeTimestamp + ":R>.\n"
+                        + "-# This thread will automatically lock <t:" + closeTimestamp + ":R>.\n"
                         + "||<@" + maleId + "> <@" + femaleId + ">||";
                 } else {
                     message = "## Match Found!\n\n"
-                        + "Take this opportunity to get to know each other—we want to see how you both will connect, "
-                        + "and whether you are interested in potentially pursuing a relationship together.\n\n"
-                        + "**We require you both to reach out via direct message (DM) to each other. Once you have attempted to do so, type the `/confirm` command to let us know.**\n\n"
+                        + "**We require you both to reach out via direct message (DM) to each other. Once you have attempted to do so, type the `/confirm` command in here to let us know.**\n\n"
                         + guidelinesRef
-                        + "-# This thread will automatically close <t:" + closeTimestamp + ":R>.\n"
+                        + "-# This thread will automatically lock <t:" + closeTimestamp + ":R>.\n"
                         + "||<@" + maleId + "> <@" + femaleId + ">||";
                 }
 
@@ -284,13 +293,17 @@ public class AgapeBot extends ListenerAdapter {
                 .addOption(OptionType.USER, "user1", "First user", true)
                 .addOption(OptionType.USER, "user2", "Second user", true);
 
+        SlashCommandData mmThreadCmd = Commands.slash("mm-thread", "View the Manual Match thread log for two users (Matchmakers only)")
+                .addOption(OptionType.USER, "user1", "First user", true)
+                .addOption(OptionType.USER, "user2", "Second user", true);
+
         SlashCommandData confirmCmd = Commands.slash("confirm", "Confirm this match (use inside a match thread)");
         SlashCommandData declineCmd = Commands.slash("decline", "Decline this match (use inside a match thread)");
 
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, confirmCmd, declineCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -1030,6 +1043,35 @@ public class AgapeBot extends ListenerAdapter {
                 }
             });
 
+        } else if (event.getName().equals("mm-thread")) {
+            if (!hasMatchmakerRole(event)) {
+                event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
+                return;
+            }
+
+            User user1 = event.getOption("user1").getAsUser();
+            User user2 = event.getOption("user2").getAsUser();
+            String uid1 = user1.getId();
+            String uid2 = user2.getId();
+
+            event.deferReply().queue();
+
+            ThreadManager.QMThread log = ThreadManager.findMMThread(uid1, uid2);
+            if (log == null) {
+                event.getHook().sendMessage(
+                    "❌ No Manual Match thread log found between <@" + uid1 + "> and <@" + uid2 + ">."
+                ).queue();
+                return;
+            }
+
+            java.util.List<String> chunks = buildMMThreadOutput(log);
+            event.getHook().sendMessage(chunks.get(0)).queue(sent -> {
+                for (int i = 1; i < chunks.size(); i++) {
+                    final String chunk = chunks.get(i);
+                    event.getChannel().sendMessage(chunk).queue();
+                }
+            });
+
         } else if (event.getName().equals("confirm")) {
             if (!(event.getChannel() instanceof net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel)) {
                 event.reply("❌ This command can only be used inside a match thread.").setEphemeral(true).queue();
@@ -1324,11 +1366,19 @@ public class AgapeBot extends ListenerAdapter {
         ch.sendMessageEmbeds(embed.build()).queue();
     }
 
+    private static java.util.List<String> buildMMThreadOutput(ThreadManager.QMThread log) {
+        return buildThreadOutput(log, "MM Thread Log");
+    }
+
     private static java.util.List<String> buildQMThreadOutput(ThreadManager.QMThread log) {
+        return buildThreadOutput(log, "QM Thread Log");
+    }
+
+    private static java.util.List<String> buildThreadOutput(ThreadManager.QMThread log, String label) {
         java.util.List<String> chunks = new java.util.ArrayList<>();
 
         StringBuilder header = new StringBuilder();
-        header.append("## QM Thread Log\n");
+        header.append("## ").append(label).append("\n");
         header.append("**Pair:** <@").append(log.maleId).append("> & <@").append(log.femaleId).append(">\n");
         header.append("**Status:** ").append(log.status);
         if (log.createdAt != null) {

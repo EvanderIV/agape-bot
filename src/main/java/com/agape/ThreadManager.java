@@ -19,8 +19,9 @@ import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 
 public class ThreadManager {
 
-    private static final String THREADS_DIR = "user_content/qm_threads/";
-    private static final String STRIKES_DIR  = "data/strikes/";
+    private static final String THREADS_DIR    = "user_content/qm_threads/";
+    private static final String MM_THREADS_DIR = "user_content/mm_threads/";
+    private static final String STRIKES_DIR    = "data/strikes/";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final DateTimeFormatter FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     static final long THREAD_LIFESPAN_HOURS = 24;
@@ -81,26 +82,28 @@ public class ThreadManager {
      * Safe to call on boot and on a recurring schedule.
      */
     public static void checkExpiredThreads(JDA jda) {
-        File dir = new File(THREADS_DIR);
-        if (!dir.exists()) return;
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
-        if (files == null || files.length == 0) return;
-
         LocalDateTime cutoff = LocalDateTime.now().minusHours(THREAD_LIFESPAN_HOURS);
         int expired = 0;
 
-        for (File file : files) {
-            try {
-                QMThread record = GSON.fromJson(new FileReader(file), QMThread.class);
-                if (record == null || !"OPEN".equals(record.status) || record.createdAt == null) continue;
+        for (String dirPath : new String[]{THREADS_DIR, MM_THREADS_DIR}) {
+            File dir = new File(dirPath);
+            if (!dir.exists()) continue;
+            File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files == null) continue;
 
-                LocalDateTime created = LocalDateTime.parse(record.createdAt, FMT);
-                if (created.isAfter(cutoff)) continue;
+            for (File file : files) {
+                try {
+                    QMThread record = GSON.fromJson(new FileReader(file), QMThread.class);
+                    if (record == null || !"OPEN".equals(record.status) || record.createdAt == null) continue;
 
-                archiveAndDelete(record, jda);
-                expired++;
-            } catch (Exception e) {
-                System.err.println("ThreadManager: Error processing " + file.getName() + ": " + e.getMessage());
+                    LocalDateTime created = LocalDateTime.parse(record.createdAt, FMT);
+                    if (created.isAfter(cutoff)) continue;
+
+                    archiveAndDelete(record, jda);
+                    expired++;
+                } catch (Exception e) {
+                    System.err.println("ThreadManager: Error processing " + file.getName() + ": " + e.getMessage());
+                }
             }
         }
 
@@ -112,7 +115,7 @@ public class ThreadManager {
     // ─── Public API (continued) ───────────────────────────────────────────────
 
     /**
-     * Finds the QMThread log for the given pair (either ordering).
+     * Finds the QMThread log for the given pair (either ordering), searching both directories.
      * Returns {@code null} if no log file exists for the pair.
      */
     public static QMThread findThread(String userId1, String userId2) {
@@ -120,20 +123,39 @@ public class ThreadManager {
         return r != null ? r : tryLoad(userId2, userId1);
     }
 
+    /** Finds the Manual Match thread log for the given pair, looking only in mm_threads/. */
+    public static QMThread findMMThread(String userId1, String userId2) {
+        QMThread r = tryLoadMM(userId1, userId2);
+        return r != null ? r : tryLoadMM(userId2, userId1);
+    }
+
+    private static QMThread tryLoadMM(String id1, String id2) {
+        File f = new File(MM_THREADS_DIR + id1 + "_" + id2 + ".json");
+        if (!f.exists()) return null;
+        try (FileReader reader = new FileReader(f)) {
+            return GSON.fromJson(reader, QMThread.class);
+        } catch (Exception e) {
+            System.err.println("ThreadManager: Failed to load " + f.getName() + ": " + e.getMessage());
+            return null;
+        }
+    }
+
     /**
      * Scans all thread records for one whose Discord thread ID matches the given channel ID.
      * Returns {@code null} if not found.
      */
     public static QMThread findThreadByChannelId(String threadId) {
-        File dir = new File(THREADS_DIR);
-        if (!dir.exists()) return null;
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
-        if (files == null) return null;
-        for (File file : files) {
-            try (FileReader reader = new FileReader(file)) {
-                QMThread record = GSON.fromJson(reader, QMThread.class);
-                if (record != null && threadId.equals(record.threadId)) return record;
-            } catch (Exception ignored) {}
+        for (String dirPath : new String[]{THREADS_DIR, MM_THREADS_DIR}) {
+            File dir = new File(dirPath);
+            if (!dir.exists()) continue;
+            File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files == null) continue;
+            for (File file : files) {
+                try (FileReader reader = new FileReader(file)) {
+                    QMThread record = GSON.fromJson(reader, QMThread.class);
+                    if (record != null && threadId.equals(record.threadId)) return record;
+                } catch (Exception ignored) {}
+            }
         }
         return null;
     }
@@ -263,12 +285,16 @@ public class ThreadManager {
      * Safe to call on boot and on a recurring schedule.
      */
     public static void checkManualMatchNotifications(JDA jda) {
-        File dir = new File(THREADS_DIR);
-        if (!dir.exists()) return;
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
-        if (files == null || files.length == 0) return;
+        List<File> allFiles = new ArrayList<>();
+        for (String dirPath : new String[]{THREADS_DIR, MM_THREADS_DIR}) {
+            File dir = new File(dirPath);
+            if (!dir.exists()) continue;
+            File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files != null) for (File f : files) allFiles.add(f);
+        }
+        if (allFiles.isEmpty()) return;
 
-        for (File file : files) {
+        for (File file : allFiles) {
             try {
                 QMThread record = GSON.fromJson(new FileReader(file), QMThread.class);
                 if (record == null
@@ -413,14 +439,16 @@ public class ThreadManager {
     }
 
     private static QMThread tryLoad(String id1, String id2) {
-        File f = new File(THREADS_DIR + id1 + "_" + id2 + ".json");
-        if (!f.exists()) return null;
-        try (FileReader reader = new FileReader(f)) {
-            return GSON.fromJson(reader, QMThread.class);
-        } catch (Exception e) {
-            System.err.println("ThreadManager: Failed to load " + f.getName() + ": " + e.getMessage());
-            return null;
+        for (String dirPath : new String[]{THREADS_DIR, MM_THREADS_DIR}) {
+            File f = new File(dirPath + id1 + "_" + id2 + ".json");
+            if (!f.exists()) continue;
+            try (FileReader reader = new FileReader(f)) {
+                return GSON.fromJson(reader, QMThread.class);
+            } catch (Exception e) {
+                System.err.println("ThreadManager: Failed to load " + f.getName() + ": " + e.getMessage());
+            }
         }
+        return null;
     }
 
     private static void archiveAndDelete(QMThread record, JDA jda) {
@@ -438,13 +466,13 @@ public class ThreadManager {
             return;
         }
 
-        // Fetch message history, then save + delete
+        // Fetch message history, save, then lock + archive the thread
         thread.getHistoryFromBeginning(100).queue(history -> {
             List<Message> msgs = new ArrayList<>(history.getRetrievedHistory());
             msgs.sort(Comparator.comparing(Message::getTimeCreated)); // oldest first
 
             for (Message msg : msgs) {
-                if (msg.getAuthor().isBot()) continue; // exclude the bot's intro message
+                if (msg.getAuthor().isBot()) continue;
                 ThreadMessage tm = new ThreadMessage();
                 tm.authorId   = msg.getAuthor().getId();
                 tm.authorName = msg.getAuthor().getName();
@@ -465,7 +493,7 @@ public class ThreadManager {
                 err -> System.err.println("ThreadManager: Could not delete thread " + record.threadId + ": " + err.getMessage())
             );
         }, err -> {
-            // History fetch failed — still close it
+            // History fetch failed — still lock it
             System.err.println("ThreadManager: Could not fetch history for thread " + record.threadId + ": " + err.getMessage());
             record.status   = "ARCHIVED";
             record.closedAt = LocalDateTime.now().format(FMT);
@@ -568,10 +596,10 @@ public class ThreadManager {
     }
 
     private static void save(String maleId, String femaleId, QMThread record) {
+        String dirPath = "MANUAL".equals(record.matchType) ? MM_THREADS_DIR : THREADS_DIR;
         try {
-            File dir = new File(THREADS_DIR);
-            if (!dir.exists()) dir.mkdirs();
-            try (FileWriter writer = new FileWriter(new File(THREADS_DIR + maleId + "_" + femaleId + ".json"))) {
+            new File(dirPath).mkdirs();
+            try (FileWriter writer = new FileWriter(new File(dirPath + maleId + "_" + femaleId + ".json"))) {
                 GSON.toJson(record, writer);
             }
         } catch (Exception e) {
