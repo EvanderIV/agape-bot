@@ -451,6 +451,12 @@ public class ThreadManager {
         return null;
     }
 
+    /** Immediately archives and deletes the thread with the given Discord channel ID. */
+    public static void closeThread(String threadId, JDA jda) {
+        QMThread record = findThreadByChannelId(threadId);
+        if (record != null) archiveAndDelete(record, jda);
+    }
+
     private static void archiveAndDelete(QMThread record, JDA jda) {
         ThreadChannel thread = jda.getThreadChannelById(record.threadId);
 

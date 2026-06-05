@@ -165,15 +165,15 @@ public class AgapeBot extends ListenerAdapter {
                     message = "## Match Found!\n\n"
                         + "In evaluating the match, you both should briefly discuss your top 3-5 dealbreakers in a partner *here in this thread*. Be realistic and only include the **dealbreakers/non-negotiables**.\n\n"
                         + "When you have finished discussing (should take <15 minutes), you must confirm or decline the match:\n\n"
-                        + "`/confirm` - You think this match is a viable fit, and you're interested in pursuing a relationship. *(both parties must* /confirm *to match)*\n"
-                        + "`/decline` - You think this match is strictly incompatible, and you are uninterested in pursuing a relationship. *(you will be required to explain your decision)*\n\n"
+                        + "`/confirm` - You think this match is a viable fit, and you're interested in pursuing it further. *(both parties must* /confirm *to match)*\n"
+                        + "`/decline` - You think this match is strictly incompatible, and you are uninterested in pursuing this further. *(you will be required to explain your decision)*\n\n"
                         + guidelinesRef
                         + "-# This thread will automatically lock <t:" + closeTimestamp + ":R>.\n"
                         + "||<@" + maleId + "> <@" + femaleId + ">||";
                 } else {
                     message = "## Match Found!\n\n"
                         + "**We require you both to reach out via direct message (DM) to each other. Once you have attempted to do so, type the `/confirm` command in here to let us know.**\n\n"
-                        + guidelinesRef
+                        + quickmatchRules
                         + "-# This thread will automatically lock <t:" + closeTimestamp + ":R>.\n"
                         + "||<@" + maleId + "> <@" + femaleId + ">||";
                 }
@@ -1110,12 +1110,15 @@ public class AgapeBot extends ListenerAdapter {
                 net.dv8tion.jda.api.entities.Guild guild = event.getGuild();
                 final String finalMaleId = record.maleId;
                 final String finalFemaleId = record.femaleId;
+                final String finalThreadId = threadId;
 
                 event.getChannel().sendMessage(
                     "## 💍 It's a Match!\n\n"
                     + "<@" + finalMaleId + "> and <@" + finalFemaleId + "> have both confirmed! "
                     + "Congratulations — we're all rooting for you! 🎉"
-                ).queue();
+                ).queue(msg -> ThreadManager.closeThread(finalThreadId, event.getJDA()));
+
+                sendManualMatchDMs(guild, finalMaleId, finalFemaleId);
 
                 net.dv8tion.jda.api.entities.Role matchedRole = null;
                 for (net.dv8tion.jda.api.entities.Role role : guild.getRoles()) {
@@ -1144,6 +1147,13 @@ public class AgapeBot extends ListenerAdapter {
                 } else {
                     System.err.println("Match: No role containing 'matched' found in guild " + guild.getId());
                 }
+            }
+
+            if (bothConfirmed && "QUICKMATCH".equals(record.matchType)) {
+                final String finalThreadId = threadId;
+                event.getChannel().sendMessage(
+                    "✅ Both parties have confirmed. This thread will now be closed."
+                ).queue(msg -> ThreadManager.closeThread(finalThreadId, event.getJDA()));
             }
 
         } else if (event.getName().equals("decline")) {
@@ -1364,6 +1374,43 @@ public class AgapeBot extends ListenerAdapter {
              .setTimestamp(java.time.Instant.now());
 
         ch.sendMessageEmbeds(embed.build()).queue();
+    }
+
+    private void sendManualMatchDMs(net.dv8tion.jda.api.entities.Guild guild, String maleId, String femaleId) {
+        String guidelinesRef = "the guidelines";
+        for (net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch : guild.getTextChannels()) {
+            if (ch.getName().toLowerCase().replace("-", "").contains("guideline")) {
+                guidelinesRef = "<#" + ch.getId() + ">";
+                break;
+            }
+        }
+        final String ref = guidelinesRef;
+
+        for (String[] pair : new String[][]{{maleId, femaleId}, {femaleId, maleId}}) {
+            final String userId   = pair[0];
+            final String matchedId = pair[1];
+
+            String body = "**Congratulations on the match! 🎉**\n\n"
+                + "We encourage you to remain in contact with your match via DMs.\n\n"
+                + "-# As always, remember to read the " + ref + ". Ghosting and abuse are strictly forbidden.";
+
+            net.dv8tion.jda.api.interactions.components.buttons.Button feedbackBtn =
+                net.dv8tion.jda.api.interactions.components.buttons.Button.primary(
+                    "qm_feedback_" + userId + "_" + matchedId, "💬 Give Feedback");
+            net.dv8tion.jda.api.interactions.components.buttons.Button reportBtn =
+                net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
+                    "qm_report_" + userId + "_" + matchedId, "🚩 Report");
+
+            guild.getJDA().openPrivateChannelById(userId).queue(
+                ch -> ch.sendMessage(body)
+                        .setComponents(net.dv8tion.jda.api.interactions.components.ActionRow.of(feedbackBtn, reportBtn))
+                        .queue(
+                            s -> System.out.println("Match: Sent manual match congratulations DM to " + userId),
+                            e -> System.err.println("Match: Failed to send DM to " + userId + ": " + e.getMessage())
+                        ),
+                e -> System.err.println("Match: Could not open DM for " + userId + ": " + e.getMessage())
+            );
+        }
     }
 
     private static java.util.List<String> buildMMThreadOutput(ThreadManager.QMThread log) {
