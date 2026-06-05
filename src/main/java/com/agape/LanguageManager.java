@@ -4,7 +4,8 @@ public class LanguageManager {
 
     public static String getWelcomeMessage() {
         return "## 👋 Hello! Thanks for applying to the CCM matchmaking process!\n\n" +
-                "**(1/15)** Let's start with your preferred language. What is your first language?\n" +
+                "Questions in **bold** are **required questions**.\n\n" +
+                "**(1/15) Let's start with your preferred language. What is your first language?**\n" +
                 "-# Please enter your preferred language below.\n" +
                 "-# Por favor, especifique su idioma preferido.\n" +
                 "-# Veuillez indiquer votre langue préférée.\n" +
