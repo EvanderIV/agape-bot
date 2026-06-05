@@ -557,6 +557,7 @@ public class ThreadManager {
     }
 
     private static void sendPostMatchDMs(JDA jda, QMThread record) {
+        if (!"QUICKMATCH".equals(record.matchType)) return;
         sendPostMatchDM(jda, record.maleId, record.femaleId);
         sendPostMatchDM(jda, record.femaleId, record.maleId);
     }

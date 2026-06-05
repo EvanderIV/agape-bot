@@ -1387,12 +1387,15 @@ public class AgapeBot extends ListenerAdapter {
         final String ref = guidelinesRef;
 
         for (String[] pair : new String[][]{{maleId, femaleId}, {femaleId, maleId}}) {
-            final String userId   = pair[0];
+            final String userId    = pair[0];
             final String matchedId = pair[1];
 
-            String body = "**Congratulations on the match! 🎉**\n\n"
-                + "We encourage you to remain in contact with your match via DMs.\n\n"
-                + "-# As always, remember to read the " + ref + ". Ghosting and abuse are strictly forbidden.";
+            net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                .setTitle("🎉 Congratulations on the match!")
+                .setColor(0xFF6699)
+                .setDescription("We encourage you to remain in contact with your match via DMs.\n\n"
+                    + "-# As always, remember to read the " + ref + ". Ghosting and abuse are strictly forbidden.")
+                .setFooter("Agape Matchmaking • Your feedback helps us improve!");
 
             net.dv8tion.jda.api.interactions.components.buttons.Button feedbackBtn =
                 net.dv8tion.jda.api.interactions.components.buttons.Button.primary(
@@ -1402,7 +1405,7 @@ public class AgapeBot extends ListenerAdapter {
                     "qm_report_" + userId + "_" + matchedId, "🚩 Report");
 
             guild.getJDA().openPrivateChannelById(userId).queue(
-                ch -> ch.sendMessage(body)
+                ch -> ch.sendMessageEmbeds(embed.build())
                         .setComponents(net.dv8tion.jda.api.interactions.components.ActionRow.of(feedbackBtn, reportBtn))
                         .queue(
                             s -> System.out.println("Match: Sent manual match congratulations DM to " + userId),
