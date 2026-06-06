@@ -437,14 +437,16 @@ public class ThreadManager {
     }
 
     /**
-     * Returns the user ID of the only matched user who has sent a message, or null if
-     * zero or both have messaged. Used to target only the active participant after the
-     * first reminder when the other has not yet spoken.
+     * If exactly one of the two matched users has sent a message, returns the ID of the
+     * one who has NOT spoken yet. Returns null if neither or both have messaged.
+     * Used to target the silent participant directly in follow-up reminders.
      */
-    private static String getSingleMessagerId(QMThread record) {
+    private static String getSilentUserId(QMThread record) {
         if (record.messagedBy == null || record.messagedBy.size() != 1) return null;
-        String id = record.messagedBy.get(0);
-        return (id.equals(record.maleId) || id.equals(record.femaleId)) ? id : null;
+        String messager = record.messagedBy.get(0);
+        if (messager.equals(record.maleId))   return record.femaleId;
+        if (messager.equals(record.femaleId)) return record.maleId;
+        return null;
     }
 
     private static void sendMatchNotification(JDA jda, QMThread record, int level) {
@@ -456,12 +458,12 @@ public class ThreadManager {
             return;
         }
 
-        // After the first reminder, if only one person has spoken, ping only them so they
-        // can re-engage their match. Once both have messaged we switch back to pinging
-        // everyone who hasn't yet confirmed or declined.
+        // After the first reminder, if only one person has spoken, ping only the silent
+        // user directly. Once they message, both are in messagedBy and we switch back to
+        // pinging everyone who hasn't yet confirmed or declined.
         boolean firstAlreadySent = record.notificationsSent != null && record.notificationsSent.contains("first");
-        String singleMessagerId  = (level >= 2 && firstAlreadySent) ? getSingleMessagerId(record) : null;
-        String mention = (singleMessagerId != null) ? "<@" + singleMessagerId + ">" : buildPendingMention(record);
+        String silentUserId  = (level >= 2 && firstAlreadySent) ? getSilentUserId(record) : null;
+        String mention = (silentUserId != null) ? "<@" + silentUserId + ">" : buildPendingMention(record);
 
         String message;
         switch (level) {
@@ -478,11 +480,11 @@ public class ThreadManager {
                 }
                 break;
             case 2:
-                if (singleMessagerId != null) {
-                    message = "👋 " + mention + " — it looks like your match hasn't replied yet. "
-                        + "Why not try sending them another message to get the conversation going? "
-                        + "Once you've connected, use **/confirm** or **/decline** to let us know how you'd like to proceed.\n\n"
-                        + "⚠️ **Note:** If neither of you responds before the thread closes, you may be removed from all matchmaking pools.";
+                if (silentUserId != null) {
+                    message = "👋 " + mention + " — your match has already reached out! "
+                        + "Take a moment to say hi and get the conversation going. "
+                        + "Use **/confirm** if you'd like to pursue this match, or **/decline** if not.\n\n"
+                        + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 } else {
                     message = "👋 " + mention + " — just a reminder to respond to your match! "
                         + "Use **/confirm** if you'd like to continue, or **/decline** if not.\n\n"
@@ -490,11 +492,11 @@ public class ThreadManager {
                 }
                 break;
             case 3:
-                if (singleMessagerId != null) {
-                    message = "⏰ **Urgent — " + mention + ":** Your match still hasn't replied. "
-                        + "Please try reaching out once more — this thread closes in about 11 hours. "
-                        + "Use **/confirm** or **/decline** once you've heard back.\n\n"
-                        + "⚠️ **Warning:** Failure to respond before this thread closes may result "
+                if (silentUserId != null) {
+                    message = "⏰ **Urgent — " + mention + ":** Your match is waiting for you to respond. "
+                        + "Please reply to them as soon as possible — this thread closes in about 11 hours. "
+                        + "Use **/confirm** or **/decline** when you're ready.\n\n"
+                        + "⚠️ **Warning:** Failure to respond before this thread closes will result "
                         + "in removal from all matchmaking pools.";
                 } else {
                     message = "⏰ **Urgent — " + mention + ":** You have not yet responded to this match. "
@@ -504,9 +506,9 @@ public class ThreadManager {
                 }
                 break;
             case 4:
-                if (singleMessagerId != null) {
+                if (silentUserId != null) {
                     message = "🚨 **Final Warning — " + mention + ":** This thread closes in less than 1 hour "
-                        + "and your match has not replied. Please try once more, and use **/confirm** or **/decline** before it closes.\n\n"
+                        + "and you have not replied to your match. This is your last chance — please respond and use **/confirm** or **/decline** before it closes.\n\n"
                         + "⛔ Non-response will result in immediate removal from all matchmaking pools.";
                 } else {
                     message = "🚨 **Final Warning — " + mention + ":** This match thread closes in less than 1 hour "
