@@ -218,4 +218,45 @@ public class MessagingHandler {
             System.out.println("✅ Cleared DM message ID");
         }
     }
+
+    /**
+     * Saves the guild ID for a conversation so replies can be routed even when the
+     * user has no registered profile.
+     * @param applicantId The applicant's (or non-applicant's) ID
+     * @param matchmakerId The matchmaker's ID
+     * @param guildId The guild where the conversation originated
+     */
+    public static void saveConversationGuildId(String applicantId, String matchmakerId, String guildId) {
+        File dir = new File("user_content/conversation_meta/");
+        if (!dir.exists()) dir.mkdirs();
+
+        File metaFile = new File(dir, applicantId + "_" + matchmakerId + ".json");
+        try (FileWriter writer = new FileWriter(metaFile)) {
+            JsonObject meta = new JsonObject();
+            meta.addProperty("guildId", guildId);
+            meta.addProperty("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            new GsonBuilder().setPrettyPrinting().create().toJson(meta, writer);
+        } catch (IOException e) {
+            System.err.println("❌ Failed to save conversation guild ID: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Retrieves the guild ID stored for a conversation.
+     * @param applicantId The applicant's ID
+     * @param matchmakerId The matchmaker's ID
+     * @return The guild ID, or null if not found
+     */
+    public static String getConversationGuildId(String applicantId, String matchmakerId) {
+        File metaFile = new File("user_content/conversation_meta/" + applicantId + "_" + matchmakerId + ".json");
+        if (!metaFile.exists()) return null;
+        try {
+            String content = new String(java.nio.file.Files.readAllBytes(metaFile.toPath()));
+            JsonObject meta = JsonParser.parseString(content).getAsJsonObject();
+            return meta.has("guildId") ? meta.get("guildId").getAsString() : null;
+        } catch (IOException e) {
+            System.err.println("Error reading conversation guild ID: " + e.getMessage());
+            return null;
+        }
+    }
 }

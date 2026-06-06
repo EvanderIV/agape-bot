@@ -606,6 +606,9 @@ public class AgapeBot extends ListenerAdapter {
                         String newMessageId = success.getId();
                         MessagingHandler.saveDMMessageId(applicantId, matchmakerId, newMessageId);
                         MessagingHandler.saveMessage(applicantId, matchmakerId, "matchmaker", messageContent);
+                        if (event.getGuild() != null) {
+                            MessagingHandler.saveConversationGuildId(applicantId, matchmakerId, event.getGuild().getId());
+                        }
                         
                         // Remove reply button from the previous message if it exists
                         String oldMessageId = MessagingHandler.getDMMessageId(applicantId, matchmakerId);

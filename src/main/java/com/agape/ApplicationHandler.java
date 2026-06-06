@@ -915,19 +915,22 @@ public class ApplicationHandler extends ListenerAdapter {
      */
     private void postConversationReplyToChannel(String applicantId, String matchmakerId, String replyContent, JDA jda, String sender) {
         try {
-            // Get the applicant's guild ID from their profile
+            // Try to get the guild ID from the applicant's profile first
+            String guildId = null;
             File profileFile = new File("user_content/profiles/" + applicantId + ".json");
-            if (!profileFile.exists()) {
-                System.err.println("❌ Profile not found for applicant: " + applicantId);
-                return;
+            if (profileFile.exists()) {
+                Gson gson = new Gson();
+                AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
+                guildId = state.guildId;
             }
 
-            Gson gson = new Gson();
-            AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-            String guildId = state.guildId;
+            // Fall back to the guild ID stored when the conversation was initiated
+            if (guildId == null) {
+                guildId = MessagingHandler.getConversationGuildId(applicantId, matchmakerId);
+            }
 
             if (guildId == null) {
-                System.err.println("❌ No guild ID found in applicant profile");
+                System.err.println("❌ Could not determine guild ID for conversation: " + applicantId + " <-> " + matchmakerId);
                 return;
             }
 
