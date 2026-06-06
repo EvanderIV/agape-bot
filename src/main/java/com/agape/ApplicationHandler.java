@@ -747,7 +747,7 @@ public class ApplicationHandler extends ListenerAdapter {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle("📋 New Application: " + state.name)
                     .setColor(state.sex ? 0xFF6699 : 0x9966FF)
-                    .addField("1. Name", state.name, true)
+                    .addField("1. Name", state.name + " (<@" + userId + ">)", true)
                     .addField("2. Birthday", state.birthday != null ? state.birthday + " (age " + calculateAge(state.birthday) + ")" : "N/A", true)
                     .addField("3. Location", state.country, true)
                     .addField("4. Gender", state.sex ? "Female" : "Male", true)
