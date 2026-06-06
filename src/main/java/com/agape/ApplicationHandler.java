@@ -970,27 +970,21 @@ public class ApplicationHandler extends ListenerAdapter {
                     .setTimestamp(java.time.Instant.now());
 
             // Send to channel
-            Object channelObj = applicationsList.get(0);
-            try {
-                java.lang.reflect.Method sendEmbedMethod = channelObj.getClass().getMethod("sendMessageEmbeds", java.util.Collection.class);
-                Object messageAction = sendEmbedMethod.invoke(channelObj, java.util.Collections.singletonList(embed.build()));
-                
-                // Add reply button for applicant replies
-                if ("applicant".equals(sender)) {
-                    Button replyBtn = Button.primary("convo_reply_mm_" + matchmakerId + "_" + applicantId, "💬 Reply");
-                    ActionRow actionRow = ActionRow.of(replyBtn);
-                    
-                    java.lang.reflect.Method setComponentsMethod = messageAction.getClass().getMethod("setComponents", java.util.Collection.class);
-                    messageAction = setComponentsMethod.invoke(messageAction, java.util.Collections.singletonList(actionRow));
-                }
-                
-                java.lang.reflect.Method queueMethod = messageAction.getClass().getMethod("queue");
-                queueMethod.invoke(messageAction);
-                
-                System.out.println("✅ Conversation reply posted to channel");
-            } catch (Exception ex) {
-                System.err.println("❌ Failed to post conversation reply: " + ex.getMessage());
-                ex.printStackTrace();
+            TextChannel channel = (TextChannel) applicationsList.get(0);
+            if ("applicant".equals(sender)) {
+                Button replyBtn = Button.primary("convo_reply_mm_" + matchmakerId + "_" + applicantId, "💬 Reply");
+                channel.sendMessageEmbeds(embed.build())
+                        .setComponents(ActionRow.of(replyBtn))
+                        .queue(
+                            msg -> System.out.println("✅ Applicant reply posted to channel"),
+                            err -> System.err.println("❌ Failed to post applicant reply: " + err.getMessage())
+                        );
+            } else {
+                channel.sendMessageEmbeds(embed.build())
+                        .queue(
+                            msg -> System.out.println("✅ Matchmaker reply posted to channel"),
+                            err -> System.err.println("❌ Failed to post matchmaker reply: " + err.getMessage())
+                        );
             }
         } catch (Exception e) {
             System.err.println("❌ Error posting conversation reply to channel: " + e.getMessage());
