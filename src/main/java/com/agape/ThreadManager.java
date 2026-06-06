@@ -250,7 +250,7 @@ public class ThreadManager {
         jda.openPrivateChannelById(userId).queue(
             ch -> ch.sendMessage(
                 "⚠️ **Quickmatch Strike**\n\n"
-                + "You received a strike on your matchmaking record because you did not use `/confirm` or `/decline` before your quickmatch thread closed. "
+                + "You received a strike on your matchmaking record because you did not use `/confirm` before your quickmatch thread closed. "
                 + "You have been unenrolled from the quickmatch pool."
                 + statusNote + expiryNote
             ).queue(),
@@ -665,8 +665,7 @@ public class ThreadManager {
                 jda.openPrivateChannelById(uid).queue(
                     ch -> ch.sendMessage(
                         "⚠️ **Matchmaking Profile Suspended**\n\n"
-                        + "Your profile has been removed from all matchmaking pools because you did not use `/confirm` or `/decline` before your manual match thread closed. "
-                        + "This counts as **1 strike** on your account.\n\n"
+                        + "Your profile has been removed from all matchmaking pools because you did not use `/confirm` or `/decline` before your manual match thread closed.\n\n"
                         + "📊 You currently have **" + recentStrikes + "/3 active strike(s)** in the past 6 months."
                         + expiryNote + "\n\n"
                         + "📩 **To appeal:** Open a support ticket in the server and a matchmaker will review your case. "
