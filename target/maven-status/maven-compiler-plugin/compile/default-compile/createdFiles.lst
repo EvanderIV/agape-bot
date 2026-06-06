@@ -1,5 +1,6 @@
 com\agape\MatchmakingEngine.class
 com\agape\DenominationCompatibility$Issue.class
+com\agape\LetsChatManager$State.class
 com\agape\ImageGenerator$2.class
 com\agape\MatchmakingEngine$MatchResult.class
 com\agape\CompatibilityEngine$ScoreDetail.class
@@ -31,3 +32,4 @@ com\agape\DenominationCompatibility.class
 com\agape\EnvironmentManager.class
 com\agape\CompatibilityEngine$Continent.class
 com\agape\ImageGenerator$1.class
+com\agape\LetsChatManager.class

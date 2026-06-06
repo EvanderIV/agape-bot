@@ -149,6 +149,7 @@ public class MatchmakingEngine {
             if (!"ACCEPTED".equals(candidate.status)) continue;
             if (candidate.softDeleted) continue;
             if (!candidate.quickmatchEnrolled) continue;
+            if (!ApplicationHandler.verifyMembership(candidateId, candidate.guildId, jda)) continue;
 
             int candidateAge = calculateAge(candidate.birthday);
             if (candidateAge < bracket[0] || candidateAge > bracket[1]) continue;

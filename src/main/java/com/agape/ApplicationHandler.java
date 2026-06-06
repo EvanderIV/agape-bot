@@ -2171,4 +2171,58 @@ public class ApplicationHandler extends ListenerAdapter {
             event.getHook().sendMessage("❌ Something went wrong. Please try again later.").queue();
         }
     }
+
+    // ─── Guild membership verification ────────────────────────────────────────
+
+    /**
+     * Confirms a user is still a member of their guild before including them in any matchmaking operation.
+     * Uses the GUILD_MEMBERS cache as a fast path; falls back to the Discord API only when not cached.
+     * If the user has left, their profile is soft-deleted automatically and false is returned.
+     * Returns true whenever membership cannot be determined (missing guildId, API errors, etc.) so that
+     * a network hiccup never accidentally soft-deletes an active user.
+     */
+    public static boolean verifyMembership(String userId, String guildId, net.dv8tion.jda.api.JDA jda) {
+        if (guildId == null || jda == null) return true;
+        net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
+        if (guild == null) return true;
+
+        // Fast path: GUILD_MEMBERS intent keeps the cache current
+        if (guild.getMemberById(userId) != null) return true;
+
+        // Slow path: not in cache — confirm with the API before acting
+        try {
+            guild.retrieveMemberById(userId).complete();
+            return true;
+        } catch (net.dv8tion.jda.api.exceptions.ErrorResponseException e) {
+            // 10007 = Unknown Member  |  10013 = Unknown User
+            if (e.getErrorCode() == 10007 || e.getErrorCode() == 10013) {
+                softDeleteAbsentMember(userId);
+                return false;
+            }
+            // Any other code is an API or permissions issue — do not soft-delete
+            System.err.println("Membership check: API error for " + userId
+                + " (code " + e.getErrorCode() + "): " + e.getMessage());
+            return true;
+        } catch (Exception e) {
+            System.err.println("Membership check: Unexpected error for " + userId + ": " + e.getMessage());
+            return true;
+        }
+    }
+
+    private static void softDeleteAbsentMember(String userId) {
+        File profileFile = new File("user_content/profiles/" + userId + ".json");
+        if (!profileFile.exists()) return;
+        try {
+            com.google.gson.Gson g = new GsonBuilder().setPrettyPrinting().create();
+            AppState state = g.fromJson(new java.io.FileReader(profileFile), AppState.class);
+            if (state == null || state.softDeleted) return;
+            state.softDeleted = true;
+            try (FileWriter w = new FileWriter(profileFile)) {
+                g.toJson(state, w);
+            }
+            System.out.println("Membership check: User " + userId + " has left the server — profile soft-deleted.");
+        } catch (Exception e) {
+            System.err.println("Membership check: Failed to soft-delete profile for " + userId + ": " + e.getMessage());
+        }
+    }
 }

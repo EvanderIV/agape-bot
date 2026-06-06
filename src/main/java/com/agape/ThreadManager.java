@@ -60,6 +60,7 @@ public class ThreadManager {
         String status;     // "OPEN" or "ARCHIVED"
         String matchType;           // "QUICKMATCH" or "MANUAL"
         String firstMessageAt;      // ISO-8601 local datetime of first non-bot message
+        List<String> messagedBy     = new ArrayList<>(); // user IDs (maleId/femaleId) who have sent ≥1 message
         List<String> confirmedBy    = new ArrayList<>();
         List<String> declinedBy     = new ArrayList<>();
         List<String> notificationsSent = new ArrayList<>();
@@ -339,24 +340,34 @@ public class ThreadManager {
 
                 if (record.notificationsSent == null) record.notificationsSent = new ArrayList<>();
 
-                // Lazily populate firstMessageAt by fetching the thread history
-                if (record.firstMessageAt == null) {
+                // Lazily populate firstMessageAt and messagedBy by fetching the thread history.
+                // Keep fetching until both matched users have messaged (or firstMessageAt is set).
+                boolean needsHistoryUpdate = record.firstMessageAt == null
+                    || record.messagedBy == null
+                    || !(record.messagedBy.contains(record.maleId) && record.messagedBy.contains(record.femaleId));
+                if (needsHistoryUpdate) {
                     net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel thread =
                         jda.getThreadChannelById(record.threadId);
                     if (thread != null) {
                         final QMThread rec = record;
-                        thread.getHistoryFromBeginning(10).queue(history -> {
+                        thread.getHistoryFromBeginning(50).queue(history -> {
                             List<Message> msgs = new ArrayList<>(history.getRetrievedHistory());
                             msgs.sort(Comparator.comparing(Message::getTimeCreated));
+                            if (rec.messagedBy == null) rec.messagedBy = new ArrayList<>();
                             for (Message msg : msgs) {
-                                if (!msg.getAuthor().isBot()) {
+                                if (msg.getAuthor().isBot()) continue;
+                                String authorId = msg.getAuthor().getId();
+                                if (rec.firstMessageAt == null) {
                                     rec.firstMessageAt = msg.getTimeCreated()
                                         .atZoneSameInstant(java.time.ZoneId.systemDefault())
                                         .toLocalDateTime().format(FMT);
-                                    save(rec.maleId, rec.femaleId, rec);
-                                    break;
+                                }
+                                if ((authorId.equals(rec.maleId) || authorId.equals(rec.femaleId))
+                                        && !rec.messagedBy.contains(authorId)) {
+                                    rec.messagedBy.add(authorId);
                                 }
                             }
+                            save(rec.maleId, rec.femaleId, rec);
                         }, err -> {});
                     }
                     // firstMessageAt not yet set — only the 1-hr fallback below is evaluated this cycle
@@ -425,6 +436,17 @@ public class ThreadManager {
         return sb.toString().trim();
     }
 
+    /**
+     * Returns the user ID of the only matched user who has sent a message, or null if
+     * zero or both have messaged. Used to target only the active participant after the
+     * first reminder when the other has not yet spoken.
+     */
+    private static String getSingleMessagerId(QMThread record) {
+        if (record.messagedBy == null || record.messagedBy.size() != 1) return null;
+        String id = record.messagedBy.get(0);
+        return (id.equals(record.maleId) || id.equals(record.femaleId)) ? id : null;
+    }
+
     private static void sendMatchNotification(JDA jda, QMThread record, int level) {
         net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel thread =
             jda.getThreadChannelById(record.threadId);
@@ -434,29 +456,63 @@ public class ThreadManager {
             return;
         }
 
-        String mention = buildPendingMention(record);
+        // After the first reminder, if only one person has spoken, ping only them so they
+        // can re-engage their match. Once both have messaged we switch back to pinging
+        // everyone who hasn't yet confirmed or declined.
+        boolean firstAlreadySent = record.notificationsSent != null && record.notificationsSent.contains("first");
+        String singleMessagerId  = (level >= 2 && firstAlreadySent) ? getSingleMessagerId(record) : null;
+        String mention = (singleMessagerId != null) ? "<@" + singleMessagerId + ">" : buildPendingMention(record);
+
         String message;
         switch (level) {
             case 1:
-                message = "👋 " + mention + " — now that you've had a chance to get to know each other, "
-                    + "please let us know what you think! Use **/confirm** if you'd like to pursue this match, "
-                    + "or **/decline** if you'd prefer to pass.";
+                if (record.firstMessageAt == null) {
+                    message = "👋 " + mention + " — hey there! Just wanted to check in and see if you've had a chance to connect yet."
+                        + "Take a moment to introduce yourself and get the conversation going. "
+                        + "Once you've had a chance to connect, use **/confirm** if you'd like to pursue this match, "
+                        + "or **/decline** if you'd strongly prefer to pass.";
+                } else {
+                    message = "👋 " + mention + " — now that you've had a chance to get to know each other, "
+                        + "please let us know what you think! Use **/confirm** if you'd like to pursue this match, "
+                        + "or **/decline** if you'd strongly prefer to pass.";
+                }
                 break;
             case 2:
-                message = "👋 " + mention + " — just a reminder to respond to your match! "
-                    + "Use **/confirm** if you'd like to continue, or **/decline** if not.\n\n"
-                    + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
+                if (singleMessagerId != null) {
+                    message = "👋 " + mention + " — it looks like your match hasn't replied yet. "
+                        + "Why not try sending them another message to get the conversation going? "
+                        + "Once you've connected, use **/confirm** or **/decline** to let us know how you'd like to proceed.\n\n"
+                        + "⚠️ **Note:** If neither of you responds before the thread closes, you may be removed from all matchmaking pools.";
+                } else {
+                    message = "👋 " + mention + " — just a reminder to respond to your match! "
+                        + "Use **/confirm** if you'd like to continue, or **/decline** if not.\n\n"
+                        + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
+                }
                 break;
             case 3:
-                message = "⏰ **Urgent — " + mention + ":** You have not yet responded to this match. "
-                    + "Please use **/confirm** or **/decline** as soon as possible.\n\n"
-                    + "⚠️ **Warning:** Failure to respond before this thread closes will result "
-                    + "in removal from all matchmaking pools.";
+                if (singleMessagerId != null) {
+                    message = "⏰ **Urgent — " + mention + ":** Your match still hasn't replied. "
+                        + "Please try reaching out once more — this thread closes in about 11 hours. "
+                        + "Use **/confirm** or **/decline** once you've heard back.\n\n"
+                        + "⚠️ **Warning:** Failure to respond before this thread closes may result "
+                        + "in removal from all matchmaking pools.";
+                } else {
+                    message = "⏰ **Urgent — " + mention + ":** You have not yet responded to this match. "
+                        + "Please use **/confirm** or **/decline** as soon as possible.\n\n"
+                        + "⚠️ **Warning:** Failure to respond before this thread closes will result "
+                        + "in removal from all matchmaking pools.";
+                }
                 break;
             case 4:
-                message = "🚨 **Final Warning — " + mention + ":** This match thread closes in less than 1 hour "
-                    + "and you have not responded. This is your last chance to use **/confirm** or **/decline**.\n\n"
-                    + "⛔ Non-response will result in immediate removal from all matchmaking pools.";
+                if (singleMessagerId != null) {
+                    message = "🚨 **Final Warning — " + mention + ":** This thread closes in less than 1 hour "
+                        + "and your match has not replied. Please try once more, and use **/confirm** or **/decline** before it closes.\n\n"
+                        + "⛔ Non-response will result in immediate removal from all matchmaking pools.";
+                } else {
+                    message = "🚨 **Final Warning — " + mention + ":** This match thread closes in less than 1 hour "
+                        + "and you have not responded. This is your last chance to use **/confirm** or **/decline**.\n\n"
+                        + "⛔ Non-response will result in immediate removal from all matchmaking pools.";
+                }
                 break;
             default:
                 message = "👋 " + mention + " — please use **/confirm** or **/decline** to respond to your match.";

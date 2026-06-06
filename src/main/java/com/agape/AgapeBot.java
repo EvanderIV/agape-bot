@@ -252,6 +252,9 @@ public class AgapeBot extends ListenerAdapter {
         // Restore any applications that were in-flight when the bot last shut down
         ApplicationHandler.recoverInProgressApplications(event.getJDA());
 
+        // Post today's Let's Chat question if the window has passed and it hasn't been posted yet
+        LetsChatManager.checkAndPost(event.getJDA());
+
         // Schedule ongoing expiry and notification checks every 5 minutes
         final java.util.concurrent.ScheduledExecutorService scheduler =
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
@@ -263,6 +266,7 @@ public class AgapeBot extends ListenerAdapter {
             () -> {
                 ThreadManager.checkExpiredThreads(event.getJDA());
                 ThreadManager.checkManualMatchNotifications(event.getJDA());
+                LetsChatManager.checkAndPost(event.getJDA());
             },
             5, 5, java.util.concurrent.TimeUnit.MINUTES
         );
@@ -828,7 +832,7 @@ public class AgapeBot extends ListenerAdapter {
             event.deferReply().queue();
 
             new Thread(() -> {
-                CompatibilityEngine.ScoringResult result = CompatibilityEngine.findTopMatches(10);
+                CompatibilityEngine.ScoringResult result = CompatibilityEngine.findTopMatches(10, event.getJDA());
 
                 if (result.topPairs.isEmpty()) {
                     event.getHook().sendMessage(

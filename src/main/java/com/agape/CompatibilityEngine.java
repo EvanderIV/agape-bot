@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.google.gson.Gson;
+import net.dv8tion.jda.api.JDA;
 
 public class CompatibilityEngine {
 
@@ -136,7 +137,7 @@ public class CompatibilityEngine {
      * Loads all ACCEPTED profiles, scores every opposite-sex pair, and returns
      * the top {@code limit} pairs sorted by score descending.
      */
-    public static ScoringResult findTopMatches(int limit) {
+    public static ScoringResult findTopMatches(int limit, JDA jda) {
         File dir = new File(PROFILES_DIR);
         File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
         if (files == null || files.length == 0)
@@ -148,6 +149,7 @@ public class CompatibilityEngine {
             String uid = f.getName().replace(".json", "");
             ApplicationHandler.AppState p = loadProfile(uid);
             if (p != null && "ACCEPTED".equals(p.status) && !p.softDeleted && p.manualMatchEnrolled) {
+                if (!ApplicationHandler.verifyMembership(uid, p.guildId, jda)) continue;
                 ids.add(uid);
                 profiles.add(p);
             }
@@ -218,8 +220,8 @@ public class CompatibilityEngine {
             }
         }
 
-        boolean aPrefsB = matchesTargetSect(a.targetSect, denomB);
-        boolean bPrefsA = matchesTargetSect(b.targetSect, denomA);
+        boolean aPrefsB = matchesTargetSect(a.targetSect, denomA, denomB);
+        boolean bPrefsA = matchesTargetSect(b.targetSect, denomB, denomA);
         if (aPrefsB) score += 5;
         if (bPrefsA) score += 5;
 
@@ -232,11 +234,21 @@ public class CompatibilityEngine {
         return new ScoreDetail(score, detail);
     }
 
-    private static boolean matchesTargetSect(String targetSect, String denom) {
-        if (targetSect == null || denom == null) return false;
-        for (String part : targetSect.split("[,;]")) {
+    private static boolean matchesTargetSect(String targetSect, String ownDenom, String partnerDenom) {
+        if (partnerDenom == null) return false;
+
+        // Implicit self-inclusion: everyone is assumed to be open to their own denomination
+        if (ownDenom != null && ownDenom.equalsIgnoreCase(partnerDenom)) return true;
+
+        if (targetSect == null || targetSect.trim().isEmpty()) return false;
+
+        // "Any denomination" / "All" signals universal openness
+        String lower = targetSect.toLowerCase();
+        if (lower.contains("any") || lower.contains("all")) return true;
+
+        for (String part : targetSect.split("[,;/]")) {
             String normalized = DenominationCompatibility.normalizeDenomination(part.trim());
-            if (denom.equalsIgnoreCase(normalized)) return true;
+            if (partnerDenom.equalsIgnoreCase(normalized)) return true;
         }
         return false;
     }
