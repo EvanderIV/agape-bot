@@ -222,34 +222,7 @@ public class ThreadManager {
      * Unenrolls them from quickmatch and sends a DM notice.
      */
     public static void addStrike(String userId, String threadId, JDA jda) {
-        new File(STRIKES_DIR).mkdirs();
-        File strikeFile = new File(STRIKES_DIR + userId + ".json");
-
-        UserStrikes us;
-        if (strikeFile.exists()) {
-            try (FileReader r = new FileReader(strikeFile)) {
-                us = GSON.fromJson(r, UserStrikes.class);
-                if (us == null) us = new UserStrikes();
-            } catch (Exception e) {
-                us = new UserStrikes();
-            }
-        } else {
-            us = new UserStrikes();
-        }
-        if (us.strikes == null) us.strikes = new ArrayList<>();
-        us.userId = userId;
-
-        Strike s = new Strike();
-        s.timestamp = LocalDateTime.now().format(FMT);
-        s.threadId  = threadId;
-        us.strikes.add(s);
-
-        try (FileWriter w = new FileWriter(strikeFile)) {
-            GSON.toJson(us, w);
-        } catch (Exception e) {
-            System.err.println("ThreadManager: Failed to save strike for " + userId + ": " + e.getMessage());
-            return;
-        }
+        UserStrikes us = writeStrikeRecord(userId, threadId);
 
         // Unenroll from quickmatch
         File profileFile = new File("user_content/profiles/" + userId + ".json");
@@ -269,20 +242,73 @@ public class ThreadManager {
         }
 
         int recentStrikes = getRecentStrikeCount(userId);
-        String banNote = recentStrikes >= 3
-            ? "\n\n⛔ You have **" + recentStrikes + " strikes** in the past 6 months and cannot re-enroll in quickmatch until your oldest strike ages out."
-            : "\n\nYou currently have **" + recentStrikes + "/3** strike(s) in the past 6 months. You may re-enroll using `/toggle-qm` when ready.";
+        String expiryNote = buildExpiryNote(getNextStrikeExpiry(us));
+        String statusNote = recentStrikes >= 3
+            ? "\n\n⛔ You have reached **" + recentStrikes + "/3 strikes** in the past 6 months and cannot re-enroll in the quickmatch pool until your oldest strike ages out."
+            : "\n\n📊 You currently have **" + recentStrikes + "/3 strike(s)** in the past 6 months. You may re-enroll in the quickmatch pool at any time using `/toggle-qm`.";
 
         jda.openPrivateChannelById(userId).queue(
             ch -> ch.sendMessage(
                 "⚠️ **Quickmatch Strike**\n\n"
-                + "You received a strike on your matchmaking record because you did not use `/confirm` or `/decline` before your quickmatch thread closed.\n"
+                + "You received a strike on your matchmaking record because you did not use `/confirm` or `/decline` before your quickmatch thread closed. "
                 + "You have been unenrolled from the quickmatch pool."
-                + banNote
+                + statusNote + expiryNote
             ).queue(),
             e -> System.err.println("ThreadManager: Could not DM strike notice to " + userId + ": " + e.getMessage())
         );
         System.out.println("ThreadManager: Strike issued to " + userId + " (" + recentStrikes + " in last 6 months).");
+    }
+
+    /** Writes a new strike entry for {@code userId} and returns the updated UserStrikes. */
+    private static UserStrikes writeStrikeRecord(String userId, String threadId) {
+        new File(STRIKES_DIR).mkdirs();
+        File strikeFile = new File(STRIKES_DIR + userId + ".json");
+        UserStrikes us;
+        if (strikeFile.exists()) {
+            try (FileReader r = new FileReader(strikeFile)) {
+                us = GSON.fromJson(r, UserStrikes.class);
+                if (us == null) us = new UserStrikes();
+            } catch (Exception e) {
+                us = new UserStrikes();
+            }
+        } else {
+            us = new UserStrikes();
+        }
+        if (us.strikes == null) us.strikes = new ArrayList<>();
+        us.userId = userId;
+        Strike s = new Strike();
+        s.timestamp = LocalDateTime.now().format(FMT);
+        s.threadId  = threadId;
+        us.strikes.add(s);
+        try (FileWriter w = new FileWriter(strikeFile)) {
+            GSON.toJson(us, w);
+        } catch (Exception e) {
+            System.err.println("ThreadManager: Failed to save strike for " + userId + ": " + e.getMessage());
+        }
+        return us;
+    }
+
+    /** Returns the expiry datetime of the oldest still-active (within 6 months) strike, or null if none. */
+    private static java.time.LocalDateTime getNextStrikeExpiry(UserStrikes us) {
+        if (us == null || us.strikes == null) return null;
+        LocalDateTime cutoff = LocalDateTime.now().minusMonths(6);
+        LocalDateTime oldest = null;
+        for (Strike st : us.strikes) {
+            if (st.timestamp == null) continue;
+            try {
+                LocalDateTime ts = LocalDateTime.parse(st.timestamp, FMT);
+                if (ts.isAfter(cutoff) && (oldest == null || ts.isBefore(oldest))) oldest = ts;
+            } catch (Exception ignored) {}
+        }
+        return oldest != null ? oldest.plusMonths(6) : null;
+    }
+
+    /** Formats the next-expiry datetime into a DM note, or returns "" if null. */
+    private static String buildExpiryNote(java.time.LocalDateTime expiry) {
+        if (expiry == null) return "";
+        long days = java.time.temporal.ChronoUnit.DAYS.between(LocalDateTime.now(), expiry);
+        String dateStr = expiry.format(java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy"));
+        return "\n\n⏳ Your oldest active strike expires on **" + dateStr + "** (in approximately " + days + " day(s)).";
     }
 
     /** Returns the number of strikes {@code userId} has received in the past 6 months. */
@@ -470,7 +496,7 @@ public class ThreadManager {
             case 1:
                 if (record.firstMessageAt == null) {
                     message = "👋 " + mention + " — hey there! Just wanted to check in and see if you've had a chance to connect yet."
-                        + "Take a moment to introduce yourself and get the conversation going. "
+                        + "Take a moment to introduce yourself and discuss relationship dealbreakers. "
                         + "Once you've had a chance to connect, use **/confirm** if you'd like to pursue this match, "
                         + "or **/decline** if you'd strongly prefer to pass.";
                 } else {
@@ -482,11 +508,12 @@ public class ThreadManager {
             case 2:
                 if (silentUserId != null) {
                     message = "👋 " + mention + " — your match has already reached out! "
-                        + "Take a moment to say hi and get the conversation going. "
+                        + "Take a moment to say hi and discuss relationship dealbreakers. "
                         + "Use **/confirm** if you'd like to pursue this match, or **/decline** if not.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 } else {
                     message = "👋 " + mention + " — just a reminder to respond to your match! "
+                        + "Please take a moment to connect and discuss relationship dealbreakers. "
                         + "Use **/confirm** if you'd like to continue, or **/decline** if not.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 }
@@ -631,12 +658,19 @@ public class ThreadManager {
                 try (FileWriter w = new FileWriter(profileFile)) {
                     g.toJson(state, w);
                 }
+                UserStrikes us = writeStrikeRecord(uid, record.threadId);
+                int recentStrikes = getRecentStrikeCount(uid);
+                String expiryNote = buildExpiryNote(getNextStrikeExpiry(us));
                 final String finalUid = uid;
                 jda.openPrivateChannelById(uid).queue(
                     ch -> ch.sendMessage(
                         "⚠️ **Matchmaking Profile Suspended**\n\n"
-                        + "Your profile has been removed from all matchmaking because you did not use `/confirm` or `/decline` before your manual match thread closed.\n\n"
-                        + "Please reach out to a matchmaker if you believe this was in error."
+                        + "Your profile has been removed from all matchmaking pools because you did not use `/confirm` or `/decline` before your manual match thread closed. "
+                        + "This counts as **1 strike** on your account.\n\n"
+                        + "📊 You currently have **" + recentStrikes + "/3 active strike(s)** in the past 6 months."
+                        + expiryNote + "\n\n"
+                        + "📩 **To appeal:** Open a support ticket in the server and a matchmaker will review your case. "
+                        + "Your profile will remain suspended until it is restored."
                     ).queue(),
                     e -> System.err.println("ThreadManager: Could not DM soft-delete notice to " + finalUid + ": " + e.getMessage())
                 );
