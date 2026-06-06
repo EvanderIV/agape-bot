@@ -60,6 +60,15 @@ public class AgapeBot extends ListenerAdapter {
         return hasMatchmakerRole(event.getMember());
     }
 
+    private boolean hasMatchmakerOrAdminRole(net.dv8tion.jda.api.entities.Member member) {
+        if (member == null) return false;
+        if (member.hasPermission(net.dv8tion.jda.api.Permission.ADMINISTRATOR)) return true;
+        for (Role role : member.getRoles()) {
+            if (role.getName().toLowerCase().contains("admin")) return true;
+        }
+        return hasMatchmakerRole(member);
+    }
+
     /**
      * Helper method to check if a member is marked as single
      */
@@ -319,11 +328,12 @@ public class AgapeBot extends ListenerAdapter {
 
         SlashCommandData confirmCmd = Commands.slash("confirm", "Confirm this match (use inside a match thread)");
         SlashCommandData declineCmd = Commands.slash("decline", "Decline this match (use inside a match thread)");
+        SlashCommandData closeThreadCmd = Commands.slash("close-thread", "Immediately close and archive this match thread without issuing penalties (Matchmakers only)");
 
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -1038,8 +1048,8 @@ public class AgapeBot extends ListenerAdapter {
             }, "match-preview").start();
 
         } else if (event.getName().equals("qm-thread")) {
-            if (!hasMatchmakerRole(event)) {
-                event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
+            if (!hasMatchmakerOrAdminRole(event.getMember())) {
+                event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
                 return;
             }
 
@@ -1067,8 +1077,8 @@ public class AgapeBot extends ListenerAdapter {
             });
 
         } else if (event.getName().equals("mm-thread")) {
-            if (!hasMatchmakerRole(event)) {
-                event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
+            if (!hasMatchmakerOrAdminRole(event.getMember())) {
+                event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
                 return;
             }
 
@@ -1215,6 +1225,47 @@ public class AgapeBot extends ListenerAdapter {
                     .addActionRow(reasonsInput)
                     .build()
             ).queue();
+
+        } else if (event.getName().equals("close-thread")) {
+            if (!hasMatchmakerOrAdminRole(event.getMember())) {
+                event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+                return;
+            }
+            if (!(event.getChannel() instanceof net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel)) {
+                event.reply("❌ This command must be run inside a match thread.").setEphemeral(true).queue();
+                return;
+            }
+            String threadId = event.getChannel().getId();
+            ThreadManager.QMThread record = ThreadManager.findThreadByChannelId(threadId);
+            if (record == null) {
+                event.reply("❌ No match thread record found for this channel.").setEphemeral(true).queue();
+                return;
+            }
+            if (!"OPEN".equals(record.status)) {
+                event.reply("❌ This thread is already closed.").setEphemeral(true).queue();
+                return;
+            }
+            event.reply("🔒 Closing thread — no strikes or penalties will be issued.").queue();
+
+            // Notify the matchmaker channel
+            if (event.getGuild() != null) {
+                net.dv8tion.jda.api.entities.channel.concrete.TextChannel mmChannel = findMatchmakerChannel(event.getGuild());
+                if (mmChannel != null) {
+                    String closer = event.getMember() != null ? event.getMember().getAsMention() : event.getUser().getAsMention();
+                    String matchType = "MANUAL".equals(record.matchType) ? "Manual Match" : "Quickmatch";
+                    net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                        .setTitle("🔒 Thread Force-Closed")
+                        .setColor(0xFF9900)
+                        .addField("Closed by", closer, true)
+                        .addField("Match type", matchType, true)
+                        .addField("Users", "<@" + record.maleId + "> & <@" + record.femaleId + ">", false)
+                        .setFooter("Thread ID: " + threadId)
+                        .setTimestamp(java.time.Instant.now());
+                    mmChannel.sendMessageEmbeds(embed.build()).queue();
+                }
+            }
+
+            ThreadManager.adminCloseThread(threadId, event.getJDA());
         }
     }
 

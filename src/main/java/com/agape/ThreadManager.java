@@ -572,6 +572,50 @@ public class ThreadManager {
         if (record != null) archiveAndDelete(record, jda);
     }
 
+    /** Admin-closes a thread without issuing any strikes or soft-deletes. */
+    public static void adminCloseThread(String threadId, JDA jda) {
+        QMThread record = findThreadByChannelId(threadId);
+        if (record == null) return;
+        if (shuttingDown) return;
+        activeClosures.incrementAndGet();
+        ThreadChannel thread = jda.getThreadChannelById(record.threadId);
+        if (thread == null) {
+            record.status   = "ARCHIVED";
+            record.closedAt = LocalDateTime.now().format(FMT);
+            save(record.maleId, record.femaleId, record);
+            activeClosures.decrementAndGet();
+            return;
+        }
+        thread.getHistoryFromBeginning(100).queue(history -> {
+            List<Message> msgs = new ArrayList<>(history.getRetrievedHistory());
+            msgs.sort(Comparator.comparing(Message::getTimeCreated));
+            for (Message msg : msgs) {
+                if (msg.getAuthor().isBot()) continue;
+                ThreadMessage tm = new ThreadMessage();
+                tm.authorId   = msg.getAuthor().getId();
+                tm.authorName = msg.getAuthor().getName();
+                tm.content    = msg.getContentRaw();
+                tm.timestamp  = msg.getTimeCreated().toString();
+                record.messages.add(tm);
+            }
+            record.status   = "ARCHIVED";
+            record.closedAt = LocalDateTime.now().format(FMT);
+            save(record.maleId, record.femaleId, record);
+            thread.delete().queue(
+                v   -> { activeClosures.decrementAndGet(); System.out.println("ThreadManager: Admin-closed thread " + record.threadId + "."); },
+                err -> { activeClosures.decrementAndGet(); System.err.println("ThreadManager: Could not delete thread " + record.threadId + ": " + err.getMessage()); }
+            );
+        }, err -> {
+            record.status   = "ARCHIVED";
+            record.closedAt = LocalDateTime.now().format(FMT);
+            save(record.maleId, record.femaleId, record);
+            thread.delete().queue(
+                v   -> activeClosures.decrementAndGet(),
+                err2 -> activeClosures.decrementAndGet()
+            );
+        });
+    }
+
     private static void archiveAndDelete(QMThread record, JDA jda) {
         if (shuttingDown) return;
         activeClosures.incrementAndGet();
