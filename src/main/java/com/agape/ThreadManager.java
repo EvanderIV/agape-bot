@@ -619,6 +619,8 @@ public class ThreadManager {
         if (record.declinedBy  != null) responded.addAll(record.declinedBy);
         for (String uid : new String[]{record.maleId, record.femaleId}) {
             if (uid == null || responded.contains(uid)) continue;
+            // Don't penalize a user who actively participated — they were waiting for the other person
+            if (record.messagedBy != null && record.messagedBy.contains(uid)) continue;
             File profileFile = new File("user_content/profiles/" + uid + ".json");
             if (!profileFile.exists()) continue;
             try {
@@ -651,9 +653,10 @@ public class ThreadManager {
         if (record.confirmedBy != null) responded.addAll(record.confirmedBy);
         if (record.declinedBy  != null) responded.addAll(record.declinedBy);
         for (String uid : new String[]{record.maleId, record.femaleId}) {
-            if (uid != null && !responded.contains(uid)) {
-                addStrike(uid, record.threadId, jda);
-            }
+            if (uid == null || responded.contains(uid)) continue;
+            // Don't strike a user who actively participated — they were waiting for the other person
+            if (record.messagedBy != null && record.messagedBy.contains(uid)) continue;
+            addStrike(uid, record.threadId, jda);
         }
     }
 
