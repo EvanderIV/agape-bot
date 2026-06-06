@@ -495,8 +495,8 @@ public class ThreadManager {
         switch (level) {
             case 1:
                 if (record.firstMessageAt == null) {
-                    message = "👋 " + mention + " — hey there! Just wanted to check in and see if you've had a chance to connect yet."
-                        + "Take a moment to introduce yourself and discuss relationship dealbreakers. "
+                    message = "👋 " + mention + " — hey there! Just wanted to check in and see if you've had a chance to connect yet. "
+                        + "Take a moment to introduce yourself, then each list 3 to 5 major relationship deal-breakers. "
                         + "Once you've had a chance to connect, use **/confirm** if you'd like to pursue this match, "
                         + "or **/decline** if you'd strongly prefer to pass.";
                 } else {
@@ -508,12 +508,12 @@ public class ThreadManager {
             case 2:
                 if (silentUserId != null) {
                     message = "👋 " + mention + " — your match has already reached out! "
-                        + "Take a moment to say hi and discuss relationship dealbreakers. "
+                        + "Take a moment to say hi, then each list 3 to 5 major relationship deal-breakers. "
                         + "Use **/confirm** if you'd like to pursue this match, or **/decline** if not.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 } else {
                     message = "👋 " + mention + " — just a reminder to respond to your match! "
-                        + "Please take a moment to connect and discuss relationship dealbreakers. "
+                        + "Please take a moment to connect, then each list 3 to 5 major relationship deal-breakers. "
                         + "Use **/confirm** if you'd like to continue, or **/decline** if not.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 }
