@@ -5,10 +5,12 @@ com\agape\ImageGenerator$2.class
 com\agape\MatchmakingEngine$MatchResult.class
 com\agape\CompatibilityEngine$ScoreDetail.class
 com\agape\ThreadManager.class
+com\agape\LetsChatManager$Question.class
 com\agape\AgapeBot.class
 com\agape\ImageGenerator$TextRun.class
 com\agape\ThreadManager$QMThread.class
 com\agape\CompatibilityEngine$CompatPair.class
+com\agape\LetsChatManager$1.class
 com\agape\MatchmakingEngine$MatchEntry.class
 com\agape\ThreadManager$UserStrikes.class
 com\agape\MatchmakingEngine$MatchLog.class

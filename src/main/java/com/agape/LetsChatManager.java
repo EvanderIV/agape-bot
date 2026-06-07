@@ -4,98 +4,83 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.utils.messages.MessagePollBuilder;
+import net.dv8tion.jda.api.utils.messages.MessagePollData;
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.lang.reflect.Type;
+import java.time.Duration;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 public class LetsChatManager {
 
     // Master switch — flip to true to enable posting
-    static final boolean ENABLED = false;
+    static final boolean ENABLED = true;
 
-    // UTC hour at which the daily question is posted (noon)
-    private static final int POST_HOUR_UTC = 12;
+    // Server timezone (America/New_York — handles EST/EDT automatically)
+    private static final ZoneId SERVER_ZONE = ZoneId.of("America/New_York");
+
+    // Local hour at which the daily question is posted (9 AM ET)
+    private static final int POST_HOUR = 9;
+
+    private static final String QUESTIONS_FILE = "assets/lets_chat_questions.json";
+    private static final String STATE_FILE     = "user_content/lets_chat_state.json";
 
     // Channel names searched in priority order
     private static final String[] CHANNEL_NAMES = {
+        "general", "gen-chat", "general-chat",
         "lets-chat", "letschat", "lets_chat",
         "daily-chat", "daily-question", "dailies",
         "christian-chat", "christian-talk", "discussion"
     };
 
-    private static final String STATE_FILE = "user_content/lets_chat_state.json";
+    static class Question {
+        String category;
+        String format;   // "QA" or "Poll"
+        String question;
+        List<String> options; // only present for Poll entries
+    }
 
-    // {category, question}
-    private static final String[][] QUESTIONS = {
-        // Dating & Marriage
-        { "Dating & Marriage", "What do you believe is the single most important quality to look for in a future spouse?" },
-        { "Dating & Marriage", "At what stage of a relationship do you think it's appropriate to discuss marriage?" },
-        { "Dating & Marriage", "What role should prayer play in a Christian dating relationship?" },
-        { "Dating & Marriage", "What is one thing you believe separates a healthy relationship from an unhealthy one?" },
-        { "Dating & Marriage", "How do you think finances should be handled in a Christian marriage?" },
-        { "Dating & Marriage", "What's one non-negotiable character trait you would need in a potential spouse?" },
-        { "Dating & Marriage", "How do you believe a husband and wife should handle disagreements in a godly way?" },
-        { "Dating & Marriage", "What does 'marrying your best friend' mean to you?" },
-        { "Dating & Marriage", "How do you feel about long-distance relationships — can they truly thrive?" },
-        { "Dating & Marriage", "How do you envision spiritual leadership working in a future marriage?" },
-        { "Dating & Marriage", "Do you think couples need to share the same hobbies and interests, or is it okay to have separate passions?" },
-        { "Dating & Marriage", "What does submission in marriage mean to you, as described in Ephesians 5?" },
-        { "Dating & Marriage", "At what point in dating do you think it's appropriate to discuss children and family planning?" },
-        { "Dating & Marriage", "What role should a couple's church community play in their relationship?" },
-        { "Dating & Marriage", "How should physical boundaries look in a Christian dating relationship?" },
-        { "Dating & Marriage", "Do you believe spouses need to share the exact same denomination, or is shared faith in Christ enough?" },
-        { "Dating & Marriage", "How do you feel about premarital counseling — do you think every couple should go through it?" },
-        { "Dating & Marriage", "What's one thing you want to make sure is firmly established *before* getting engaged?" },
-        { "Dating & Marriage", "What's the difference between loving someone and being *in love* with someone?" },
-        { "Dating & Marriage", "What does a 'date' look like to you — what kinds of activities do you find most meaningful for getting to know someone?" },
-
-        // Protestant Christianity
-        { "Christian Faith", "What is one Bible verse that has deeply shaped how you approach love or relationships?" },
-        { "Christian Faith", "How has your faith journey shaped the kind of partner you are — or want to be?" },
-        { "Christian Faith", "What does it mean practically to 'put God at the center' of a relationship?" },
-        { "Christian Faith", "How do you handle seasons where your prayer life or church attendance feels dry?" },
-        { "Christian Faith", "Which book of the Bible has impacted your walk with God the most, and why?" },
-        { "Christian Faith", "What does 'bearing one another's burdens' (Galatians 6:2) look like practically in a relationship?" },
-        { "Christian Faith", "Do you have a Bible reading routine or method you'd recommend to others?" },
-        { "Christian Faith", "What is one spiritual discipline (prayer, fasting, journaling, etc.) that has had the biggest impact on your faith?" },
-        { "Christian Faith", "How do you believe a Christian should handle forgiveness in a romantic relationship after being hurt?" },
-        { "Christian Faith", "What does being 'equally yoked' (2 Corinthians 6:14) mean to you in the context of dating?" },
-        { "Christian Faith", "How do you think Christians should navigate social media and its effect on relationships?" },
-        { "Christian Faith", "Do you have a favorite Christian book, sermon, or devotional that shaped how you think about love and marriage?" },
-        { "Christian Faith", "What does agape love — unconditional, self-giving love — look like practically in a dating relationship?" },
-        { "Christian Faith", "How important is it to you that your future spouse serves in some capacity at church?" },
-        { "Christian Faith", "What's one area of your faith you feel God is currently calling you to grow in?" },
-        { "Christian Faith", "How do you navigate friendships with members of the opposite sex while pursuing holiness?" },
-        { "Christian Faith", "What does a healthy prayer life look like for a couple, in your opinion?" },
-        { "Christian Faith", "How has your relationship with God shaped the way you handle conflict?" },
-        { "Christian Faith", "What's one thing you think the Church tends to get wrong about dating and relationships?" },
-        { "Christian Faith", "What does 'waiting on God' mean to you when it comes to finding a spouse — and how do you practice it?" },
-    };
+    static class State {
+        String lastPostedDate = "";
+    }
 
     public static void checkAndPost(JDA jda) {
         if (!ENABLED) return;
 
-        ZonedDateTime nowUtc = ZonedDateTime.now(ZoneOffset.UTC);
-        if (nowUtc.getHour() < POST_HOUR_UTC) return;
+        ZonedDateTime now = ZonedDateTime.now(SERVER_ZONE);
+        if (now.getHour() < POST_HOUR) return;
 
-        String today = LocalDate.now(ZoneOffset.UTC).toString();
+        LocalDate today = LocalDate.now(SERVER_ZONE);
 
+        // Only post on even days of the year
+        int dayOfYear = today.getDayOfYear();
+        if (dayOfYear % 2 != 0) return;
+
+        String todayStr = today.toString();
         State state = loadState();
-        if (today.equals(state.lastPostedDate)) return;
+        if (todayStr.equals(state.lastPostedDate)) return;
 
-        if (state.usedIndices.size() >= QUESTIONS.length) {
-            state.usedIndices.clear();
+        List<Question> questions = loadQuestions();
+        if (questions == null || questions.isEmpty()) {
+            System.err.println("LetsChatManager: No questions loaded from " + QUESTIONS_FILE);
+            return;
         }
 
-        int idx = pickUnused(state.usedIndices);
-        String category = QUESTIONS[idx][0];
-        String question = QUESTIONS[idx][1];
+        // 4-year cycle: year%4 → offset 0,1,366,367 maps 183 posting days to a unique slice of 732
+        int year = today.getYear();
+        int yearMod4 = year % 4;
+        int offset = (yearMod4 / 2) * 366 + (yearMod4 % 2);
+        int idx = (dayOfYear + offset) % questions.size();
+
+        Question q = questions.get(idx);
 
         boolean postedAny = false;
         for (Guild guild : jda.getGuilds()) {
@@ -108,24 +93,48 @@ public class LetsChatManager {
                 continue;
             }
 
-            EmbedBuilder embed = new EmbedBuilder()
-                .setTitle("☕ Let's Chat!")
-                .setDescription("**" + question + "**\n\n-# Share your thoughts below!")
-                .setColor(0xFF9966)
-                .setFooter("📖 " + category + "  ·  Agape Matchmaking")
-                .setTimestamp(java.time.Instant.now());
-
-            ch.sendMessageEmbeds(embed.build()).queue(
-                s -> System.out.println("LetsChatManager: Posted daily question to #" + ch.getName() + " in " + guild.getName()),
-                e -> System.err.println("LetsChatManager: Failed to post to " + guild.getName() + ": " + e.getMessage())
-            );
+            if ("Poll".equals(q.format) && q.options != null && q.options.size() >= 2) {
+                MessagePollBuilder pollBuilder = MessagePollData.builder(q.question)
+                    .setMultiAnswer(false)
+                    .setDuration(Duration.ofHours(24));
+                for (String opt : q.options) pollBuilder.addAnswer(opt);
+                ch.sendMessagePoll(pollBuilder.build()).queue(
+                    s -> System.out.println("LetsChatManager: Posted daily poll to #" + ch.getName() + " in " + guild.getName()),
+                    e -> System.err.println("LetsChatManager: Failed to post poll to " + guild.getName() + ": " + e.getMessage())
+                );
+            } else {
+                EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle("☕ Let's Chat!")
+                    .setDescription("**" + q.question + "**\n\n-# Share your thoughts below!")
+                    .setColor(0xFF9966)
+                    .setFooter("📖 " + q.category + "  ·  Agape Matchmaking")
+                    .setTimestamp(java.time.Instant.now());
+                ch.sendMessageEmbeds(embed.build()).queue(
+                    s -> System.out.println("LetsChatManager: Posted daily question to #" + ch.getName() + " in " + guild.getName()),
+                    e -> System.err.println("LetsChatManager: Failed to post to " + guild.getName() + ": " + e.getMessage())
+                );
+            }
             postedAny = true;
         }
 
         if (postedAny) {
-            state.lastPostedDate = today;
-            state.usedIndices.add(idx);
+            state.lastPostedDate = todayStr;
             saveState(state);
+        }
+    }
+
+    private static List<Question> loadQuestions() {
+        File f = new File(QUESTIONS_FILE);
+        if (!f.exists()) {
+            System.err.println("LetsChatManager: Questions file not found: " + QUESTIONS_FILE);
+            return null;
+        }
+        try (FileReader r = new FileReader(f)) {
+            Type listType = new TypeToken<List<Question>>(){}.getType();
+            return new Gson().fromJson(r, listType);
+        } catch (Exception e) {
+            System.err.println("LetsChatManager: Failed to load questions: " + e.getMessage());
+            return null;
         }
     }
 
@@ -137,26 +146,12 @@ public class LetsChatManager {
         return null;
     }
 
-    private static int pickUnused(List<Integer> used) {
-        for (int i = 0; i < QUESTIONS.length; i++) {
-            if (!used.contains(i)) return i;
-        }
-        return 0;
-    }
-
-    static class State {
-        String lastPostedDate = "";
-        List<Integer> usedIndices = new ArrayList<>();
-    }
-
     private static State loadState() {
         File f = new File(STATE_FILE);
         if (!f.exists()) return new State();
         try (FileReader r = new FileReader(f)) {
-            State s = new com.google.gson.Gson().fromJson(r, State.class);
-            if (s == null) return new State();
-            if (s.usedIndices == null) s.usedIndices = new ArrayList<>();
-            return s;
+            State s = new Gson().fromJson(r, State.class);
+            return s != null ? s : new State();
         } catch (Exception e) {
             System.err.println("LetsChatManager: Failed to load state: " + e.getMessage());
             return new State();
@@ -165,8 +160,7 @@ public class LetsChatManager {
 
     private static void saveState(State state) {
         try {
-            File dir = new File("user_content");
-            if (!dir.exists()) dir.mkdirs();
+            new File("user_content").mkdirs();
             try (FileWriter w = new FileWriter(STATE_FILE)) {
                 new GsonBuilder().setPrettyPrinting().create().toJson(state, w);
             }

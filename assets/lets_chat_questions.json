@@ -1,0 +1,4094 @@
+[
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What has suffering taught you about who God is that you couldn't have learned any other way?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about premarital counseling — do you think every couple should go through it?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it mean to be emotionally safe — to be a person others can be honest with?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you keep your faith personal and genuine rather than performative or cultural?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's the difference between loving someone and being in love with someone?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing about your relationship with your parents that has shaped how you give and receive love?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How important is it for a husband and wife to have common life goals and timelines?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you approach your morning — is it intentional, or do you let the day's demands dictate it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you believe God's design for marriage is, and how does that shape what you're looking for?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does a healthy family culture look like to you — what rhythms and values would you want to build?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you think a woman's role is in a relationship — where does she lead and where does she follow?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's the most Christlike thing someone has ever done for you in a relationship?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's something most people your age aren't interested in but you genuinely love?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is the difference between being content in singleness and simply becoming comfortable with being alone?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's the most interesting thing you've learned in the last month?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's a book that changed your thinking in an unexpected way?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's something about your daily life right now that a stranger would find interesting or surprising?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the role of community in holding a couple accountable during dating?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one non-negotiable character trait you would need in a potential spouse?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you wish you had started sooner in life?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "Poll",
+    "question": "How do you handle waiting — in life, in traffic, in a relationship?",
+    "options": [
+      "I'm patient by nature",
+      "It's a work in progress",
+      "I struggle with it genuinely",
+      "I use it as intentional time with God"
+    ]
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What would you most want your children to inherit from your character — not your achievements?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you think makes a marriage thrive long after the honeymoon phase ends?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think past relationships should — or shouldn't — be discussed with a new partner?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one lie about love or marriage that you've had to identify and uproot in your own thinking?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "Do you feel settled in your current season of life, or still finding your footing?",
+    "options": [
+      "Very settled — I know who I am and where I'm going",
+      "Mostly settled, with some open questions",
+      "Still figuring things out — a lot is in motion",
+      "In real flux — much feels unresolved"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What role should prayer play in a Christian dating relationship?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you've had to unlearn that took longer than it should have?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What's one thing you would not compromise on in raising children — a non-negotiable in your household?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about going to couples therapy — would you pursue it before problems become serious?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about dating someone who has been divorced?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What's one cultural value that Christianity directly challenges, and how do you live that out?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you approach learning — are you actively growing, or mostly comfortable where you are?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's your perspective on courtship versus modern dating?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you reconcile the goodness of God with the brokenness of the world?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "Would you rather marry someone who is mostly different from you yet strengthens your weaknesses, or someone who is more similar to you and shares most of your strengths? Why? (Assume both are equally Christian and Godly.)"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "How do you feel about discussing past relationships with a new partner?",
+    "options": [
+      "Open — it's part of knowing someone",
+      "Selective — what's relevant, I'll share",
+      "Minimal — the past is the past",
+      "Only if they ask directly"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "Do you think Christians sometimes confuse waiting on God with avoiding necessary action?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you maintain your personal walk with God when life gets demanding and busy?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does 'abiding in Christ' (John 15) look like as a practice in your daily life?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you've learned about yourself through a season of being single?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "How do you handle change in life?",
+    "options": [
+      "I embrace it — it excites me",
+      "I adapt well but need time",
+      "I prefer stability and routine",
+      "It's hard but I lean into faith"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's the hardest truth someone has ever spoken into your life, and how did you receive it?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one area where you've had to trust God without seeing the outcome — and what happened?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the Holy Spirit's role in guiding decisions in a relationship?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle comparison — to peers, to people online, to who you thought you'd be by now?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you approach a situation where doing the right thing costs you significantly?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How has suffering or hardship deepened your faith?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one character flaw you've finally made peace with — or are still working on?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one thing you never get tired of talking about?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about accountability — do you have people who speak truth into your life?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it mean to you to live with open hands — owning things without being owned by them?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you want someone to know about loving you well — what makes you feel truly seen?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How can someone tell the difference between God closing a door and fear preventing them from walking through that door?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "Poll",
+    "question": "How intentional are you about what you let into your mind each day?",
+    "options": [
+      "Very intentional — I curate carefully",
+      "Mostly intentional, though I'm inconsistent",
+      "Not very — I consume mostly what's available",
+      "This is honestly an area I want to grow in"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you hold hope and realism together when thinking about marriage — not naive but not cynical either?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the connection between self-love and the capacity to love someone else well?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to trust God with your future when so much is uncertain?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What does a perfect week look like for you — work, rest, people, and all?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "How transparent are you about your spiritual life with someone you're dating?",
+    "options": [
+      "Very open from early on",
+      "I open up as trust builds",
+      "I tend to keep it private initially",
+      "I lead with my faith naturally"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you believe a husband and wife should handle disagreements in a godly way?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's a childhood memory that still makes you smile?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's your view on a couple doing ministry together — essential, a bonus, or a potential source of tension?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What role should in-laws play in a married couple's life?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "Which is harder to maintain in a relationship: love, trust, communication, respect, or forgiveness? Why?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does thriving look like for you — not surviving, but genuinely flourishing?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle stress, and what does that reveal about you?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does the way you handle disappointment reveal about you?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you think about the difference between goals and calling — do you have both?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the idea of building a spiritual legacy together with a future spouse?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's the most honest conversation you've had with God, and what came from it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the influence a future spouse will have on your relationship with God — for better or worse?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "How often do you share your faith with someone outside your Christian circle?",
+    "options": [
+      "Regularly — it's part of my life",
+      "Occasionally when opportunities arise",
+      "Rarely — I'm still building confidence",
+      "I mostly live it rather than talk about it"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does covenant love look like practically in day-to-day married life?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you've settled in your heart about what you need — not want — in a future spouse?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does trust look like in a dating relationship, and how do you build it without rushing?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you approach the topic of money with a future spouse — and how early should that conversation happen?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you approach Scripture when you disagree with what it says about something in your own life?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the balance between being heavenly minded and earthly useful?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one way your faith has made you genuinely odd or different in the eyes of the world — and how do you feel about that?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one hard thing that God has used to make you more like Jesus — even if you resisted it?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "Poll",
+    "question": "When you genuinely need to recharge, do you lean toward solitude or people?",
+    "options": [
+      "Solitude all the way — quiet restores me",
+      "Mostly alone, but light connection helps too",
+      "Mostly with people — that's where I refuel",
+      "Fully with people — community restores me"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you believe is the single most important quality to look for in a future spouse?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the physical and spiritual elements of marriage — are they equally important?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of sacrifice in love — not as burden but as calling?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you've let go of that you thought defined you, and what replaced it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about long-distance relationships — can they truly thrive?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you share your faith with people who aren't interested in it?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "When your faith is challenged, how confident are you in your ability to engage?",
+    "options": [
+      "Very confident — I welcome those conversations",
+      "Reasonably confident, but I still prepare",
+      "I'm building that confidence — it's a growing area",
+      "I often struggle to find the right words"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you think about your mental health — do you take it as seriously as your physical and spiritual health?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you handle the fear of failing as a parent — is it a healthy fear or one to surrender?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's the difference between being in love and making a covenant decision to love someone?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you want to make sure is firmly established before getting engaged?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the concept of rest in your faith — not just Sabbath but soul rest in Christ?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does \"being equally yoked\" practically look like beyond simply both people being Christians?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to pursue someone with both your heart and your wisdom — not just one?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's a hobby or passion of yours that most people wouldn't guess just by looking at you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "At what stage of a relationship do you think it's appropriate to discuss marriage?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you think a man's role is in initiating a relationship, and how should that look today?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one way you've grown as a person because of a failed relationship?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you've had to forgive in yourself, and how did you get there?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it look like to pursue someone intentionally — with clarity and respect?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "If you could master any skill instantly, what would you choose and why?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one area of your life you feel is clearly out of alignment with who you want to be?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's the most important thing you've learned about yourself from a past relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "How do you feel about having deep spiritual conversations early in a relationship?",
+    "options": [
+      "I love it — it's how I connect",
+      "I ease into it naturally",
+      "I'm more reserved early on",
+      "It depends on the person"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "How would you honestly describe the current state of your spiritual growth?",
+    "options": [
+      "Thriving — I'm growing consistently",
+      "Growing, but unevenly and with gaps",
+      "Mostly stagnant — I know I need more",
+      "In a dry or difficult season right now"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to pursue God together as a couple rather than just alongside each other?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does a man leading well in a relationship look like — and what does it not look like?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's the most generous thing someone has done for you, and how did it affect you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does a relationship that glorifies God actually look like from the outside?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does a meaningful date look like to you — what kinds of activities help you truly get to know someone?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does 'iron sharpening iron' look like in a marriage — how do you want your spouse to challenge and grow you?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's the best trip you've ever taken and what made it memorable?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you feel about ambition — is it a godly quality or something to be careful with?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about the idea of a 'season of singleness' — a gift from God or just a waiting room?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about the idea of a 'test' before marriage — does moving in together, traveling together, or facing hardship together reveal something necessary?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you approach a relationship where your feelings are strong but your wisdom is hesitant?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the pace of emotional vulnerability — is going deep fast a strength or a risk?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does faithfulness in a relationship look like before the vows are spoken?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What boundaries would you set around opposite-sex friendships once you're in a committed relationship?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "Poll",
+    "question": "How do you feel about Christians engaging in the arts and entertainment industry?",
+    "options": [
+      "Strongly supportive — we need salt and light there",
+      "Supportive with wisdom and accountability",
+      "Cautious — the industry is spiritually risky",
+      "Neutral — not something I've thought much about"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you define success, and has that definition changed over time?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's the most meaningful gift you've ever received — not necessarily the most expensive?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think couples should divide household responsibilities?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "If your life had a theme song right now, what would it be?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of waiting — does God honor it, and what has that looked like in your experience?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's something that is genuinely hard for you that most people would expect to be easy?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one area of your life that you feel you need to grow in before you're ready to pursue marriage?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you consistently make time for that tells you something true about your priorities?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Is premarital counseling a must?",
+    "options": [
+      "Absolutely — no exceptions",
+      "Strongly preferred",
+      "Nice to have",
+      "Not necessary"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is a relationship lesson that you believe most people only learn after getting hurt?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does integrity look like in your daily life — especially when no one is watching?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one question you think every couple should answer honestly before getting engaged?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to 'fix your eyes on Jesus' (Hebrews 12:2) when life is demanding and distracting?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you view the relationship between self-care and selflessness — can they coexist?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one way your faith has made you bolder — not just internally but in how you actually live?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the sacrifice required in parenting — are you emotionally ready for it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you wish someone had told you before you started dating?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "When something emotionally hard hits you, do you process it alone or with others first?",
+    "options": [
+      "Alone — I need space before I can open up",
+      "Alone first, then I bring others in",
+      "With others right away — I can't process in isolation",
+      "With God first, then people I trust"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you define emotional availability — and do you think you're there right now?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's the most spontaneous thing you've ever done?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What role should a couple's church community play in their relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it look like for a woman to be a genuine partner and helper — in the fullest, biblical sense?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the relationship between the local church and the global body of Christ?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one sacrifice you've made for a value or principle you believe in?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to you that the Holy Spirit dwells within you — and do you live differently because of it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How would you handle a situation where your church community disapproved of your relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about disappointment in dating — what's the spiritually healthy response when it doesn't work out?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How has your faith journey shaped the kind of partner you are — or want to be?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one habit you've built that has changed your life for the better?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you engage with people going through deconstruction — with grace or concern, and how do you hold both?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "Poll",
+    "question": "How important is it to you that your partner has a similar sense of humor?",
+    "options": [
+      "Essential — shared humor is non-negotiable for me",
+      "Very important — humor is how I connect",
+      "It matters, but it doesn't make or break it",
+      "Not a major factor to me"
+    ]
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you feel about adoption — is it something you'd consider?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you to 'leave and cleave' as Genesis 2:24 describes?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the role of your church's leadership in your dating life?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you feel about having hard conversations early in a relationship about kids, timing, and expectations?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you define strength — and is it the same as how the world defines it?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What does it look like to engage well with people who have very different worldviews than your own?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you're currently learning to hold more loosely?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's a weird or unpopular opinion you hold that you'll actually defend?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about worship beyond singing — what does it look like across all of life?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you make sure you're pursuing someone out of genuine care versus loneliness or pressure?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "How soon into dating do you introduce someone to close friends?",
+    "options": [
+      "Pretty quickly — it matters to me",
+      "After a few months when it's clear",
+      "Only once we're exclusive",
+      "When it feels naturally right"
+    ]
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's the strangest or most unexpected way God has used something in your life for good?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you think every couple should discuss before their first year of marriage?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you approach times when God feels silent or distant?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you handle it when you feel God calling you one direction and your partner feels called another?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think a family should navigate finances with children — teaching kids about money early?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you view the role of attraction in choosing a spouse — necessary, important, or secondary?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you feel about asking for help — is it easy or hard for you, and why?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to love God with your mind — how do you pursue intellectual faithfulness?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "Poll",
+    "question": "How close do you want to live to extended family?",
+    "options": [
+      "Same city or nearby",
+      "Driveable — a few hours away",
+      "Distance doesn't worry me",
+      "Some distance is actually healthy"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you handle romantic disappointment from a faith perspective — does God have one specific person for you?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one thing you hope people feel after spending time with you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "At what point in dating do you think it's appropriate to discuss children and family planning?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it look like to truly forgive a partner for a significant hurt without minimizing the pain?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What are some subtle signs that a relationship is centered on Christ rather than centered on each other?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What movie, show, or book has surprisingly shaped how you think about relationships or faith?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think Christians should engage with culture — separate, transform, or something else?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "If you could go back and give your 18-year-old self one piece of advice, what would it be?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "How do you engage with Christian content outside of Sunday service?",
+    "options": [
+      "Podcasts or sermons regularly",
+      "Books and devotionals",
+      "Bible apps and reading plans",
+      "Mostly just community and conversation"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you practice gratitude — is it something you cultivate intentionally?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it look like to honor someone you're dating, even if things don't work out?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "Do you have a favorite Christian book, sermon, or devotional that shaped how you think about love and marriage?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "If God guaranteed that you would remain single for the next ten years, what would change about how you live your life today? What would stay exactly the same?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one word you hope your close friends would use to describe you — and do you think they would?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's your view on couples spending time alone together before marriage, and what guardrails should be in place?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think Christians should navigate social media and its effect on relationships?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you navigate friendships with members of the opposite sex while pursuing holiness?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one biblical promise that has carried you through a specific hardship?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does abiding in Christ feel like on a practical, moment-by-moment level — and is it something you experience?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about seeking the counsel of others when discerning a relationship — who has your ear?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you deal with comparison — scrolling through others' lives and measuring yourself against them?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "How do you feel about dating someone significantly older or younger?",
+    "options": [
+      "Open to it if values align",
+      "Prefer close in age",
+      "Depends on the gap",
+      "Not comfortable with large gaps"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the connection between forgiveness and a willingness to reconcile in a relationship?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does a life well-ordered to what matters most look like for you right now?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the difference between compatibility and chemistry — which matters more?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about obedience — is it something you give God out of love or duty, or both?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "What's your view on a couple praying together before marriage?",
+    "options": [
+      "Essential — non-negotiable",
+      "Very important but I'm flexible on how",
+      "Good when it feels natural",
+      "Still forming a view on this"
+    ]
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "If you could witness any moment in church history, what would you choose?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What's your view on Christians and political engagement — where's the right balance?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one prayer you've prayed specifically about your future spouse?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about mental health from a Christian perspective — faith, medicine, therapy, and all of it?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you pray specifically — do you have ways of keeping prayer fresh and not formulaic?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you believe separates a healthy relationship from an unhealthy one?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does submission in marriage mean to you, as described in Ephesians 5?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it look like to keep marriage as the primary relationship in a home, even with children?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does faithfulness in small things look like in your life right now?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What role does laughter and lightheartedness play in a marriage — is it a luxury or a necessity?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does your inner life look like — your thought patterns, what you dwell on, how you talk to yourself?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does genuine repentance look like in the context of a relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you think men and women often misunderstand about each other in relationships?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you keep growing as a person while also investing in a relationship — do the two compete?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle failure — personally, professionally, or spiritually?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "Poll",
+    "question": "How do you feel about adoption?",
+    "options": [
+      "Strongly feel called to it",
+      "Open to it alongside biological children",
+      "Open if biological isn't possible",
+      "Probably not for me"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "How quickly do you typically bounce back from failure or disappointment?",
+    "options": [
+      "Quickly — I process and move forward",
+      "Steadily — I sit with it and learn from it",
+      "It takes me a while to get back on my feet",
+      "It can really knock me down for some time"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is something modern dating culture gets wrong about relationships, and what is something it gets right?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the importance of suffering in the Christian life — is it something to avoid or embrace?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you handle the pressure from family or community to get married?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does healthy communication look like in a dating relationship, in your view?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one thing you do that immediately makes you feel like yourself again?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How would you approach having hard conversations with your children about faith, doubt, or sexuality?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you think is the biggest mistake Christian singles make in the dating process?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one goal you have for the next 5 years that has nothing to do with a relationship?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to walk by faith and not by sight in a practical, everyday sense?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of a soul tie — is it biblical, and how does it affect how you date?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you hold both conviction and humility when engaging with someone who disagrees with your beliefs?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What does Christian hospitality look like in a modern world where everyone is busy and isolated?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one thing about God's character that never stops surprising you the more you understand it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How would you handle finding out a potential partner has significantly different political views than you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What role does humor and laughter play in a healthy relationship?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's the most formative spiritual season you've ever gone through, and what did it teach you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you envision spiritual leadership working in a future marriage?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How important is it to you that your future spouse has a strong relationship with their family?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "What's your view on long-distance relationships?",
+    "options": [
+      "I'd be open to it with a clear plan",
+      "Only if we're already serious",
+      "Difficult but doable if God's in it",
+      "Probably not for me"
+    ]
+  },
+  {
+    "category": "Family & Children",
+    "format": "Poll",
+    "question": "What's your preferred schooling approach for children?",
+    "options": [
+      "Homeschool",
+      "Christian private school",
+      "Public school with strong home foundation",
+      "Haven't decided yet"
+    ]
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What one thing do you believe your children most need to see modeled in your marriage?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's a fear you've overcome, and what did it take?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one thing you wish the church talked about more honestly?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to have childlike faith, and have you experienced it yourself?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you think about legacy — what do you want people to say at your funeral?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you think about the difference between wisdom and knowledge — which are you more naturally drawn to?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one spiritual gift you have, and how do you use it to serve others?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you'd say to yourself one year ago if you could?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing about your personality that you think would genuinely surprise a future spouse?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you feel about your work-life balance, and what trade-offs have you consciously made?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you'd tell yourself about how you handled a past season of life — with more grace?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about environmental stewardship — is caring for creation a Christian responsibility?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle moments when you know you've hurt someone — what does the process of making it right look like?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you know when you're spiritually ready to lead a family versus just ready to be in a relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "How important is it that your partner has a close mentor or accountability partner?",
+    "options": [
+      "Very important — a must",
+      "Important but not a dealbreaker",
+      "A nice bonus",
+      "Not a major factor"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "How important is it that your church preaches expository, verse-by-verse Scripture?",
+    "options": [
+      "Very important — it's a priority",
+      "Somewhat important",
+      "I care more about truth than method",
+      "Not a major factor to me"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one way you've served someone sacrificially and what did it teach you about yourself?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it look like to be intentional with your time in a world designed to steal it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does emotional courage look like in dating — being willing to feel things and still move forward?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the gift of singleness — is it a season, a calling, or just a waiting room?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing that used to scare you that no longer does — and what changed?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one quality you think is often undervalued in choosing a spouse but actually matters enormously in the long run?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's the most interesting conversation you've had with a stranger?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does mutual submission in marriage look like — is it something you believe in and how would you live it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you balance being emotionally present with someone you're dating while protecting your heart?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the tension between protecting your children's faith and exposing them to the real world?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does gospel-centered discipline look like — firm and grace-filled at the same time?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one relationship outside of romance that has most shaped who you are?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What did your own parents model about marriage, and how has that shaped your expectations?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to trust God with something you care about deeply and can't control?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "How do you prefer to handle conflict in a relationship?",
+    "options": [
+      "Talk it through right away",
+      "Cool off first, then talk",
+      "Pray together first",
+      "Write out my thoughts first"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "What best describes how you show interest in someone you like?",
+    "options": [
+      "I'm direct and clear about it",
+      "I drop hints and see if they're returned",
+      "I invest more time and attention quietly",
+      "I wait for them to make the first move"
+    ]
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What's one social issue you feel the Church has been too silent on?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one way you've seen God's faithfulness in your life that you'll never forget?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does living with integrity cost you, and is it worth it?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's something you're genuinely excited about in this current season of your life?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it look like for parents to disciple their children rather than just raise them morally?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does the concept of grace mean to you — not just theologically but in how you extend it to others?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you're proud of about who you've become over the last few years?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to delight in God — not just serve Him — and is that something you experience?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What do you think Christians most misunderstand about people outside the faith?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "If two Christians genuinely love God but disagree on a major life goal — ministry, location, career — how much compromise should be expected?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one question you'd love to ask every person you meet but rarely feel like you can?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you handle it when a prayer you prayed earnestly went unanswered in the way you hoped?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's something you do just for the joy of it — no goal, no productivity, just pure delight?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about dating apps — are they a legitimate tool for finding a godly partner?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you think about discipline — in work, health, faith, or relationships?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one way you've seen a couple model a truly Christlike marriage?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the role of physical attraction — how much should it matter, and does it grow over time?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to date with an open hand — holding a person lightly before God?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How much should a person's past matter when considering them for a serious Christian relationship?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be a good steward of your gifts, time, and opportunities as a single person?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "Poll",
+    "question": "After a full Sunday, do you need solitude or company to feel restored?",
+    "options": [
+      "Solitude — quiet and alone is how I recover",
+      "Mostly quiet, maybe some light connection",
+      "Good company — people give me energy even after a long day",
+      "Honestly it changes week to week"
+    ]
+  },
+  {
+    "category": "Family & Children",
+    "format": "Poll",
+    "question": "In marriage, should household responsibilities be divided equally, or based on other factors?",
+    "options": [
+      "As equally as possible — 50/50",
+      "By strengths and preferences",
+      "Flexibly, based on capacity and season",
+      "I haven't given this much thought yet"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it look like to honor someone as an image-bearer of God even in a difficult breakup?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you to be truly known by your spouse — not just loved but deeply seen?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about the concept of 'the one' — does God have a specific person for you, or is it more nuanced than that?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think couples should talk about and align on parenting philosophies before marriage?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's the most important thing you've learned about yourself that will make you a better partner?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What's one way you want to stay intentionally connected as a couple after children arrive?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What cultural moment in recent years has most challenged your faith, and how did you respond?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What song could you listen to on repeat without ever getting tired of it?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one way you've seen the local church be what it was designed to be — and what made it so?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one area of selfishness you're aware of that you'd need to work on to be a great spouse?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does repentance look like when you've failed as a parent or spouse — can you model that vulnerability?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you think dating culture gets completely wrong?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What role should the church community play in dating relationships, and where should the line be drawn?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think a couple should navigate career ambition when it requires sacrifice from the other partner?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you'd want to pray over together regularly in marriage?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you keep perspective when feelings are strong early in a relationship?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does a family culture of confession and forgiveness look like in practical terms?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you approach the idea of becoming your best self — is it a pursuit, a surrender, or both?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "Poll",
+    "question": "How important is it to you that your future spouse shares your political views?",
+    "options": [
+      "Very important to me",
+      "Somewhat important",
+      "Not that important",
+      "Not a factor at all"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "How would you describe your relationship with God right now?",
+    "options": [
+      "Close and consistent",
+      "Growing but with room to go deeper",
+      "In a dry season but still holding on",
+      "Honestly struggling but persisting"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to you to be set apart — to live a life that looks different from the world?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one expectation you have about marriage that you've had to examine and adjust?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "If God asked you today to stop dating and trust Him with your future spouse completely, could you — and what would that cost you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you that God knows the person he has for you, even before you meet them?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How should physical boundaries look in a Christian dating relationship?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What's one thing you believe most people don't take seriously enough in life?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How long do you think couples should date before getting engaged?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does 'marrying your best friend' mean to you?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What is one spiritual discipline that has had the biggest impact on your faith?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one memory with a friend that you'll always cherish?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's a skill you have that you're low-key proud of but rarely get to show off?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about dating with intentionality in a culture that treats it casually?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does 'being a good friend' look like to you in practice?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How has God used community — other believers — to shape and grow you in ways personal faith alone couldn't?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you balance excitement about a new person with taking your time to discern if they're the right fit?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you approach conversations about sexual purity with someone you're dating — awkward, necessary, or both?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think couples should handle it when one person is much more spiritually experienced than the other?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one marriage habit (from a couple you've observed) that you'd love to carry into your own marriage?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to pursue holiness together without legalism?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "How consistent are you in your current spiritual disciplines?",
+    "options": [
+      "Very consistent — I have strong, regular practices",
+      "Fairly consistent, with some gaps",
+      "Inconsistent — I want to grow here",
+      "This is an honest struggle for me right now"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How important is it to you that your future spouse serves in some capacity at church?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What is one passage in the New Testament that has radically changed how you treat people?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "For a first date, would you prefer something active and out-in-the-world, or relaxed and conversational?",
+    "options": [
+      "Active all the way — I want to do something",
+      "Active, but with space to really talk",
+      "Relaxed — I want to sit and connect",
+      "Low-key as possible — comfort over everything"
+    ]
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's something about your personality that takes people a while to figure out?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What's one way following Jesus has cost you something tangible — and how do you feel about that cost?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you feel about your current church community — is it truly home, and what makes it so?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one relationship standard you believe Christians should never compromise on, and why?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's the best piece of advice someone has ever given you?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does a healthy prayer life look like for a couple, in your opinion?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the balance between protecting your children and preparing them for the real world?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you think about the difference between being productive and being fruitful?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the concept of a 'family mission' — a shared purpose greater than just being comfortable?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to you that God calls you His child — not just His creation?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you keep the gospel from becoming background noise in your daily life?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you define readiness for marriage — is it a feeling, a checklist, or something else?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you feel about raising children to question, wrestle with, and own their faith rather than just inherit it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one pattern in your past relationships that God has been helping you break?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one thing you're completely sure of — not about theology or doctrine, just about life — that you wish more people believed?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What role does mentorship or discipleship play in how you approach dating and relationships?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "Poll",
+    "question": "Do you tend to feel closest to God in personal solitude or in community with other believers?",
+    "options": [
+      "In solitude — alone with Him is where I thrive",
+      "Both, but I tend toward solitude",
+      "Both, but I tend toward community",
+      "In community — that's where He feels most present"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think finances should be handled in a Christian marriage?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What's one thing you need in a relationship that you rarely talk about because it feels vulnerable?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one experience that made you laugh until you couldn't breathe?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think the Church should respond to issues of racial injustice and reconciliation?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "How do you feel about receiving feedback or correction?",
+    "options": [
+      "I genuinely welcome it",
+      "I can receive it but it takes me a moment",
+      "It depends heavily on who's giving it",
+      "I struggle with it but I'm working on that"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think a couple should navigate differing opinions on major life decisions?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one thing you love about the season of life you're in right now?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What role does humility play in your character, and how do you practice it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you think about the concept of 'settling' — where is the line between being realistic and compromising what matters?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "If you could only eat one cuisine for the rest of your life, what would it be?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it mean to you to be genuinely present — in a conversation, in a relationship, in life?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does worshiping together mean to you — is corporate worship a non-negotiable in a relationship?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What's one experience you've had that changed how you see the world?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "If you could ask every married Christian one question before entering a relationship, what would you ask and why?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you approach dating differently now than you did a few years ago?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one expectation about a future spouse that you have never admitted out loud to anyone?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you tell the difference between feelings worth pursuing and feelings that are just appreciation?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to fear the Lord in a way that draws you closer to Him rather than pushing you away?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle the discomfort of knowing you need to change but not yet wanting to?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one quality in a potential spouse that you have become less willing to compromise on over time?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "If you could have dinner with any three people — living or dead — who would they be and what would you ask?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you to fight for a relationship rather than fight in it?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the tension between God's sovereignty and human responsibility in your own life choices?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area where you know you are harder on yourself than God is?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the balance between a parent's authority and a child's growing independence?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it look like to protect someone's heart while still pursuing them with clarity?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How has your understanding of God's grace changed the way you extend grace to others?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one way that your love language has changed or evolved as you have gotten older?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you cultivate genuine humility when success makes it easy to become proud?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you think is the biggest difference between a healthy friendship and a romantic relationship?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What does it mean to be a good neighbor in a society where people rarely know their neighbors?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about being in a relationship that you think would surprise you most?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is something you believed confidently at 20 that you have since completely reversed on?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Would you pursue a relationship with someone if key mentors in your life strongly cautioned against it?",
+    "options": [
+      "No — I trust their discernment over my feelings",
+      "Probably not — I would take it very seriously",
+      "Maybe — it would depend on their reasoning",
+      "Yes — I would ultimately trust my own judgment"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Is it possible to love someone deeply and genuinely and still not be right for them?",
+    "options": [
+      "Yes, absolutely — love is not always enough",
+      "Probably yes — it is painful but possible",
+      "Uncertain — it is hard to imagine in practice",
+      "No — true love finds a way"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does your prayer life reveal about what you actually believe about God?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you balance having clear standards for a future spouse with staying genuinely open?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it look like to pursue excellence without making your identity depend on it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one habit you would need to change to be the partner you want to be?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing that consistently makes you laugh at yourself?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the difference between a healthy dependence on a partner and an unhealthy one?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to you that Jesus is both fully human and fully divine — and why does that matter practically?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you know when you are being resilient versus just suppressing something that needs to be felt?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one truth about yourself in relationships that took you embarrassingly long to see?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What would you want your children to understand about money and generosity before they leave your home?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you approach the idea that the person you marry will eventually see the worst version of you?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you engage with parts of Scripture that are deeply uncomfortable or culturally offensive?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be ready for a relationship — and who decides?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle seasons when you feel behind your peers in life or faith?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one boundary in dating that you think is more important than most people realize?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about the Christian's responsibility to the poor and marginalized in society?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "Do you believe God speaks personally and specifically into your decisions today — not just through Scripture in general, but directly?",
+    "options": [
+      "Yes — I experience this regularly",
+      "Probably yes — though I hold it with some discernment",
+      "Uncertain — I am still working through this",
+      "No — I think He primarily speaks through Scripture and wisdom"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "Would you describe yourself as someone who generally trusts people until they give you a reason not to?",
+    "options": [
+      "Yes — trust is my default starting point",
+      "Mostly yes — with some natural caution",
+      "Somewhat — I tend to take my time",
+      "No — trust is something people have to earn with me"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one moment in a past relationship — good or bad — that permanently changed how you see love?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is something most people do out of social pressure that you have stopped doing?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How would you handle it if your partner felt significantly closer to God than you in a particular season?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to worship in spirit and in truth — and do you know the difference in practice?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area of your character where you have noticed genuine, measurable growth in the last two years?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you feel about the concept of dating with a clear exit strategy — knowing in advance when you would walk away?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the role of extended family in a couple's major decisions?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does healthy emotional intimacy look like — and where do you think most couples get it wrong?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the relationship between sanctification and personal effort — is becoming holy something you do or something God does?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one relationship in your life that consistently brings out the best in you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "Is there a season in your past you feel you are still recovering from — and how honest are you about that with people close to you?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one question you would ask God if you could receive a direct, honest answer right now?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to pursue someone with your head, your heart, and your faith all pointing in the same direction?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be a peacemaker — and when does it require courage rather than just kindness?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area where you need more courage in your everyday life?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How important is it to you that a future partner has done significant work through their family-of-origin wounds?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you believe attraction can grow meaningfully over time, or is the initial chemistry mostly fixed?",
+    "options": [
+      "Yes — attraction can deepen significantly",
+      "Mostly yes — but there is a baseline that matters",
+      "Somewhat — I do not think it changes much",
+      "No — chemistry is mostly immediate and either there or not"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "Do you believe God still performs miracles in the same way He did in Scripture?",
+    "options": [
+      "Yes — I have seen or experienced this",
+      "Probably yes — though with appropriate discernment",
+      "Uncertain — I hold this question openly",
+      "No — I think miracles operated in a distinct biblical era"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you think about having a close opposite-sex friendship after you are married — healthy or risky?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you approach a situation where someone you love is making a decision you believe will harm them?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it look like to honor someone's dignity while also being honest about incompatibility?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you handle the fear of repeating the mistakes of the generation before you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you would tell a younger version of yourself about what to actually look for in a partner?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the gift of the church when it has also been a source of hurt for you or someone you love?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you need someone to know about you before they can really know you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to love someone in a way that leads them closer to God rather than just closer to you?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is a season of your life that was hard at the time but that you now see as one of the most important?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one pattern from your past relationships that you would most want to break in the next one?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How does the resurrection of Jesus change how you face uncertainty about your own future?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you think about the difference between being driven and being called?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does long-term love look like when feelings come and go — what actually holds it together?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What do you think Christians uniquely offer to conversations about justice and mercy in society?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Would you be willing to relocate for a relationship if everything else seemed right?",
+    "options": [
+      "Yes — if they are the right person, absolutely",
+      "Probably — with prayer and real discernment",
+      "Uncertain — it would depend on many factors",
+      "Probably not — my roots and context are too important"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you believe is the single most underrated quality in a marriage partner?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to love God with all your strength — not just heart, soul, and mind?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you have realized about yourself that took a painful circumstance to reveal?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What role do you think timing plays in whether a relationship actually works?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "Do you generally find it easy to open up emotionally with people you are close to?",
+    "options": [
+      "Yes — vulnerability comes naturally to me",
+      "Mostly yes — with the right people it flows",
+      "Somewhat — it takes real time and trust",
+      "No — opening up is genuinely difficult for me"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to you that God is both perfectly just and perfectly merciful at the same time?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you would need a partner to understand about how you handle conflict before you got serious?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way your perspective on success has shifted as you have gotten older?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you handle a situation where you are drawn to someone but genuinely uncertain about the timing?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one experience that made you realize you had more strength than you thought you did?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you to choose a partner with your future children already in mind?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the relationship between faith and emotions — when they disagree, which do you trust?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you consistently do that genuinely reflects who you want to be?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is the most dangerous assumption people make about what marriage will fix in their life?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about building family traditions — are they important or a potential source of pressure?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of emotional baggage — do you have some, and what do you actually do with it?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to hold your theology with conviction while holding your posture with genuine humility?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it look like to be genuinely humble in a culture that rewards confidence and self-promotion?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about you that someone who loves you deeply would need to be consistently patient with?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one skill you have that you believe is genuinely useful in building a strong community?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of spiritual warfare in the context of a relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think it is possible to know someone is right for you within the first few months of dating?",
+    "options": [
+      "Yes — you can know quickly with wisdom and discernment",
+      "Probably — but it needs more time to confirm",
+      "Unlikely — real depth takes longer than that",
+      "No — you need at least a year to really know someone"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "Do you believe that God has a specific, detailed plan for your life — not just a general will?",
+    "options": [
+      "Yes — He is that personal and specific",
+      "Probably — though I hold it with some nuance",
+      "Uncertain — I am still working this out",
+      "No — I think He gives wisdom and freedom more than a specific script"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle the feeling that you are not where you thought you would be by now?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be someone who is truly easy to love — not just loveable?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to love your enemy — and have you ever had to actually do it?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you approach a season when your sense of identity feels unclear or genuinely shaken?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one red flag in early dating that you now take more seriously than you used to?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is a creative skill or interest you have that you wish you had more time to develop?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about compatibility — is it something you discover or something you build?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to experience God's joy even in suffering — not just despite it?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle a situation where you know you are right but pursuing it would cost you a meaningful relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you to be someone's safe person — the one they run toward, not away from?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What does it mean to you that Christians are called to be salt and light in a world that is often indifferent or hostile?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about love that you have only been able to understand through experiencing a real loss?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be filled with the Holy Spirit — and is that something you actively seek?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it look like to be genuinely at peace with your own story without being defined by it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you approach the idea of falling in love with someone's potential rather than with who they actually are now?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it look like for two people to sharpen each other without tearing each other down?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Would you walk away from a relationship that looked right on paper but felt persistently unsettled inside?",
+    "options": [
+      "Yes — an unexplained lack of peace matters deeply to me",
+      "Probably — I would take the unrest very seriously",
+      "Maybe — I would want more clarity and time first",
+      "No — feelings can be wrong; I would push through it"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "Do you think you are generally self-aware — able to see yourself clearly, including your blind spots?",
+    "options": [
+      "Yes — self-awareness is something I actively cultivate",
+      "Mostly — though I know I have gaps",
+      "Somewhat — I see some things clearly and miss others",
+      "Not really — it is something I want to grow in"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you need in a partner that never shows up on anyone's formal list of requirements?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to delight yourself in the Lord in a real, practical, everyday way?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it mean to live a life that is both intentional and surrendered — without one canceling the other?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you need to give yourself permission to actually want in a relationship?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one place you have visited — or would most want to visit — that has or would shape how you see the world?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to choose a partner for who they are becoming, not just who they are today?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you cultivate spiritual hunger when you are in a season of comfort and plenty?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area where being patient with yourself has made you more patient with others?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it mean to raise children in a way that makes faith attractive rather than obligatory?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the role of friendship in a marriage — is marrying your best friend a cliche or a real goal?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does the fruit of the Spirit look like in your relationships — not just in private but in how others actually experience you?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it mean to live with integrity when integrity costs you something concrete?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one area of growth you would want to see in yourself before entering your next serious relationship?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is a moment when you felt unexpectedly proud of someone — and what did it reveal about your own values?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the difference between a soulmate and a covenant partner?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one way that loving someone has required you to confront your own selfishness?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think having a detailed list of qualities for a future spouse is helpful, or does it do more harm than good?",
+    "options": [
+      "Helpful — clarity protects you from settling",
+      "Probably helpful — as long as it stays flexible",
+      "Probably harmful — lists can blind you to real people",
+      "Harmful — love does not come from a checklist"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "Is regular fasting a spiritual discipline you currently practice or genuinely intend to practice?",
+    "options": [
+      "Yes — it is a consistent part of my faith life",
+      "Occasionally — it is something I return to",
+      "I want to but have not been consistent",
+      "No — it is not something I currently practice"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it look like to hold your future loosely without becoming passive about it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about physical affection in dating — as bonding, as a boundary challenge, or as both?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the authority of Scripture in a world that increasingly challenges its assumptions?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you would do differently in how you have pursued or received love in the past?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one piece of art, music, or literature that has genuinely moved you, and why?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the relationship between romantic love and commitment — which comes first, and which sustains?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to fear God rather than people — and have you ever had to choose between the two?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What does it mean to take full responsibility for your life — not your circumstances, but your response to them?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about the way you receive love that you genuinely wish you were better at?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about the relationship between faith and science — do you find them in conflict?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to marry someone's whole life — not just the parts you see during dating?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to trust God with a desire that has been genuinely unfulfilled for a long time?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you deal with the gap between who you want to be and who you actually are on hard days?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about your communication style that you know would require patience from a future partner?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it look like to pass on a living, breathing faith to your children rather than just religious habits?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean for a couple to have a shared vision for life — and how important is it in choosing a partner?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you believe God has one specific person intended for you to marry, or do you think that framework is more complicated than that?",
+    "options": [
+      "Yes — I believe God has a specific person for me",
+      "Leaning yes — though I hold it with some nuance",
+      "Uncertain — I genuinely wrestle with this question",
+      "No — I think it is more about two people choosing well"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think men and women should approach initiating romantic interest differently today than in previous generations?",
+    "options": [
+      "Yes — I think distinct approaches still make sense",
+      "Somewhat — the principles remain but the form can adapt",
+      "Probably not — I think it should be mostly the same",
+      "No — the old distinctions do not apply today"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean that God sees you completely and loves you fully — and do you live as though you actually believe that?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area of your life where you are still waiting for your courage to match your conviction?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does emotional safety in a marriage look like when both partners are exhausted and depleted?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is something you do to stay genuinely hopeful when the world feels heavy?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of romantic jealousy — is it a healthy signal or a dangerous pattern?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to abide in Christ when your circumstances are genuinely difficult?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What do you do when you know you are wrong but pride makes it hard to admit it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to build a relationship on covenant rather than on contract?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about Christians' responsibility to care for creation as part of their faith?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about the way you love that you would want someone to see clearly before they commit to you?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to seek first the kingdom of God in the specific decisions you are facing right now?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way you have been surprised by your own capacity for grace toward someone who genuinely hurt you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of sacrifice in love — not the romantic kind, but the daily invisible kind?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is something that has shifted your understanding of what it means to be truly generous?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you believe about love that most people in your generation seem to disagree with?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be known deeply and to choose to stay — what makes that kind of love possible?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Is it fair to enter a serious relationship when you know you are still in a critical season of personal growth?",
+    "options": [
+      "Yes — growth never fully stops; do not wait forever",
+      "Probably — it depends on what is being worked through",
+      "Uncertain — it really depends on the type of growth",
+      "No — some stability should come before you bring someone else in"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you stay present in a season that is mostly ordinary and unglamorous?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one quality you have been quietly looking for in a partner that you rarely actually admit to?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "Do you find that corporate worship on Sundays genuinely impacts how you live the rest of your week?",
+    "options": [
+      "Yes — Sunday shapes my entire week",
+      "Mostly — when I am truly engaged it does",
+      "Sometimes — it is inconsistent for me",
+      "Not really — I struggle to carry it past Sunday"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about a partner's close friendship with their ex — where is the line?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about having open, honest conversations with your children about your own past mistakes?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be genuinely content with where you are while still pursuing something more?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to pursue God when you are genuinely angry at Him?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you have learned about yourself by watching how you treat people who can do nothing for you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about love languages when they conflict — when you naturally give one way but need to receive another?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about the tension between personal holiness and engaging authentically with a broken world?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to love someone well in their worst season — not just their best?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing that happened in your childhood that you believe has shaped almost everything since?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you handle feeling vulnerable in a relationship when vulnerability has genuinely hurt you before?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to live with eternity in view — and does that reality actually change your daily decisions?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing about your generation's approach to relationships that you think is genuinely wise?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one aspect of God's love that most directly changes how you show up in your relationships?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about dating someone who is very different from you in temperament or personality?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be a disciple — not just a believer — and what is the practical difference?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you stay connected to your values when the environment around you is constantly pulling you in another direction?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think it is healthy for a couple to spend most of their free time together, or is regular independent space important?",
+    "options": [
+      "Independent space is very important — I would want that",
+      "Leaning toward space — though togetherness matters too",
+      "Leaning toward togetherness — I want to share most of life",
+      "As much togetherness as possible — that is the goal"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "Would you say your sense of worth is more rooted in what you do and achieve, or in who you are before God?",
+    "options": [
+      "Rooted in who I am before God — genuinely",
+      "Mostly in God — though performance still tugs at me",
+      "Honestly more in what I do — it is something I am working on",
+      "Mostly in what I achieve — I know I need to change this"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about your own needs in a relationship that you have been hesitant to honestly ask for?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the role of faith in a child's development — is it something you teach or something they catch?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What do you think is the most important thing a couple can do to protect their relationship over decades?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to hope in God when your circumstances give you no visible reason to hope?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing about your upbringing that you are genuinely grateful for — not in spite of the hard parts but because of them?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be a partner who is genuinely safe to fail around?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing you think most people miss about what makes a community truly healthy?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of growing apart versus growing together — what is the real cause?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be a living witness — not just a speaking one?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area where you have had to choose faithfulness over feelings for an extended period of time?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to have a shared vision for life with a partner — how necessary is it, and what happens without it?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "What does it mean for the church to be prophetic in today's culture — not political, but genuinely prophetic?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about how you handle money right now that you know would directly affect a future relationship?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the concept of family loyalty — how much should it bind you, and when does it stop?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be a partner who leads with service rather than with authority?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean that God is patient with you — and how does that actually shape your patience toward yourself?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way you have had to let go of control in order to grow in genuine trust?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about your own argument or conflict style that you know needs to change?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think couples should set explicit physical boundaries early in a dating relationship, or let them develop more naturally?",
+    "options": [
+      "Yes — clear and early is the wisest approach",
+      "Probably — sooner rather than later is better",
+      "Somewhat — I think it varies by the relationship",
+      "No — I think they should develop organically over time"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "Is memorizing Scripture a regular spiritual practice for you?",
+    "options": [
+      "Yes — it is a consistent discipline in my life",
+      "Occasionally — I do it in certain seasons",
+      "I want to but have not been consistent",
+      "No — it is not something I currently practice"
+    ]
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the role of faith in a child's development — is it something you teach intentionally or something they absorb?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about supporting a partner's dreams when they compete with your own sense of direction?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be transformed by the renewing of your mind — what does that process actually look like?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle situations where what is good and what is easy are completely opposite things?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about how men and women relate that you think the church needs to talk about more honestly?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think Christians should engage with the entertainment and media they consume?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be loved not for what you do but for who you are — and do you actually believe that is possible?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it look like to navigate in-law relationships with wisdom and grace when there are real tensions?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you are learning about yourself in this current season of waiting?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the role of community in keeping you accountable to your actual convictions?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way you have seen the connection between faithfulness in small things and trustworthiness in larger ones?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of romantic love as a choice versus a feeling — where do you actually land?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing that would make you genuinely reconsider pursuing someone you were already interested in?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to press into God during a season when faith feels like effort rather than grace?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you handle feeling stuck — in a season, in a habit, or in a relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to pray for your future spouse right now — what do you actually pray?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Would you be open to pursuing premarital counseling even if your relationship already felt healthy and strong?",
+    "options": [
+      "Yes — healthy couples benefit most from it",
+      "Probably — I would be open to it",
+      "Maybe — I would consider it depending on the situation",
+      "Probably not — if things are healthy, I would not feel the need"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "Do you think you are genuinely good at receiving criticism and feedback from people who care about you?",
+    "options": [
+      "Yes — I actively welcome it",
+      "Mostly — though it takes me a moment to receive it well",
+      "Somewhat — it depends heavily on who is giving it",
+      "No — I struggle with criticism even when it is loving"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one long-term quality in a relationship that most people undervalue when they are young?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to give cheerfully and sacrificially — and does your actual giving reflect that?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one part of your character that has been hardest won — paid for by real cost?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be generous in a relationship — not financially, but emotionally and with your time?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one conversation you have had that genuinely changed how you see something important?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean for two people to grow in the same direction — and what happens when they do not?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be a peacemaker in a relationship — not a conflict-avoiding peacekeeper?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way you have grown in your ability to receive love that you are still learning?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about being truly known and not running away that you think is central to any real relationship?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it mean to you for your home to be a place of genuine hospitality — not just a nice house?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the role of past trauma in shaping what you genuinely need from a partner?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to take up your cross daily — not just in theory, but in the actual decisions of this season?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you stay motivated in the middle of a long, slow obedience that no one is watching?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about the concept of romantic love that you have had to let go of as you have matured?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing you believe is genuinely undervalued in today's culture that you think matters deeply?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of being spiritually ready versus spiritually perfect — is there a real distinction?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think it is important for a couple to have a shared sense of mission or calling beyond their own household?",
+    "options": [
+      "Yes — a shared mission is essential",
+      "Probably — I think it adds something vital",
+      "Nice to have — but not strictly necessary",
+      "No — building a healthy home is mission enough"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "Do you feel that your local church community genuinely knows and actively supports you?",
+    "options": [
+      "Yes — I feel truly known and supported",
+      "Mostly — though there is room to go deeper",
+      "Somewhat — I know some people well but not many",
+      "No — I feel largely unknown in my church community"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to walk humbly before God — not just morally, but in how you hold your own opinions?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way you have had to let go of control to grow in genuine trust?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about your communication style that most surprises people who know you well?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing about your faith that makes you genuinely different in a way you are actually proud of?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about long-term love that you have come to believe requires more courage than people expect?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be in the world but not of it in the specific context of your daily life?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way you have learned to love yourself that has made you genuinely better at loving others?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about a partner's relationship with God being private versus something they share openly with you?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about the relationship between your own healing and your capacity to parent well?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about the institution of marriage that you believe modern culture has profoundly misunderstood?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does genuine repentance feel like — not just saying sorry, but actually turning?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one value you hold that you have had to defend at some genuine personal cost?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the relationship between vulnerability and strength — can they genuinely coexist in a relationship?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about the Christian's role in caring for the next generation — beyond just your own children?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you believe about the purpose of marriage that has changed what you are actually looking for?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to you to be part of the body of Christ — not just to attend a church, but to genuinely be the church?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you do to guard your own peace when the people around you are not at peace?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about how you parent yourself that you would want a partner to understand?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think it is wise to share your full romantic history with a future spouse, or is some level of privacy appropriate?",
+    "options": [
+      "Full transparency — a future spouse deserves to know everything",
+      "Mostly open — what is relevant and shaping, I would share",
+      "Selective — the past is the past and some things are private",
+      "Privacy is appropriate — no one needs to know everything"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Is financial compatibility — similar values, habits, and goals around money — a dealbreaker for you?",
+    "options": [
+      "Yes — financial alignment is essential to me",
+      "Probably — significant misalignment would be a serious concern",
+      "Maybe — it depends on how different we actually are",
+      "No — money is not something I would end a relationship over"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to serve someone sacrificially when you get nothing in return and no one sees it?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way your faith has genuinely protected you from a decision that would have caused you serious harm?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you handle the fear of being hurt again when you have already been hurt in love before?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one way that failure has been more formative for you than success?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to give someone the benefit of the doubt — and when does that become something closer to naivety?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to you that God keeps His promises even when circumstances make it look completely impossible?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area where you have had to choose discipline over comfort for an extended period — and what did it build in you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the tension between high standards and genuine acceptance in how you pursue a relationship?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it look like for parents to model repentance and forgiveness openly in front of their children?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to stay emotionally faithful — not just physically — before marriage?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about what it means to truly love the local church — its actual people, not just the idea of it?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing about how you relate to people that you know has grown significantly in the last few years?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the role of service in a marriage — not just to each other but together for others?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing you wish you could tell someone who is in the hardest season of their life right now?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you that your marriage could be a witness to others — not just a personal blessing?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about pursuing someone that you think gets overlooked in favor of just letting things happen naturally?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Is it important to you that your future spouse has a meaningful relationship with your close friends?",
+    "options": [
+      "Yes — their fitting into my community matters deeply",
+      "Probably — I would want my people to genuinely like them",
+      "Somewhat — it would matter but not be a dealbreaker",
+      "Not really — friendships and a relationship can stay separate"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "Would you say you are currently living in a way that reflects your deepest values, or is there a significant gap?",
+    "options": [
+      "Yes — my life and values are largely aligned",
+      "Mostly — with some areas I am actively working on",
+      "There is a noticeable gap — I am aware and working on it",
+      "There is a significant gap — this is something I need to address"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to forgive as the Lord has forgiven you — completely and at genuine cost?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you believe about yourself that has been hard to hold onto against voices that say otherwise?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be spiritually present for someone you are in a relationship with — not controlling, but praying and protecting?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one book, sermon, or piece of teaching that genuinely shifted how you see yourself or the world?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the risk of loving someone deeply when there is no guarantee of the outcome?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to offer yourself fully to God for whatever He wants to do through you in a given season?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "How do you think about the relationship between contentment and ambition — are they in real tension?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about how you express love that most people would never see unless they were genuinely close to you?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it mean to let your children see you struggle with your faith in a healthy, honest way?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be a partner who stays present when your instinct is to pull away?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "How do you think about the promise of heaven — does it genuinely shape your present, or is it mostly a comfort for later?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you need to stop apologizing for because it is actually part of who God made you to be?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to build a life together rather than just sharing a life — what is the actual difference?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one question you have never been asked that you would actually love to be asked?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about emotional unavailability — have you experienced it in yourself or in someone you loved?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you that the church describes marriage as a picture of Christ and the church — not just a relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think couples should intentionally plan time apart in marriage to protect individual identity and personal growth?",
+    "options": [
+      "Yes — I think it is essential for a healthy marriage",
+      "Probably — regular independent space is wise",
+      "Somewhat — some is healthy but I would not plan much of it",
+      "No — I want to share almost all of life with my spouse"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "Poll",
+    "question": "Do you believe that fasting meaningfully deepens your connection with God?",
+    "options": [
+      "Yes — I have experienced this directly",
+      "Probably — I believe it does even when I do not feel it",
+      "Uncertain — I am still forming a view on this",
+      "I am not sure — I have not practiced it enough to know"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be faithful in waiting rather than just enduring it?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing about your relationship with time — deadlines, spontaneity, pace — that a partner would genuinely need to know?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you would most want to protect in your marriage when life gets busy and starts to crowd everything out?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing you have outgrown that was once very important to you — and how do you feel about that now?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the idea that love is not just something you feel, but something you practice — every single day?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be set free by the truth — and is there a truth you are still working toward fully accepting?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area of your character where you know there is a gap between how you present yourself and who you actually are?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you believe every person should know about themselves before seriously pursuing marriage?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about Christians engaging in local government, education, or community leadership — is that a calling?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you for a couple to have a shared prayer life — beyond just praying before meals?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to have a faith that is truly your own — not inherited, not cultural, but genuinely personal?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing about your personality that you have had to learn to steward rather than suppress?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the idea of falling out of love — can it happen to people who are genuinely committed?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing you have done purely for joy — no goal, no productivity, no audience — that you would do again?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to build a friendship with someone before romance — is that the right order?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to encounter God in the ordinary moments of your life — not just in church or in crisis?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you have noticed about yourself in community that you do not see when you are alone?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about your relationship with your father or mother that has shaped what you look for in a partner?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think a couple should live in the same city for at least a year before getting engaged?",
+    "options": [
+      "Yes — shared daily life reveals things dating cannot",
+      "Probably — proximity over time matters a lot",
+      "Maybe — it depends on the relationship and circumstances",
+      "No — the length of engagement can compensate for distance"
+    ]
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Is it important to you that your future spouse has a sense of humor that can match or complement yours?",
+    "options": [
+      "Yes — shared humor is non-negotiable for me",
+      "Probably — it matters more than people admit",
+      "Somewhat — it is nice but not essential",
+      "No — humor is not something I would weigh heavily"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be honest before God — not just obedient, but genuinely transparent with Him?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing that consistently reveals your character under pressure that you are still working on?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you to be loved with patience — and have you actually received that kind of love?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is something you have changed your mind about in the last five years that would surprise the version of you from then?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the idea of a partner who challenges you versus one who supports you — do you need both?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be salt and light in your workplace, neighborhood, or social world without being preachy?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you have learned about forgiveness that you could not have learned without being genuinely and significantly wronged?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to love someone freely — without fear of rejection or the constant need for their approval?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "How do you think about creating a family culture where every member feels genuinely seen and valued?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about the concept of finding your person that you think sets people up for disappointment?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to endure hardship as formation — not as punishment, but as the shaping of your character?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area where you know your words and your actual actions are not yet in alignment?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be genuinely curious about someone — not projecting onto them, but actually wanting to understand who they are?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one way that a person you barely knew changed how you think about something that matters to you?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be patient in love — not passive, but genuinely unhurried?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about dating in the digital age that you find genuinely difficult to navigate with integrity?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "Poll",
+    "question": "Do you think the way a person treats service workers or strangers reveals something significant about their character?",
+    "options": [
+      "Yes — it is one of the most honest tests of character",
+      "Probably — it reveals more than most people realize",
+      "Somewhat — it is one signal among many",
+      "Not really — context matters too much to read into it"
+    ]
+  },
+  {
+    "category": "Life & Character",
+    "format": "Poll",
+    "question": "Do you think you are better at giving love to others than you are at receiving it?",
+    "options": [
+      "Yes — giving comes far more naturally to me",
+      "Probably — receiving is harder than most people know",
+      "About the same — I do not think one is easier for me",
+      "No — I actually find receiving easier than giving"
+    ]
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to bring your whole self to God — not just the presentable, put-together parts?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way you have learned to set a boundary that protects your peace without damaging a relationship?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of falling in love versus building in love — which do you think is more sustainable?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing about your personality that people almost always misread until they know you well?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to pray for someone you are interested in before you tell them?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean for your faith to be costly — is there something it has genuinely cost you?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one area of your life where you are learning to rest without feeling guilty about it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the concept of spiritual intimacy in a marriage — is it different from emotional or physical intimacy?"
+  },
+  {
+    "category": "Family & Children",
+    "format": "QA",
+    "question": "What does it mean to be honest with your children about your own struggles and history in a way that builds trust rather than fear?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing you believe about love that you have had to defend against a culture that fundamentally disagrees?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to you that God is close to the brokenhearted — have you actually experienced that?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing about your relationship with yourself that you would want your future spouse to understand early on?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about the difference between a partner who accepts you as you are and one who sees who you can become?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing you do that most people around you do not do, that you think is quietly important?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to be someone's person — the one they call when everything is going wrong?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it look like to be led by the Spirit in a specific relationship or major decision — not just in theory?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you have noticed about how you treat people when you are tired or under stress that you wish were different?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about your personality that you think would be most surprising to a future spouse once they really see it?"
+  },
+  {
+    "category": "Culture & Society",
+    "format": "QA",
+    "question": "How do you think about Christians being genuinely different from culture without becoming isolated from it?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to build a marriage that survives not just the hard seasons but the long, ordinary ones?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to live with a deep awareness of God's presence — not just in church but throughout your actual day?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one thing you have learned about yourself by paying attention to what consistently moves you or breaks your heart?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "How do you think about fighting fair in a marriage — what are your non-negotiables when conflict arises?"
+  },
+  {
+    "category": "Fun & Icebreakers",
+    "format": "QA",
+    "question": "What is one thing you have learned about love that could only be understood by watching it lived out in someone else?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to you to give someone your whole heart — knowing it might not be returned?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What does it mean to be rooted and grounded in love — not just as doctrine, but as something you have lived?"
+  },
+  {
+    "category": "Life & Character",
+    "format": "QA",
+    "question": "What is one way that your relationship with God has made you a noticeably better friend, coworker, or family member?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What is one thing about the way you see a future spouse that you hope is still completely true 20 years into marriage?"
+  },
+  {
+    "category": "Dating & Marriage",
+    "format": "QA",
+    "question": "What does it mean to choose someone on the worst day of your life — and is that a standard worth holding for a future spouse?"
+  },
+  {
+    "category": "Christian Faith",
+    "format": "QA",
+    "question": "What is one thing about God's character that you have had to learn through loss rather than abundance?"
+  }
+]
