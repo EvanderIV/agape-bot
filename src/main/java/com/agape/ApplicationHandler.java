@@ -485,7 +485,7 @@ public class ApplicationHandler extends ListenerAdapter {
                                     "{autoscale:2}" + state.physicalDescription + "{/autoscale}" + "\n\n" +
                                     "{autoscale:3}" + state.hobbies + "{/autoscale}" + "\n\n" +
                                     strAndWeak +
-                                    "{autoscale:3}{img:green_flag.png} PARTNER: " + state.lookFor.replace("\n", ", ") + "\n" +
+                                    "{autoscale:4}{img:green_flag.png} PARTNER: " + state.lookFor.replace("\n", ", ") + "\n" +
                                     "{img:red_flag.png} PARTNER: " + state.dealBreakers.replace("\n", ", ") + "{/autoscale}";
     
                     // Resolve design code to actual file paths
@@ -536,9 +536,10 @@ public class ApplicationHandler extends ListenerAdapter {
             ? "\n"
             : "{autoscale:3}" + strAndWeak.trim() + "{/autoscale}\n\n";
 
-        // Looking For + Deal Breakers are linked: shrink both if either is too long
+        // Looking For + Deal Breakers are linked: shrink both if either is too long.
+        // Limit is 4 (2 lines per entry) since each flag is its own natural paragraph.
         String flagSection = lookFor != null
-            ? "{autoscale:3}{img:green_flag.png} PARTNER: " + lookFor + "\n"
+            ? "{autoscale:4}{img:green_flag.png} PARTNER: " + lookFor + "\n"
                 + "{img:red_flag.png} PARTNER: " + dealBreakers + "{/autoscale}"
             : "{autoscale:2}{img:red_flag.png} PARTNER: " + dealBreakers + "{/autoscale}";
 
