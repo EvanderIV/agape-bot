@@ -467,10 +467,13 @@ public class ApplicationHandler extends ListenerAdapter {
                     // Ensure the image path is a valid URI if it's a local file
                     String pfpUri = state.photoPath.startsWith("http") ? state.photoPath : new File(state.photoPath).toURI().toURL().toString();
 
-                    String strAndWeak = "\n";
-
-                    if (state.strengths != null && !state.strengths.isEmpty() && state.weaknesses != null && !state.weaknesses.isEmpty()) {
-                        strAndWeak = state.strengths + "\n" + state.weaknesses + "\n\n";
+                    boolean hasStr = state.strengths != null && !state.strengths.isEmpty();
+                    boolean hasWeak = state.weaknesses != null && !state.weaknesses.isEmpty();
+                    String strAndWeak;
+                    if (hasStr && hasWeak) {
+                        strAndWeak = "{autoscale:3}" + state.strengths + "\n" + state.weaknesses + "{/autoscale}\n\n";
+                    } else {
+                        strAndWeak = "\n";
                     }
 
                     // Construct the beautiful rich text using their actual answers!
@@ -479,11 +482,11 @@ public class ApplicationHandler extends ListenerAdapter {
                                     calculateAge(state.birthday) + " | " + getBirthYear(state.birthday) + "\n" +
                                     (state.sex ? "Female" : "Male") + "\n" +
                                     state.sect + "\n" +
-                                    state.physicalDescription + "\n\n" +
-                                    state.hobbies + "\n\n" +
+                                    "{autoscale:2}" + state.physicalDescription + "{/autoscale}" + "\n\n" +
+                                    "{autoscale:3}" + state.hobbies + "{/autoscale}" + "\n\n" +
                                     strAndWeak +
-                                    "{img:green_flag.png} PARTNER: " + state.lookFor.replace("\n", ", ") + "\n" +
-                                    "{img:red_flag.png} PARTNER: " + state.dealBreakers.replace("\n", ", ");
+                                    "{autoscale:3}{img:green_flag.png} PARTNER: " + state.lookFor.replace("\n", ", ") + "\n" +
+                                    "{img:red_flag.png} PARTNER: " + state.dealBreakers.replace("\n", ", ") + "{/autoscale}";
     
                     // Resolve design code to actual file paths
                     DesignPaths designPaths = resolveDesignCode(state.designCode);
@@ -520,8 +523,6 @@ public class ApplicationHandler extends ListenerAdapter {
         String strAndWeak = "";
         if (hasStrengths) strAndWeak += state.strengths + "\n";
         if (hasWeaknesses) strAndWeak += state.weaknesses + "\n";
-        if (!strAndWeak.isEmpty()) strAndWeak += "\n";
-        else strAndWeak = "\n";
 
         String username = state.username != null ? state.username : "unknown";
         String lookFor = (state.lookFor != null && !state.lookFor.isEmpty())
@@ -529,17 +530,28 @@ public class ApplicationHandler extends ListenerAdapter {
         String location = (state.country != null && !state.country.isEmpty())
             ? state.country : null;
         String dealBreakers = state.dealBreakers != null ? state.dealBreakers.replace("\n", ", ") : "";
+
+        // Strengths + Weaknesses are linked: shrink both if either is too long
+        String strAndWeakSection = strAndWeak.isEmpty()
+            ? "\n"
+            : "{autoscale:3}" + strAndWeak.trim() + "{/autoscale}\n\n";
+
+        // Looking For + Deal Breakers are linked: shrink both if either is too long
+        String flagSection = lookFor != null
+            ? "{autoscale:3}{img:green_flag.png} PARTNER: " + lookFor + "\n"
+                + "{img:red_flag.png} PARTNER: " + dealBreakers + "{/autoscale}"
+            : "{autoscale:2}{img:red_flag.png} PARTNER: " + dealBreakers + "{/autoscale}";
+
         return "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}" + state.name + "{/}*\n"
             + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:6.0}{f:Arial Rounded MT Bold}@" + username + "{/}*\n\n"
             + calculateAge(state.birthday) + " | " + getBirthYear(state.birthday) + "\n"
             + (state.sex ? "Female" : "Male") + "\n"
             + state.sect + "\n"
             + (location != null ? location + "\n" : "")
-            + state.physicalDescription + "\n\n"
-            + state.hobbies + "\n\n"
-            + strAndWeak
-            + (lookFor != null ? "{img:green_flag.png} PARTNER: " + lookFor + "\n" : "")
-            + "{img:red_flag.png} PARTNER: " + dealBreakers;
+            + "{autoscale:2}" + state.physicalDescription + "{/autoscale}" + "\n\n"
+            + "{autoscale:3}" + state.hobbies + "{/autoscale}" + "\n\n"
+            + strAndWeakSection
+            + flagSection;
     }
 
     /**

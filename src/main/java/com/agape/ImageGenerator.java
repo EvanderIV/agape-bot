@@ -266,6 +266,9 @@ public class ImageGenerator {
                 int pfpBottom = pfpMarginTop + pfpSize + 30; // buffer below PFP
                 int pfpLeft = backgroundImage.getWidth() - pfpSize - pfpMarginRight - 30; // buffer left of PFP
 
+                // Shrink sections tagged with {autoscale:N} to fit within N lines
+                mainText = preprocessAutoScale(g2d, mainText, baseFont, textX, backgroundImage.getWidth());
+
                 List<LineData> parsedLines = layoutText(g2d, mainText, baseFont, textX, textY, backgroundImage.getWidth(), pfpBottom, pfpLeft);
                 List<Rectangle> blobBounds = new ArrayList<>();
 
@@ -533,6 +536,116 @@ public class ImageGenerator {
             previousWasBlob = hasBlob;
         }
         return finalLines;
+    }
+
+    /**
+     * Finds {autoscale:N}...{/autoscale} blocks in the text, measures how many lines
+     * each block renders at the default 40f size, and if it exceeds N lines injects
+     * per-line {s:XX}...{/} tags to shrink the font until it fits.
+     */
+    private static String preprocessAutoScale(Graphics2D g2d, String text, Font baseFont,
+            int startX, int bgWidth) {
+        final String BEGIN_PREFIX = "{autoscale:";
+        final String END_TAG = "{/autoscale}";
+        final float DEFAULT_SIZE = 40f;
+        final float MIN_SIZE = 24f;
+        final float STEP = 2f;
+
+        StringBuilder result = new StringBuilder();
+        int i = 0;
+        while (i < text.length()) {
+            int tagStart = text.indexOf(BEGIN_PREFIX, i);
+            if (tagStart == -1) {
+                result.append(text, i, text.length());
+                break;
+            }
+            result.append(text, i, tagStart);
+
+            int closeBrace = text.indexOf('}', tagStart + BEGIN_PREFIX.length());
+            if (closeBrace == -1) {
+                result.append(text.substring(tagStart));
+                break;
+            }
+            int maxLines;
+            try {
+                maxLines = Integer.parseInt(text.substring(tagStart + BEGIN_PREFIX.length(), closeBrace));
+            } catch (NumberFormatException e) {
+                maxLines = 3;
+            }
+
+            int contentStart = closeBrace + 1;
+            int contentEnd = text.indexOf(END_TAG, contentStart);
+            if (contentEnd == -1) {
+                result.append(text.substring(contentStart));
+                break;
+            }
+            String content = text.substring(contentStart, contentEnd);
+
+            float fontSize = DEFAULT_SIZE;
+            while (fontSize > MIN_SIZE) {
+                if (countWrappedLines(g2d, content, baseFont, fontSize, startX, bgWidth) <= maxLines) break;
+                fontSize -= STEP;
+            }
+
+            if (fontSize < DEFAULT_SIZE) {
+                String[] lines = content.split("\n", -1);
+                for (int j = 0; j < lines.length; j++) {
+                    if (!lines[j].isEmpty()) {
+                        result.append("{s:").append((int) fontSize).append("}");
+                        result.append(lines[j]);
+                        result.append("{/}");
+                    }
+                    if (j < lines.length - 1) result.append("\n");
+                }
+            } else {
+                result.append(content);
+            }
+
+            i = contentEnd + END_TAG.length();
+        }
+        return result.toString();
+    }
+
+    /**
+     * Estimates the number of wrapped lines the given content would produce at
+     * the specified font size, using the full card width (below the PFP zone).
+     * Rich-text tags are stripped before measuring.
+     */
+    private static int countWrappedLines(Graphics2D g2d, String text, Font baseFont,
+            float fontSize, int startX, int bgWidth) {
+        Font sizedFont = baseFont.deriveFont(Font.PLAIN).deriveFont(fontSize);
+        FontMetrics fm = g2d.getFontMetrics(sizedFont);
+        int maxWidth = bgWidth - startX - 80;
+
+        // Strip tags; replace {img:...} with a short placeholder to approximate its width
+        String stripped = text.replaceAll("\\{img:[^}]+\\}", "XX")
+                              .replaceAll("\\{[^}]+\\}", "")
+                              .replaceAll("\\*+", "");
+
+        String[] paragraphs = stripped.split("\n", -1);
+        int totalLines = 0;
+        for (String paragraph : paragraphs) {
+            if (paragraph.trim().isEmpty()) {
+                totalLines++;
+                continue;
+            }
+            int lineWidth = 0;
+            int linesInPara = 1;
+            String[] tokens = paragraph.split("(?<=\\s)|(?=\\s)");
+            for (String token : tokens) {
+                if (token.isEmpty()) continue;
+                if (lineWidth == 0 && token.trim().isEmpty()) continue;
+                int tokenWidth = fm.stringWidth(token);
+                if (lineWidth + tokenWidth > maxWidth && lineWidth > 0) {
+                    linesInPara++;
+                    lineWidth = 0;
+                    if (token.trim().isEmpty()) continue;
+                }
+                lineWidth += tokenWidth;
+            }
+            totalLines += linesInPara;
+        }
+        return totalLines;
     }
 
     private static List<TextRun> parseRichText(String line) {
