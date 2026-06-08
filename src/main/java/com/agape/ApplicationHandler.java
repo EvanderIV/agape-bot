@@ -1411,13 +1411,13 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case STRENGTHS:
-                state.strengths = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
+                state.strengths = messageContent.equalsIgnoreCase("skip") ? "" : normalizeLineBreaks(messageContent);
                 state.currentStep = AppStep.WEAKNESSES;
                 event.getChannel().sendMessage("**(10/15)** " + currentQuestions[8]).queue();
                 break;
 
             case WEAKNESSES:
-                state.weaknesses = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
+                state.weaknesses = messageContent.equalsIgnoreCase("skip") ? "" : normalizeLineBreaks(messageContent);
                 state.currentStep = AppStep.PHOTO;
                 event.getChannel().sendMessage("**(11/15)** " + currentQuestions[9]).queue();
                 break;
@@ -1599,10 +1599,10 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.hobbies = normalizeLineBreaks(messageContent);
                         break;
                     case STRENGTHS:
-                        state.strengths = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
+                        state.strengths = messageContent.equalsIgnoreCase("skip") ? "" : normalizeLineBreaks(messageContent);
                         break;
                     case WEAKNESSES:
-                        state.weaknesses = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
+                        state.weaknesses = messageContent.equalsIgnoreCase("skip") ? "" : normalizeLineBreaks(messageContent);
                         break;
                     case TARGET_AGE:
                         if (!isValidTargetAge(messageContent)) {
