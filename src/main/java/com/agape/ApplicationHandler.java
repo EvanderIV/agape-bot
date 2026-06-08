@@ -483,7 +483,7 @@ public class ApplicationHandler extends ListenerAdapter {
                                     (state.sex ? "Female" : "Male") + "\n" +
                                     state.sect + "\n" +
                                     "{autoscale:2}" + state.physicalDescription + "{/autoscale}" + "\n\n" +
-                                    "{autoscale:3}" + state.hobbies + "{/autoscale}" + "\n\n" +
+                                    "{autoscale:3}" + normalizeHobbies(state.hobbies) + "{/autoscale}" + "\n\n" +
                                     strAndWeak +
                                     "{autoscale:4}{img:green_flag.png} PARTNER: " + state.lookFor.replace("\n", ", ") + "\n" +
                                     "{img:red_flag.png} PARTNER: " + state.dealBreakers.replace("\n", ", ") + "{/autoscale}";
@@ -550,9 +550,31 @@ public class ApplicationHandler extends ListenerAdapter {
             + state.sect + "\n"
             + (location != null ? location + "\n" : "")
             + "{autoscale:2}" + state.physicalDescription + "{/autoscale}" + "\n\n"
-            + "{autoscale:3}" + state.hobbies + "{/autoscale}" + "\n\n"
+            + "{autoscale:3}" + normalizeHobbies(state.hobbies) + "{/autoscale}" + "\n\n"
             + strAndWeakSection
             + flagSection;
+    }
+
+    /** Strips common user-written hobby preambles and prepends the canonical "HOBBIES: " label. */
+    private static String normalizeHobbies(String hobbies) {
+        if (hobbies == null || hobbies.isEmpty()) return "HOBBIES: ";
+        // Handles variants like:
+        //   "Hobbies: " / "Hobbies include " / "My hobbies are " / "My hobbies consist of "
+        //   "Some of my hobbies include " / "My hobbies and interests: "
+        //   "My interests include " / "Interests: "
+        //   "I enjoy " / "I like " / "I love "
+        String cleaned = hobbies.replaceFirst(
+            "(?i)^(?:" +
+            "(?:(?:some\\s+of\\s+)?my\\s+|some\\s+of\\s+)?hobbies(?:\\s+and\\s+interests)?(?:\\s+(?:include|are|consist\\s+of)|\\s*:)?|" +
+            "(?:my\\s+)?interests(?:\\s+(?:include|are)|\\s*:)?|" +
+            "i\\s+(?:enjoy|like|love)" +
+            ")\\s*",
+            ""
+        );
+        if (!cleaned.isEmpty()) {
+            cleaned = Character.toUpperCase(cleaned.charAt(0)) + cleaned.substring(1);
+        }
+        return "HOBBIES: " + cleaned;
     }
 
     /**

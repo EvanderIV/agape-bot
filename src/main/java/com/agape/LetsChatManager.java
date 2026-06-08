@@ -3,6 +3,7 @@ package com.agape;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.utils.messages.MessagePollBuilder;
 import net.dv8tion.jda.api.utils.messages.MessagePollData;
@@ -93,12 +94,15 @@ public class LetsChatManager {
                 continue;
             }
 
+            Role letsRole = guild.getRolesByName("Let's Chat!", false).stream().findFirst().orElse(null);
+            String mention = letsRole != null ? letsRole.getAsMention() : null;
+
             if ("Poll".equals(q.format) && q.options != null && q.options.size() >= 2) {
                 MessagePollBuilder pollBuilder = MessagePollData.builder(q.question)
                     .setMultiAnswer(false)
                     .setDuration(Duration.ofHours(24));
                 for (String opt : q.options) pollBuilder.addAnswer(opt);
-                ch.sendMessagePoll(pollBuilder.build()).queue(
+                ch.sendMessagePoll(pollBuilder.build()).setContent(mention).queue(
                     s -> System.out.println("LetsChatManager: Posted daily poll to #" + ch.getName() + " in " + guild.getName()),
                     e -> System.err.println("LetsChatManager: Failed to post poll to " + guild.getName() + ": " + e.getMessage())
                 );
@@ -109,7 +113,7 @@ public class LetsChatManager {
                     .setColor(0xFF9966)
                     .setFooter("📖 " + q.category + "  ·  Agape Matchmaking")
                     .setTimestamp(java.time.Instant.now());
-                ch.sendMessageEmbeds(embed.build()).queue(
+                ch.sendMessageEmbeds(embed.build()).setContent(mention).queue(
                     s -> System.out.println("LetsChatManager: Posted daily question to #" + ch.getName() + " in " + guild.getName()),
                     e -> System.err.println("LetsChatManager: Failed to post to " + guild.getName() + ": " + e.getMessage())
                 );

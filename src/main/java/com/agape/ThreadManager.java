@@ -59,6 +59,7 @@ public class ThreadManager {
         String closedAt;   // null while OPEN
         String status;     // "OPEN" or "ARCHIVED"
         String matchType;           // "QUICKMATCH" or "MANUAL"
+        String closeReason;         // "FORCE_CLOSED" if admin-closed; null for natural expiry
         String firstMessageAt;      // ISO-8601 local datetime of first non-bot message
         List<String> messagedBy     = new ArrayList<>(); // user IDs (maleId/femaleId) who have sent ≥1 message
         List<String> confirmedBy    = new ArrayList<>();
@@ -580,8 +581,9 @@ public class ThreadManager {
         activeClosures.incrementAndGet();
         ThreadChannel thread = jda.getThreadChannelById(record.threadId);
         if (thread == null) {
-            record.status   = "ARCHIVED";
-            record.closedAt = LocalDateTime.now().format(FMT);
+            record.status      = "ARCHIVED";
+            record.closedAt    = LocalDateTime.now().format(FMT);
+            record.closeReason = "FORCE_CLOSED";
             save(record.maleId, record.femaleId, record);
             activeClosures.decrementAndGet();
             return;
@@ -598,16 +600,18 @@ public class ThreadManager {
                 tm.timestamp  = msg.getTimeCreated().toString();
                 record.messages.add(tm);
             }
-            record.status   = "ARCHIVED";
-            record.closedAt = LocalDateTime.now().format(FMT);
+            record.status      = "ARCHIVED";
+            record.closedAt    = LocalDateTime.now().format(FMT);
+            record.closeReason = "FORCE_CLOSED";
             save(record.maleId, record.femaleId, record);
             thread.delete().queue(
                 v   -> { activeClosures.decrementAndGet(); System.out.println("ThreadManager: Admin-closed thread " + record.threadId + "."); },
                 err -> { activeClosures.decrementAndGet(); System.err.println("ThreadManager: Could not delete thread " + record.threadId + ": " + err.getMessage()); }
             );
         }, err -> {
-            record.status   = "ARCHIVED";
-            record.closedAt = LocalDateTime.now().format(FMT);
+            record.status      = "ARCHIVED";
+            record.closedAt    = LocalDateTime.now().format(FMT);
+            record.closeReason = "FORCE_CLOSED";
             save(record.maleId, record.femaleId, record);
             thread.delete().queue(
                 v   -> activeClosures.decrementAndGet(),
@@ -797,6 +801,109 @@ public class ThreadManager {
             if (obj.has("name") && !obj.get("name").isJsonNull()) return obj.get("name").getAsString();
         } catch (Exception ignored) {}
         return null;
+    }
+
+    // ─── /view-matches report ────────────────────────────────────────────────
+
+    /**
+     * Builds a formatted match report for both match types, split into Discord-safe
+     * chunks (≤1950 chars each) wrapped in code blocks for monospace alignment.
+     */
+    public static List<String> buildMatchesReport() {
+        List<QMThread> manual = loadAllFromDir(MM_THREADS_DIR);
+        List<QMThread> quick  = loadAllFromDir(THREADS_DIR);
+
+        Comparator<QMThread> byDate = (a, b) -> {
+            if (a.createdAt == null && b.createdAt == null) return 0;
+            if (a.createdAt == null) return 1;
+            if (b.createdAt == null) return -1;
+            return a.createdAt.compareTo(b.createdAt);
+        };
+        manual.sort(byDate);
+        quick.sort(byDate);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Manual Matches:\n\n").append(buildMatchSection(manual));
+        sb.append("\nQuickmatches:\n\n").append(buildMatchSection(quick));
+        String text = sb.toString().trim();
+
+        List<String> chunks = new ArrayList<>();
+        StringBuilder block = new StringBuilder();
+        for (String line : text.split("\n", -1)) {
+            if (block.length() + line.length() + 1 > 1950) {
+                chunks.add("```\n" + block + "```");
+                block = new StringBuilder();
+            }
+            block.append(line).append("\n");
+        }
+        if (block.length() > 0) chunks.add("```\n" + block + "```");
+        return chunks.isEmpty() ? java.util.Collections.singletonList("No matches on record.") : chunks;
+    }
+
+    private static List<QMThread> loadAllFromDir(String dirPath) {
+        List<QMThread> result = new ArrayList<>();
+        File dir = new File(dirPath);
+        if (!dir.exists()) return result;
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        if (files == null) return result;
+        for (File f : files) {
+            try (FileReader reader = new FileReader(f)) {
+                QMThread r = GSON.fromJson(reader, QMThread.class);
+                if (r != null) result.add(r);
+            } catch (Exception ignored) {}
+        }
+        return result;
+    }
+
+    private static String buildMatchSection(List<QMThread> records) {
+        if (records.isEmpty()) return "(none)\n";
+
+        String[] names1   = new String[records.size()];
+        String[] names2   = new String[records.size()];
+        String[] outcomes = new String[records.size()];
+        int maxName1 = 0;
+
+        for (int i = 0; i < records.size(); i++) {
+            QMThread r = records.get(i);
+            String n1 = getProfileName(r.maleId);
+            String n2 = getProfileName(r.femaleId);
+            if (n1 == null || n1.isEmpty()) n1 = "User " + r.maleId;
+            if (n2 == null || n2.isEmpty()) n2 = "User " + r.femaleId;
+            names1[i]   = n1;
+            names2[i]   = n2;
+            outcomes[i] = matchOutcome(r, n1, n2);
+            maxName1    = Math.max(maxName1, n1.length());
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < records.size(); i++) {
+            StringBuilder padded = new StringBuilder(names1[i]);
+            while (padded.length() < maxName1) padded.append(' ');
+            sb.append(padded).append(" & ").append(names2[i])
+              .append(" | ").append(outcomes[i]).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private static String matchOutcome(QMThread r, String name1, String name2) {
+        if ("OPEN".equals(r.status)) return "Active";
+
+        boolean m1Confirmed = r.confirmedBy != null && r.confirmedBy.contains(r.maleId);
+        boolean m2Confirmed = r.confirmedBy != null && r.confirmedBy.contains(r.femaleId);
+        boolean m1Declined  = r.declinedBy  != null && r.declinedBy.contains(r.maleId);
+        boolean m2Declined  = r.declinedBy  != null && r.declinedBy.contains(r.femaleId);
+
+        if (m1Confirmed && m2Confirmed) return "Confirmed";
+        if (m1Declined  || m2Declined)  return "Declined";
+        if ("FORCE_CLOSED".equals(r.closeReason)) return "Force-Closed";
+
+        boolean m1Responded = m1Confirmed || m1Declined;
+        boolean m2Responded = m2Confirmed || m2Declined;
+
+        if (!m1Responded && !m2Responded) return "Timed Out (Both failed to respond)";
+        if (!m1Responded) return "Timed Out (" + name1 + " failed to respond)";
+        if (!m2Responded) return "Timed Out (" + name2 + " failed to respond)";
+        return "Closed";
     }
 
     private static void save(String maleId, String femaleId, QMThread record) {

@@ -329,11 +329,12 @@ public class AgapeBot extends ListenerAdapter {
         SlashCommandData confirmCmd = Commands.slash("confirm", "Confirm this match (use inside a match thread)");
         SlashCommandData declineCmd = Commands.slash("decline", "Decline this match (use inside a match thread)");
         SlashCommandData closeThreadCmd = Commands.slash("close-thread", "Immediately close and archive this match thread without issuing penalties (Matchmakers only)");
+        SlashCommandData viewMatchesCmd = Commands.slash("view-matches", "View all matches logged in the system (Matchmakers only)");
 
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -1266,6 +1267,21 @@ public class AgapeBot extends ListenerAdapter {
             }
 
             ThreadManager.adminCloseThread(threadId, event.getJDA());
+
+        } else if (event.getName().equals("view-matches")) {
+            if (!hasMatchmakerOrAdminRole(event.getMember())) {
+                event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+                return;
+            }
+            event.deferReply().queue();
+
+            java.util.List<String> chunks = ThreadManager.buildMatchesReport();
+            event.getHook().sendMessage(chunks.get(0)).queue(sent -> {
+                for (int i = 1; i < chunks.size(); i++) {
+                    final String chunk = chunks.get(i);
+                    event.getChannel().sendMessage(chunk).queue();
+                }
+            });
         }
     }
 
