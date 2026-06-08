@@ -555,6 +555,27 @@ public class ApplicationHandler extends ListenerAdapter {
             + flagSection;
     }
 
+    /**
+     * Replaces newline-delimited lists with comma-delimited ones.
+     * Strips trailing commas from each line and skips blank segments so
+     * "item1,\nitem2\n\nitem3" becomes "item1, item2, item3".
+     */
+    static String normalizeLineBreaks(String text) {
+        if (text == null) return null;
+        String trimmed = text.trim();
+        if (!trimmed.contains("\n") && !trimmed.contains("\r")) return trimmed;
+        String[] parts = trimmed.split("[\\r\\n]+");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            String p = part.replaceAll(",$", "").trim();
+            if (!p.isEmpty()) {
+                if (sb.length() > 0) sb.append(", ");
+                sb.append(p);
+            }
+        }
+        return sb.toString();
+    }
+
     /** Strips common user-written hobby preambles and prepends the canonical "HOBBIES: " label. */
     private static String normalizeHobbies(String hobbies) {
         if (hobbies == null || hobbies.isEmpty()) return "HOBBIES: ";
@@ -1384,7 +1405,7 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case HOBBIES:
-                state.hobbies = messageContent;
+                state.hobbies = normalizeLineBreaks(messageContent);
                 state.currentStep = AppStep.STRENGTHS;
                 event.getChannel().sendMessage("**(9/15)** " + currentQuestions[7]).queue();
                 break;
@@ -1468,13 +1489,13 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case LOOK_FOR:
-                state.lookFor = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
+                state.lookFor = messageContent.equalsIgnoreCase("skip") ? "" : normalizeLineBreaks(messageContent);
                 state.currentStep = AppStep.DEAL_BREAKERS;
                 event.getChannel().sendMessage("**(15/15)** " + currentQuestions[13]).queue();
                 break;
 
             case DEAL_BREAKERS:
-                state.dealBreakers = messageContent;
+                state.dealBreakers = normalizeLineBreaks(messageContent);
                 state.currentStep = AppStep.CUSTOMIZE_PROMPT;
                 if (state.designCode == null || state.designCode.isEmpty()) {
                     state.designCode = suggestDesignCode(state);
@@ -1575,7 +1596,7 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.physicalDescription = messageContent;
                         break;
                     case HOBBIES:
-                        state.hobbies = messageContent;
+                        state.hobbies = normalizeLineBreaks(messageContent);
                         break;
                     case STRENGTHS:
                         state.strengths = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
@@ -1594,10 +1615,10 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.targetSect = messageContent;
                         break;
                     case LOOK_FOR:
-                        state.lookFor = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
+                        state.lookFor = messageContent.equalsIgnoreCase("skip") ? "" : normalizeLineBreaks(messageContent);
                         break;
                     case DEAL_BREAKERS:
-                        state.dealBreakers = messageContent;
+                        state.dealBreakers = normalizeLineBreaks(messageContent);
                         break;
                     case PHOTO:
                         if (messageContent.equalsIgnoreCase("skip")) {
