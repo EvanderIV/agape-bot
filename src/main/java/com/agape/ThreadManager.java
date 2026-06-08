@@ -807,7 +807,7 @@ public class ThreadManager {
 
     /**
      * Builds a formatted match report for both match types, split into Discord-safe
-     * chunks (≤1950 chars each) wrapped in code blocks for monospace alignment.
+     * chunks (≤1990 chars each).
      */
     public static List<String> buildMatchesReport() {
         List<QMThread> manual = loadAllFromDir(MM_THREADS_DIR);
@@ -823,20 +823,20 @@ public class ThreadManager {
         quick.sort(byDate);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Manual Matches:\n\n").append(buildMatchSection(manual));
-        sb.append("\nQuickmatches:\n\n").append(buildMatchSection(quick));
+        sb.append("**Manual Matches:**\n\n").append(buildMatchSection(manual));
+        sb.append("\n**Quickmatches:**\n\n").append(buildMatchSection(quick));
         String text = sb.toString().trim();
 
         List<String> chunks = new ArrayList<>();
         StringBuilder block = new StringBuilder();
         for (String line : text.split("\n", -1)) {
-            if (block.length() + line.length() + 1 > 1950) {
-                chunks.add("```\n" + block + "```");
+            if (block.length() + line.length() + 1 > 1990) {
+                chunks.add(block.toString().trim());
                 block = new StringBuilder();
             }
             block.append(line).append("\n");
         }
-        if (block.length() > 0) chunks.add("```\n" + block + "```");
+        if (block.length() > 0) chunks.add(block.toString().trim());
         return chunks.isEmpty() ? java.util.Collections.singletonList("No matches on record.") : chunks;
     }
 
@@ -857,35 +857,15 @@ public class ThreadManager {
 
     private static String buildMatchSection(List<QMThread> records) {
         if (records.isEmpty()) return "(none)\n";
-
-        String[] names1   = new String[records.size()];
-        String[] names2   = new String[records.size()];
-        String[] outcomes = new String[records.size()];
-        int maxName1 = 0;
-
-        for (int i = 0; i < records.size(); i++) {
-            QMThread r = records.get(i);
-            String n1 = getProfileName(r.maleId);
-            String n2 = getProfileName(r.femaleId);
-            if (n1 == null || n1.isEmpty()) n1 = "User " + r.maleId;
-            if (n2 == null || n2.isEmpty()) n2 = "User " + r.femaleId;
-            names1[i]   = n1;
-            names2[i]   = n2;
-            outcomes[i] = matchOutcome(r, n1, n2);
-            maxName1    = Math.max(maxName1, n1.length());
-        }
-
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < records.size(); i++) {
-            StringBuilder padded = new StringBuilder(names1[i]);
-            while (padded.length() < maxName1) padded.append(' ');
-            sb.append(padded).append(" & ").append(names2[i])
-              .append(" | ").append(outcomes[i]).append("\n");
+        for (QMThread r : records) {
+            sb.append("<@").append(r.maleId).append("> & <@").append(r.femaleId).append(">")
+              .append(" | ").append(matchOutcome(r)).append("\n");
         }
         return sb.toString();
     }
 
-    private static String matchOutcome(QMThread r, String name1, String name2) {
+    private static String matchOutcome(QMThread r) {
         if ("OPEN".equals(r.status)) return "Active";
 
         boolean m1Confirmed = r.confirmedBy != null && r.confirmedBy.contains(r.maleId);
@@ -901,8 +881,8 @@ public class ThreadManager {
         boolean m2Responded = m2Confirmed || m2Declined;
 
         if (!m1Responded && !m2Responded) return "Timed Out (Both failed to respond)";
-        if (!m1Responded) return "Timed Out (" + name1 + " failed to respond)";
-        if (!m2Responded) return "Timed Out (" + name2 + " failed to respond)";
+        if (!m1Responded) return "Timed Out (<@" + r.maleId + "> failed to respond)";
+        if (!m2Responded) return "Timed Out (<@" + r.femaleId + "> failed to respond)";
         return "Closed";
     }
 

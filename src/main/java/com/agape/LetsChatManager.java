@@ -94,7 +94,7 @@ public class LetsChatManager {
                 continue;
             }
 
-            Role letsRole = guild.getRolesByName("Let's Chat!", false).stream().findFirst().orElse(null);
+            Role letsRole = guild.getRoles().stream().filter(r -> isLetsChatRole(r.getName())).findFirst().orElse(null);
             String mention = letsRole != null ? letsRole.getAsMention() : null;
 
             if ("Poll".equals(q.format) && q.options != null && q.options.size() >= 2) {
@@ -140,6 +140,14 @@ public class LetsChatManager {
             System.err.println("LetsChatManager: Failed to load questions: " + e.getMessage());
             return null;
         }
+    }
+
+    private static boolean isLetsChatRole(String name) {
+        String normalized = name.toLowerCase()
+            .replaceAll("[\\[\\]'!]", "")
+            .replaceAll("\\s+", " ")
+            .trim();
+        return normalized.equals("lets chat");
     }
 
     private static TextChannel findChannel(Guild guild) {
