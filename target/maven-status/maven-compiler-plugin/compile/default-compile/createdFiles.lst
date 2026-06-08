@@ -5,11 +5,13 @@ com\agape\ImageGenerator$2.class
 com\agape\MatchmakingEngine$MatchResult.class
 com\agape\CompatibilityEngine$ScoreDetail.class
 com\agape\ThreadManager.class
+com\agape\UserInsightsManager.class
 com\agape\LetsChatManager$Question.class
 com\agape\AgapeBot.class
 com\agape\ImageGenerator$TextRun.class
 com\agape\ThreadManager$QMThread.class
 com\agape\CompatibilityEngine$CompatPair.class
+com\agape\UserInsightsManager$DeclineEntry.class
 com\agape\LetsChatManager$1.class
 com\agape\MatchmakingEngine$MatchEntry.class
 com\agape\ThreadManager$UserStrikes.class
@@ -20,6 +22,7 @@ com\agape\ApplicationHandler$AutoModResult.class
 com\agape\ApplicationHandler$AppStep.class
 com\agape\LanguageManager.class
 com\agape\MessagingHandler.class
+com\agape\UserInsightsManager$UserInsightsRecord.class
 com\agape\ImageGenerator$FontLoader.class
 com\agape\DenominationCompatibility$DoctrinalConflict.class
 com\agape\ImageGenerator.class
@@ -29,6 +32,7 @@ com\agape\ImageGenerator$LineData.class
 com\agape\ApplicationHandler.class
 com\agape\ThreadManager$Strike.class
 com\agape\ThreadManager$ThreadMessage.class
+com\agape\UserInsightsManager$TagRule.class
 com\agape\ImageGenerator$EmojiLoader.class
 com\agape\DenominationCompatibility.class
 com\agape\EnvironmentManager.class

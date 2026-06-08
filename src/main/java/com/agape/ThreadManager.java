@@ -442,6 +442,69 @@ public class ThreadManager {
         }
     }
 
+    /**
+     * Checks all OPEN QUICKMATCH threads and sends nudge notifications at the
+     * following milestones (measured from thread creation):
+     *
+     *   "1hr"  — 1 hour
+     *   "6hr"  — 6 hours
+     *   "12hr" — 12 hours (urgent)
+     *   "23hr" — 23 hours (final warning)
+     *
+     * Only users who have NOT yet run /confirm or /decline are mentioned.
+     * Safe to call on boot and on a recurring schedule.
+     */
+    public static void checkQuickmatchNotifications(JDA jda) {
+        File dir = new File(THREADS_DIR);
+        if (!dir.exists()) return;
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        if (files == null) return;
+
+        for (File file : files) {
+            try {
+                QMThread record = GSON.fromJson(new FileReader(file), QMThread.class);
+                if (record == null
+                        || !"OPEN".equals(record.status)
+                        || !"QUICKMATCH".equals(record.matchType)
+                        || record.createdAt == null) continue;
+
+                if (bothResponded(record)) continue;
+
+                LocalDateTime created = LocalDateTime.parse(record.createdAt, FMT);
+                LocalDateTime now     = LocalDateTime.now();
+
+                if (record.notificationsSent == null) record.notificationsSent = new ArrayList<>();
+
+                if (!record.notificationsSent.contains("1hr") && now.isAfter(created.plusHours(1))) {
+                    sendQMNotification(jda, record, 1);
+                    record.notificationsSent.add("1hr");
+                    save(record.maleId, record.femaleId, record);
+                }
+
+                if (!record.notificationsSent.contains("6hr") && now.isAfter(created.plusHours(6))) {
+                    sendQMNotification(jda, record, 2);
+                    record.notificationsSent.add("6hr");
+                    save(record.maleId, record.femaleId, record);
+                }
+
+                if (!record.notificationsSent.contains("12hr") && now.isAfter(created.plusHours(12))) {
+                    sendQMNotification(jda, record, 3);
+                    record.notificationsSent.add("12hr");
+                    save(record.maleId, record.femaleId, record);
+                }
+
+                if (!record.notificationsSent.contains("23hr") && now.isAfter(created.plusHours(23))) {
+                    sendQMNotification(jda, record, 4);
+                    record.notificationsSent.add("23hr");
+                    save(record.maleId, record.femaleId, record);
+                }
+
+            } catch (Exception e) {
+                System.err.println("ThreadManager: QM notification check error for " + file.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────────
 
     /** Returns true if both maleId and femaleId have each sent /confirm or /decline. */
@@ -497,7 +560,7 @@ public class ThreadManager {
             case 1:
                 if (record.firstMessageAt == null) {
                     message = "👋 " + mention + " — hey there! Just wanted to check in and see if you've had a chance to connect yet. "
-                        + "Take a moment to introduce yourself, then each list 3 to 5 major relationship deal-breakers. "
+                        + "Take a moment to introduce yourself, then each list 3-5 major relationship deal-breakers. "
                         + "Once you've had a chance to connect, use **/confirm** if you'd like to pursue this match, "
                         + "or **/decline** if you'd strongly prefer to pass.";
                 } else {
@@ -509,12 +572,12 @@ public class ThreadManager {
             case 2:
                 if (silentUserId != null) {
                     message = "👋 " + mention + " — your match has already reached out! "
-                        + "Take a moment to say hi, then each list 3 to 5 major relationship deal-breakers. "
+                        + "Take a moment to say hi, then each list 3-5 major relationship deal-breakers. "
                         + "Use **/confirm** if you'd like to pursue this match, or **/decline** if not.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 } else {
                     message = "👋 " + mention + " — just a reminder to respond to your match! "
-                        + "Please take a moment to connect, then each list 3 to 5 major relationship deal-breakers. "
+                        + "Please take a moment to connect, then each list 3-5 major relationship deal-breakers. "
                         + "Use **/confirm** if you'd like to continue, or **/decline** if not.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 }
@@ -551,6 +614,72 @@ public class ThreadManager {
         thread.sendMessage(message).queue(
             s  -> System.out.println("ThreadManager: Sent level-" + level + " notification for thread " + record.threadId),
             e  -> System.err.println("ThreadManager: Could not send notification for thread " + record.threadId + ": " + e.getMessage())
+        );
+    }
+
+    private static void sendQMNotification(JDA jda, QMThread record, int level) {
+        ThreadChannel thread = jda.getThreadChannelById(record.threadId);
+        if (thread == null) {
+            System.err.println("ThreadManager: Cannot send QM level-" + level
+                + " notification — thread " + record.threadId + " not in cache.");
+            return;
+        }
+
+        String mention = buildPendingMention(record);
+        if (mention.isEmpty()) return;
+
+        // True when exactly one party has already confirmed — the other just needs to respond
+        boolean partnerConfirmed = record.confirmedBy != null && record.confirmedBy.size() == 1;
+
+        String message;
+        switch (level) {
+            case 1:
+                message = "👋 " + mention + " — have you had a chance to DM your match yet? "
+                    + "Take some time to get to know each other, and use **/confirm** to let us know you reached out!";
+                break;
+            case 2:
+                if (partnerConfirmed) {
+                    message = "👋 " + mention + " — your match has already confirmed! "
+                        + "Reach out to them via DMs if you haven't yet, and use **/confirm** when you've done so.\n\n"
+                        + "⚠️ **Note:** If you fail to respond, you may receive a strike on your matchmaking record.";
+                } else {
+                    message = "👋 " + mention + " — just a reminder to connect with your match via DMs! "
+                        + "Use **/confirm** once you've reached out to your match.\n\n"
+                        + "⚠️ **Note:** If you fail to respond, you may receive a strike on your matchmaking record.";
+                }
+                break;
+            case 3:
+                if (partnerConfirmed) {
+                    message = "⏰ **Urgent — " + mention + ":** Your match has already confirmed — they're "
+                        + "waiting on you! Please DM your match and use **/confirm** as soon as possible.\n\n"
+                        + "⚠️ **Warning:** Failure to respond before this thread closes will result in a "
+                        + "strike on your matchmaking record and removal from the QM Pool.";
+                } else {
+                    message = "⏰ **Urgent — " + mention + ":** You have not yet responded to this match. "
+                        + "Please DM your match and use **/confirm** as soon as possible.\n\n"
+                        + "⚠️ **Warning:** Failure to respond before this thread closes will result in a "
+                        + "strike on your matchmaking record and removal from the QM Pool.";
+                }
+                break;
+            case 4:
+                if (partnerConfirmed) {
+                    message = "🚨 **Final Warning — " + mention + ":** This thread closes in less than 1 hour "
+                        + "and your match is still waiting for you. This is your last chance — please reach "
+                        + "out and use **/confirm** before it closes.\n\n"
+                        + "⛔ Non-response will result in a strike on your matchmaking record and immediate removal from the QM Pool.";
+                } else {
+                    message = "🚨 **Final Warning — " + mention + ":** This match thread closes in less than 1 hour. "
+                        + "This is your last chance to connect with each other and use **/confirm**.\n\n"
+                        + "⛔ Non-response will result in a strike on your matchmaking record and immediate removal from the QM Pool.";
+                }
+                break;
+            default:
+                message = "👋 " + mention + " — please use **/confirm** to respond to your match.";
+        }
+
+        thread.sendMessage(message).queue(
+            s  -> System.out.println("ThreadManager: Sent QM level-" + level + " notification for thread " + record.threadId),
+            e  -> System.err.println("ThreadManager: Could not send QM notification for thread " + record.threadId + ": " + e.getMessage())
         );
     }
 
@@ -604,6 +733,7 @@ public class ThreadManager {
             record.closedAt    = LocalDateTime.now().format(FMT);
             record.closeReason = "FORCE_CLOSED";
             save(record.maleId, record.femaleId, record);
+            UserInsightsManager.processThreadMessages(record);
             thread.delete().queue(
                 v   -> { activeClosures.decrementAndGet(); System.out.println("ThreadManager: Admin-closed thread " + record.threadId + "."); },
                 err -> { activeClosures.decrementAndGet(); System.err.println("ThreadManager: Could not delete thread " + record.threadId + ": " + err.getMessage()); }
@@ -657,6 +787,7 @@ public class ThreadManager {
             record.status   = "ARCHIVED";
             record.closedAt = LocalDateTime.now().format(FMT);
             save(record.maleId, record.femaleId, record);
+            UserInsightsManager.processThreadMessages(record);
             issueQuickmatchStrikes(record, jda);
             softDeleteNonResponders(record, jda);
             sendPostMatchDMs(jda, record);

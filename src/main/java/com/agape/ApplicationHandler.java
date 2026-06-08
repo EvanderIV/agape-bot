@@ -1818,6 +1818,9 @@ public class ApplicationHandler extends ListenerAdapter {
                         gsonWriter.toJson(state, writer);
                     }
                     System.out.println("✅ Profile status updated to " + newStatus + " for user " + targetUserId);
+                    if ("ACCEPTED".equals(newStatus)) {
+                        UserInsightsManager.processProfile(targetUserId);
+                    }
                 } catch (Exception ex) {
                     System.err.println("❌ Error updating profile status: " + ex.getMessage());
                 }

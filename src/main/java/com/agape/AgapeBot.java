@@ -257,6 +257,10 @@ public class AgapeBot extends ListenerAdapter {
         // Archive any threads that expired while the bot was offline, and catch up on notifications
         ThreadManager.checkExpiredThreads(event.getJDA());
         ThreadManager.checkManualMatchNotifications(event.getJDA());
+        ThreadManager.checkQuickmatchNotifications(event.getJDA());
+
+        // Sync preference insights from all accepted profiles
+        UserInsightsManager.syncAllProfiles();
 
         // Restore any applications that were in-flight when the bot last shut down
         ApplicationHandler.recoverInProgressApplications(event.getJDA());
@@ -275,6 +279,7 @@ public class AgapeBot extends ListenerAdapter {
             () -> {
                 ThreadManager.checkExpiredThreads(event.getJDA());
                 ThreadManager.checkManualMatchNotifications(event.getJDA());
+                ThreadManager.checkQuickmatchNotifications(event.getJDA());
                 LetsChatManager.checkAndPost(event.getJDA());
             },
             5, 5, java.util.concurrent.TimeUnit.MINUTES
@@ -330,11 +335,17 @@ public class AgapeBot extends ListenerAdapter {
         SlashCommandData declineCmd = Commands.slash("decline", "Decline this match (use inside a match thread)");
         SlashCommandData closeThreadCmd = Commands.slash("close-thread", "Immediately close and archive this match thread without issuing penalties (Matchmakers only)");
         SlashCommandData viewMatchesCmd = Commands.slash("view-matches", "View all matches logged in the system (Matchmakers only)");
+        SlashCommandData userInsightsCmd = Commands.slash("user-insights", "View collected preference insights for a user (Matchmakers only)")
+                .addOption(OptionType.USER, "user", "The user to look up", true);
+        SlashCommandData tagUserCmd = Commands.slash("tag-user", "Add or remove preference tags for a user (Matchmakers only)")
+                .addOption(OptionType.USER, "user", "The user to tag", true)
+                .addOption(OptionType.STRING, "tags", "Space-separated tags, e.g. +touchy -horror -smoking", true);
+
 
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userInsightsCmd, tagUserCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -1282,6 +1293,74 @@ public class AgapeBot extends ListenerAdapter {
                     event.getChannel().sendMessage(chunk).queue();
                 }
             });
+
+        } else if (event.getName().equals("user-insights")) {
+            if (!hasMatchmakerOrAdminRole(event.getMember())) {
+                event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+                return;
+            }
+
+            User targetUser = event.getOption("user").getAsUser();
+            String targetId = targetUser.getId();
+
+            event.deferReply().queue();
+
+            UserInsightsManager.UserInsightsRecord record = UserInsightsManager.getInsights(targetId);
+            boolean hasPrefs    = record != null && record.preferences    != null && !record.preferences.isEmpty();
+            boolean hasDeclines = record != null && record.declineHistory != null && !record.declineHistory.isEmpty();
+            if (!hasPrefs && !hasDeclines) {
+                event.getHook().sendMessage("📭 No insights collected yet for <@" + targetId + ">.").queue();
+                return;
+            }
+
+            java.util.List<String> chunks = buildUserInsightsOutput(targetId, record);
+            event.getHook().sendMessage(chunks.get(0)).queue(sent -> {
+                for (int i = 1; i < chunks.size(); i++) {
+                    final String chunk = chunks.get(i);
+                    event.getChannel().sendMessage(chunk).queue();
+                }
+            });
+
+        } else if (event.getName().equals("tag-user")) {
+            if (!hasMatchmakerOrAdminRole(event.getMember())) {
+                event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+                return;
+            }
+
+            User targetUser = event.getOption("user").getAsUser();
+            String targetId  = targetUser.getId();
+            String tagsInput = event.getOption("tags").getAsString().trim();
+
+            String[] tags = tagsInput.split("\\s+");
+            java.util.List<String> invalid = new java.util.ArrayList<>();
+            for (String tag : tags) {
+                if (!tag.startsWith("+") && !tag.startsWith("-")) invalid.add(tag);
+            }
+            if (!invalid.isEmpty()) {
+                event.reply("❌ Each tag must start with `+` or `-` (e.g. `+touchy -horror`). Invalid: `"
+                    + String.join("`, `", invalid) + "`").setEphemeral(true).queue();
+                return;
+            }
+
+            java.util.List<String> added   = new java.util.ArrayList<>();
+            java.util.List<String> removed = new java.util.ArrayList<>();
+            UserInsightsManager.UserInsightsRecord record = null;
+            for (String tag : tags) {
+                record = UserInsightsManager.applyTag(targetId, tag);
+                if (record.preferences.contains(tag)) added.add(tag);
+                else removed.add(tag);
+            }
+
+            StringBuilder reply = new StringBuilder("Updated tags for <@" + targetId + ">:");
+            if (!added.isEmpty())   reply.append("\n✅ Added: `").append(String.join("`, `", added)).append("`");
+            if (!removed.isEmpty()) reply.append("\n❌ Removed: `").append(String.join("`, `", removed)).append("`");
+            if (record != null && record.preferences != null && !record.preferences.isEmpty()) {
+                reply.append("\n\n**Current tags:** `").append(String.join("`, `", record.preferences)).append("`");
+            } else {
+                reply.append("\n\n*No tags remaining.*");
+            }
+            event.reply(reply.toString()).queue();
+
         }
     }
 
@@ -1345,6 +1424,10 @@ public class AgapeBot extends ListenerAdapter {
 
             // Alert matchmakers
             ThreadManager.QMThread record = ThreadManager.findThreadByChannelId(threadId);
+            if (record != null) {
+                String partnerId = userId.equals(record.maleId) ? record.femaleId : record.maleId;
+                UserInsightsManager.recordDecline(userId, partnerId, threadId, reasons);
+            }
             if (record != null && record.guildId != null) {
                 net.dv8tion.jda.api.entities.Guild guild = event.getJDA().getGuildById(record.guildId);
                 if (guild != null) {
@@ -1562,6 +1645,43 @@ public class AgapeBot extends ListenerAdapter {
             chunks.add(current.toString());
         }
 
+        return chunks;
+    }
+
+    private static java.util.List<String> buildUserInsightsOutput(String userId, UserInsightsManager.UserInsightsRecord record) {
+        java.util.List<String> chunks = new java.util.ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        current.append("## Preference Insights — <@").append(userId).append(">\n");
+        current.append("━━━━━━━━━━━━━━━━━━━━\n\n");
+
+        // Preference tags
+        if (record.preferences != null && !record.preferences.isEmpty()) {
+            current.append("**Tags:**\n");
+            for (String tag : record.preferences) {
+                current.append(tag.startsWith("+") ? "✅ " : "❌ ").append("`").append(tag).append("`\n");
+            }
+        } else {
+            current.append("*No preference tags yet. Use `/tag-user` to add some.*\n");
+        }
+
+        // Decline history
+        if (record.declineHistory != null && !record.declineHistory.isEmpty()) {
+            current.append("\n**Decline History:**\n");
+            for (UserInsightsManager.DeclineEntry entry : record.declineHistory) {
+                String ts = entry.timestamp != null ? "`" + entry.timestamp.replace('T', ' ') + "`" : "";
+                String partner = entry.matchPartnerId != null ? " (match: <@" + entry.matchPartnerId + ">)" : "";
+                String reasons = entry.reasons != null ? entry.reasons : "*[empty]*";
+                String block = ts + partner + "\n> " + reasons.replace("\n", "\n> ") + "\n\n";
+
+                if (current.length() + block.length() > 1950) {
+                    chunks.add(current.toString());
+                    current = new StringBuilder();
+                }
+                current.append(block);
+            }
+        }
+
+        if (current.length() > 0) chunks.add(current.toString());
         return chunks;
     }
 

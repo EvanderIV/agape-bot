@@ -186,7 +186,7 @@ public class ImageGenerator {
 
             // 2. Fetch and draw the user's profile picture
             try {
-                URL url = new URL(pfpUrl);
+                URL url = java.net.URI.create(pfpUrl).toURL();
                 BufferedImage pfpImage = ImageIO.read(url);
 
                 if (pfpImage != null) {
