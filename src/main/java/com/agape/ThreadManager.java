@@ -877,10 +877,28 @@ public class ThreadManager {
         if (m1Declined  || m2Declined)  return "Declined";
         if ("FORCE_CLOSED".equals(r.closeReason)) return "Force-Closed";
 
+        // Fallback for records created before closeReason was tracked: if the thread closed
+        // more than 30 minutes before its natural expiry it was almost certainly force-closed.
+        if (r.closeReason == null && r.createdAt != null && r.closedAt != null) {
+            try {
+                LocalDateTime created = LocalDateTime.parse(r.createdAt, FMT);
+                LocalDateTime closed  = LocalDateTime.parse(r.closedAt,  FMT);
+                if (closed.isBefore(created.plusHours(THREAD_LIFESPAN_HOURS).minusMinutes(30))) {
+                    return "Force-Closed";
+                }
+            } catch (Exception ignored) {}
+        }
+
         boolean m1Responded = m1Confirmed || m1Declined;
         boolean m2Responded = m2Confirmed || m2Declined;
 
-        if (!m1Responded && !m2Responded) return "Timed Out (Both failed to respond)";
+        if (!m1Responded && !m2Responded) {
+            boolean m1Tried = r.messagedBy != null && r.messagedBy.contains(r.maleId);
+            boolean m2Tried = r.messagedBy != null && r.messagedBy.contains(r.femaleId);
+            if (m1Tried && !m2Tried) return "Timed Out (<@" + r.femaleId + "> failed to respond)";
+            if (m2Tried && !m1Tried) return "Timed Out (<@" + r.maleId + "> failed to respond)";
+            return "Timed Out (Both failed to respond)";
+        }
         if (!m1Responded) return "Timed Out (<@" + r.maleId + "> failed to respond)";
         if (!m2Responded) return "Timed Out (<@" + r.femaleId + "> failed to respond)";
         return "Closed";
