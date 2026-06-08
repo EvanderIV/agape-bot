@@ -25,6 +25,12 @@ public class LetsChatManager {
     // Master switch — flip to true to enable posting
     static final boolean ENABLED = true;
 
+    private static final String[] HEADER_EMOJIS = {
+        "☕", "📝", "💬", "🗣️", "🌟", "💡", "🌸", "🎙️", "📖",
+        "✨", "🫶", "🎶", "🙌", "💭", "🌻"
+    };
+    private static final java.util.Random RANDOM = new java.util.Random();
+
     // Server timezone (America/New_York — handles EST/EDT automatically)
     private static final ZoneId SERVER_ZONE = ZoneId.of("America/New_York");
 
@@ -107,8 +113,9 @@ public class LetsChatManager {
                     e -> System.err.println("LetsChatManager: Failed to post poll to " + guild.getName() + ": " + e.getMessage())
                 );
             } else {
+                String headerEmoji = HEADER_EMOJIS[RANDOM.nextInt(HEADER_EMOJIS.length)];
                 EmbedBuilder embed = new EmbedBuilder()
-                    .setTitle("☕ Let's Chat!")
+                    .setTitle(headerEmoji + " Let's Chat!")
                     .setDescription("**" + q.question + "**\n\n-# Share your thoughts below!")
                     .setColor(0xFF9966)
                     .setFooter("📖 " + q.category + "  ·  Agape Matchmaking")
