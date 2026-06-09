@@ -1149,6 +1149,7 @@ public class AgapeBot extends ListenerAdapter {
             String displayName = event.getMember() != null
                 ? event.getMember().getEffectiveName()
                 : event.getUser().getEffectiveName();
+            ThreadManager.logEvent(threadId, userId, displayName, "[/confirm]");
             event.reply("✅ **" + displayName + "** has confirmed the match!").queue();
 
             if (bothConfirmed && "MANUAL".equals(record.matchType) && event.getGuild() != null) {
@@ -1411,6 +1412,10 @@ public class AgapeBot extends ListenerAdapter {
             String reasons = event.getValue("decline_reasons").getAsString();
 
             ThreadManager.recordDecline(threadId, userId);
+            String declinerName = event.getMember() != null
+                ? event.getMember().getEffectiveName()
+                : event.getUser().getName();
+            ThreadManager.logEvent(threadId, userId, declinerName, "[/decline]");
 
             // Acknowledge the submission immediately
             event.reply("✅ Your decline has been submitted. Matchmakers have been notified.").setEphemeral(true).queue();

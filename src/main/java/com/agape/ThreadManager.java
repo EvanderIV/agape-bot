@@ -1035,6 +1035,20 @@ public class ThreadManager {
         return "Closed";
     }
 
+    /** Appends a command event entry to the thread's message log and saves the record. */
+    public static void logEvent(String threadId, String userId, String userName, String content) {
+        QMThread record = findThreadByChannelId(threadId);
+        if (record == null) return;
+        ThreadMessage tm = new ThreadMessage();
+        tm.authorId   = userId;
+        tm.authorName = userName;
+        tm.content    = content;
+        tm.timestamp  = LocalDateTime.now().format(FMT);
+        if (record.messages == null) record.messages = new ArrayList<>();
+        record.messages.add(tm);
+        save(record.maleId, record.femaleId, record);
+    }
+
     private static void save(String maleId, String femaleId, QMThread record) {
         String dirPath = "MANUAL".equals(record.matchType) ? MM_THREADS_DIR : THREADS_DIR;
         try {

@@ -1017,14 +1017,13 @@ public class ApplicationHandler extends ListenerAdapter {
             String senderLabel = "applicant".equals(sender) ? "Applicant Reply" : "Matchmaker Reply";
             int embedColor = "applicant".equals(sender) ? 0x99FF99 : 0xFF9999;
 
-            // If applicant replied, mention the matchmaker; if matchmaker, mention is in the embed
+            // Ping the matchmaker in message content (not embed) so Discord delivers the notification
             String mention = "applicant".equals(sender) ? "<@" + matchmakerId + ">" : "";
-            String description = mention.isEmpty() ? replyContent : mention + "\n\n" + replyContent;
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(senderLabel)
                     .setColor(embedColor)
-                    .setDescription(description)
+                    .setDescription(replyContent)
                     .setFooter("Applicant ID: " + applicantId)
                     .setTimestamp(java.time.Instant.now());
 
@@ -1032,7 +1031,7 @@ public class ApplicationHandler extends ListenerAdapter {
             TextChannel channel = (TextChannel) applicationsList.get(0);
             if ("applicant".equals(sender)) {
                 Button replyBtn = Button.primary("convo_reply_mm_" + matchmakerId + "_" + applicantId, "💬 Reply");
-                channel.sendMessageEmbeds(embed.build())
+                channel.sendMessage(mention).setEmbeds(embed.build())
                         .setComponents(ActionRow.of(replyBtn))
                         .queue(
                             msg -> System.out.println("✅ Applicant reply posted to channel"),
