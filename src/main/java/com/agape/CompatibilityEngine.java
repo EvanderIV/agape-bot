@@ -2,6 +2,7 @@ package com.agape;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -13,7 +14,8 @@ import net.dv8tion.jda.api.JDA;
 
 public class CompatibilityEngine {
 
-    private static final String PROFILES_DIR = "user_content/profiles/";
+    private static final String PROFILES_DIR   = "user_content/profiles/";
+    private static final String PRECLUDED_FILE = "data/precluded_pairs.json";
     private static final Gson GSON = new Gson();
 
     public static final int MAX_DENOM   = 30; // 20 base + up to 5+5 targetSect bonus
@@ -161,6 +163,7 @@ public class CompatibilityEngine {
                 ApplicationHandler.AppState a = profiles.get(i);
                 ApplicationHandler.AppState b = profiles.get(j);
                 if (a.sex == b.sex) continue; // opposite-sex pairs only
+                if (isPrecluded(ids.get(i), ids.get(j))) continue;
                 pairs.add(new CompatPair(
                     ids.get(i), ids.get(j), a, b,
                     scoreDenomination(a, b), scoreAge(a, b), scoreDistance(a, b),
@@ -535,6 +538,50 @@ public class CompatibilityEngine {
 
             default:
                 return null;
+        }
+    }
+
+    // ─── Precluded pairs ──────────────────────────────────────────────────────
+
+    private static class PrecludedPairs {
+        List<String> pairs = new ArrayList<>();
+    }
+
+    private static String pairKey(String uid1, String uid2) {
+        return uid1.compareTo(uid2) <= 0 ? uid1 + "_" + uid2 : uid2 + "_" + uid1;
+    }
+
+    public static boolean isPrecluded(String uid1, String uid2) {
+        PrecludedPairs pp = loadPrecluded();
+        return pp.pairs.contains(pairKey(uid1, uid2));
+    }
+
+    public static void addPrecludedPair(String uid1, String uid2) {
+        PrecludedPairs pp = loadPrecluded();
+        String key = pairKey(uid1, uid2);
+        if (!pp.pairs.contains(key)) {
+            pp.pairs.add(key);
+            savePrecluded(pp);
+        }
+    }
+
+    private static PrecludedPairs loadPrecluded() {
+        File f = new File(PRECLUDED_FILE);
+        if (!f.exists()) return new PrecludedPairs();
+        try (FileReader reader = new FileReader(f)) {
+            PrecludedPairs pp = GSON.fromJson(reader, PrecludedPairs.class);
+            return pp != null ? pp : new PrecludedPairs();
+        } catch (Exception e) {
+            return new PrecludedPairs();
+        }
+    }
+
+    private static void savePrecluded(PrecludedPairs pp) {
+        new File("data").mkdirs();
+        try (FileWriter writer = new FileWriter(new File(PRECLUDED_FILE))) {
+            GSON.toJson(pp, writer);
+        } catch (Exception e) {
+            System.err.println("CompatibilityEngine: Failed to save precluded pairs: " + e.getMessage());
         }
     }
 

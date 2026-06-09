@@ -1,6 +1,7 @@
 com\agape\MatchmakingEngine.class
 com\agape\DenominationCompatibility$Issue.class
 com\agape\LetsChatManager$State.class
+com\agape\CompatibilityEngine$1.class
 com\agape\ImageGenerator$2.class
 com\agape\MatchmakingEngine$MatchResult.class
 com\agape\CompatibilityEngine$ScoreDetail.class
@@ -27,6 +28,7 @@ com\agape\ImageGenerator$FontLoader.class
 com\agape\DenominationCompatibility$DoctrinalConflict.class
 com\agape\ImageGenerator.class
 com\agape\ApplicationHandler$AppState.class
+com\agape\CompatibilityEngine$PrecludedPairs.class
 com\agape\CompatibilityEngine.class
 com\agape\ImageGenerator$LineData.class
 com\agape\ApplicationHandler.class

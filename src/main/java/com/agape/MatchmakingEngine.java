@@ -156,6 +156,7 @@ public class MatchmakingEngine {
 
             MatchLog candidateLog = loadMatchLog(candidateId);
             if (wasMatchedWithin(candidateLog, MATCH_COOLDOWN_DAYS)) continue;
+            if (CompatibilityEngine.isPrecluded(userId, candidateId)) continue;
 
             candidates.add(candidate);
             candidateIds.add(candidateId);

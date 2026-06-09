@@ -1754,7 +1754,39 @@ public class AgapeBot extends ListenerAdapter {
                 .addField("🚩 Deal Breakers (" + db.score + ")", db.detail, false)
                 .setTimestamp(java.time.Instant.now());
 
-            event.getHook().sendMessageEmbeds(breakdown.build()).queue();
+            net.dv8tion.jda.api.interactions.components.buttons.Button precludeBtn =
+                net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
+                    "preclude_match_" + uid1 + "_" + uid2, "❌ Preclude Match");
+            event.getHook().sendMessageEmbeds(breakdown.build())
+                .addActionRow(precludeBtn)
+                .queue();
+
+        } else if (buttonId.startsWith("preclude_match_")) {
+            if (!hasMatchmakerRole(event.getMember())) {
+                event.reply("❌ Only matchmakers can preclude a match.").setEphemeral(true).queue();
+                return;
+            }
+            event.deferReply().queue();
+            String rest = buttonId.substring("preclude_match_".length());
+            int sep = rest.indexOf('_');
+            if (sep < 0) {
+                event.getHook().sendMessage("❌ Malformed button ID.").queue();
+                return;
+            }
+            String uid1 = rest.substring(0, sep);
+            String uid2 = rest.substring(sep + 1);
+            CompatibilityEngine.addPrecludedPair(uid1, uid2);
+            String name1 = uid1, name2 = uid2;
+            try {
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                ApplicationHandler.AppState p1 = gson.fromJson(new FileReader("user_content/profiles/" + uid1 + ".json"), ApplicationHandler.AppState.class);
+                ApplicationHandler.AppState p2 = gson.fromJson(new FileReader("user_content/profiles/" + uid2 + ".json"), ApplicationHandler.AppState.class);
+                if (p1 != null && p1.name != null) name1 = p1.name;
+                if (p2 != null && p2.name != null) name2 = p2.name;
+            } catch (Exception ignored) {}
+            event.getHook().sendMessage(
+                "✅ **" + name1 + "** and **" + name2 + "** have been precluded from future matches."
+            ).queue();
 
         } else if (buttonId.startsWith("match_confirm_")) {
             if (!hasMatchmakerRole(event.getMember())) {
