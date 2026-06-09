@@ -157,6 +157,19 @@ public class CompatibilityEngine {
             }
         }
 
+        // verifyMembership above has already cached each member; getMemberById is a fast cache lookup.
+        java.util.Set<String> unmatchedIds = new java.util.HashSet<>();
+        for (int i = 0; i < ids.size(); i++) {
+            String uid = ids.get(i);
+            String guildId = profiles.get(i).guildId;
+            if (guildId == null) { unmatchedIds.add(uid); continue; }
+            net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
+            net.dv8tion.jda.api.entities.Member member = guild != null ? guild.getMemberById(uid) : null;
+            boolean isMatched = member != null && member.getRoles().stream()
+                .anyMatch(r -> r.getName().toLowerCase().contains("matched"));
+            if (!isMatched) unmatchedIds.add(uid);
+        }
+
         List<CompatPair> pairs = new ArrayList<>();
         for (int i = 0; i < ids.size(); i++) {
             for (int j = i + 1; j < ids.size(); j++) {
@@ -172,7 +185,12 @@ public class CompatibilityEngine {
             }
         }
 
-        pairs.sort((x, y) -> y.totalScore - x.totalScore);
+        // Sort by displayed score + invisible +5 per unmatched person in the pair
+        pairs.sort((x, y) -> {
+            int boostX = (unmatchedIds.contains(x.userId1) ? 5 : 0) + (unmatchedIds.contains(x.userId2) ? 5 : 0);
+            int boostY = (unmatchedIds.contains(y.userId1) ? 5 : 0) + (unmatchedIds.contains(y.userId2) ? 5 : 0);
+            return (y.totalScore + boostY) - (x.totalScore + boostX);
+        });
         List<CompatPair> top = pairs.subList(0, Math.min(limit, pairs.size()));
         return new ScoringResult(top, profiles.size(), pairs.size());
     }
