@@ -376,11 +376,14 @@ public class CompatibilityEngine {
         if (cA.isEmpty() && cB.isEmpty())
             return new ScoreDetail(0, "No country data available.");
 
-        if (!cA.isEmpty() && cA.equalsIgnoreCase(cB))
-            return new ScoreDetail(MAX_DIST, n1 + " and " + n2 + " are both in **" + cA + "** ✅");
+        String normA = normalizeCountry(cA);
+        String normB = normalizeCountry(cB);
 
-        Continent contA = cA.isEmpty() ? null : getContinent(cA);
-        Continent contB = cB.isEmpty() ? null : getContinent(cB);
+        if (!normA.isEmpty() && normA.equalsIgnoreCase(normB))
+            return new ScoreDetail(MAX_DIST, n1 + " and " + n2 + " are both in **" + normA + "** ✅");
+
+        Continent contA = normA.isEmpty() ? null : getContinent(normA);
+        Continent contB = normB.isEmpty() ? null : getContinent(normB);
 
         String labelA = cA.isEmpty() ? "Unknown" : cA + (contA != null ? " (" + contA + ")" : " (unknown region)");
         String labelB = cB.isEmpty() ? "Unknown" : cB + (contB != null ? " (" + contB + ")" : " (unknown region)");
@@ -484,6 +487,18 @@ public class CompatibilityEngine {
     private static boolean containsAny(String text, String[] terms) {
         for (String t : terms) if (text.contains(t)) return true;
         return false;
+    }
+
+    /** Strips a leading city/state prefix so "Texas, USA" → "USA" and "Lagos, Nigeria" → "Nigeria". */
+    private static String normalizeCountry(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return "";
+        String trimmed = raw.trim();
+        int lastComma = trimmed.lastIndexOf(',');
+        if (lastComma >= 0) {
+            String suffix = trimmed.substring(lastComma + 1).trim();
+            if (!suffix.isEmpty()) return suffix;
+        }
+        return trimmed;
     }
 
     private static Continent getContinent(String country) {

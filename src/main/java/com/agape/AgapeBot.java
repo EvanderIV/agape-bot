@@ -552,11 +552,28 @@ public class AgapeBot extends ListenerAdapter {
             } else {
                 // Existing profile found — warn the user before overwriting
                 String currentStatus = "PENDING";
+                boolean isSoftDeleted = false;
                 try {
                     ApplicationHandler.AppState existing = new com.google.gson.Gson().fromJson(
                         new FileReader(profileFile), ApplicationHandler.AppState.class);
                     if (existing.status != null) currentStatus = existing.status;
+                    isSoftDeleted = existing.softDeleted;
                 } catch (Exception ignored) {}
+
+                if (isSoftDeleted) {
+                    event.getHook().sendMessage(
+                        "❌ Your profile has been deactivated and cannot be resubmitted. Please contact a matchmaker if you believe this is an error."
+                    ).queue();
+                    return;
+                }
+
+                if ("ACCEPTED".equals(currentStatus) || "PENDING".equals(currentStatus)) {
+                    event.getHook().sendMessage(
+                        "⚠️ You already have a **" + currentStatus.toLowerCase() + "** profile on file — no need to apply again!\n\n"
+                        + "If you'd like to opt in or out of Quickmatch, use **/toggle-qm**."
+                    ).queue();
+                    return;
+                }
 
                 final String statusDisplay = currentStatus;
                 event.getUser().openPrivateChannel().queue(channel -> {
