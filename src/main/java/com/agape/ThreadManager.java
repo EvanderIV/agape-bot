@@ -18,6 +18,17 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 
+/**
+ * Owns the 24-hour lifecycle of match threads and the strike/pardon system.
+ *
+ * Records live in user_content/qm_threads/ (quickmatch) and
+ * user_content/mm_threads/ (manual), keyed {maleId}_{femaleId}.json.
+ * A 5-minute scheduler in AgapeBot calls the check* methods, which send
+ * escalating reminders and archive expired threads. On expiry,
+ * non-responders are penalized: quickmatch → strike + QM unenrollment;
+ * manual match → profile soft-delete. Strikes/pardons expire after 6 months
+ * and live in data/strikes/.
+ */
 public class ThreadManager {
 
     private static final String THREADS_DIR    = "user_content/qm_threads/";
@@ -232,20 +243,10 @@ public class ThreadManager {
         UserStrikes us = writeStrikeRecord(userId, threadId);
 
         // Unenroll from quickmatch
-        File profileFile = new File("user_content/profiles/" + userId + ".json");
-        if (profileFile.exists()) {
-            try {
-                com.google.gson.Gson g = new GsonBuilder().setPrettyPrinting().create();
-                ApplicationHandler.AppState state = g.fromJson(new FileReader(profileFile), ApplicationHandler.AppState.class);
-                if (state != null && state.quickmatchEnrolled) {
-                    state.quickmatchEnrolled = false;
-                    try (FileWriter w = new FileWriter(profileFile)) {
-                        g.toJson(state, w);
-                    }
-                }
-            } catch (Exception e) {
-                System.err.println("ThreadManager: Failed to unenroll " + userId + " from QM: " + e.getMessage());
-            }
+        AppState state = ProfileRepository.load(userId);
+        if (state != null && state.quickmatchEnrolled) {
+            state.quickmatchEnrolled = false;
+            ProfileRepository.save(userId, state);
         }
 
         int recentStrikes = getRecentStrikeCount(userId);
@@ -907,16 +908,11 @@ public class ThreadManager {
             if (uid == null || responded.contains(uid)) continue;
             // Don't penalize a user who actively participated — they were waiting for the other person
             if (record.messagedBy != null && record.messagedBy.contains(uid)) continue;
-            File profileFile = new File("user_content/profiles/" + uid + ".json");
-            if (!profileFile.exists()) continue;
             try {
-                com.google.gson.Gson g = new GsonBuilder().setPrettyPrinting().create();
-                ApplicationHandler.AppState state = g.fromJson(new FileReader(profileFile), ApplicationHandler.AppState.class);
+                AppState state = ProfileRepository.load(uid);
                 if (state == null || state.softDeleted) continue;
                 state.softDeleted = true;
-                try (FileWriter w = new FileWriter(profileFile)) {
-                    g.toJson(state, w);
-                }
+                ProfileRepository.save(uid, state);
                 UserStrikes us = writeStrikeRecord(uid, record.threadId);
                 int recentStrikes = getRecentStrikeCount(uid);
                 String expiryNote = buildExpiryNote(getNextStrikeExpiry(us));
@@ -958,12 +954,9 @@ public class ThreadManager {
         if (record.guildId != null) {
             net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(record.guildId);
             if (guild != null) {
-                for (net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch : guild.getTextChannels()) {
-                    if (ch.getName().toLowerCase().replace("-", "").contains("guideline")) {
-                        guidelinesRef = "<#" + ch.getId() + ">";
-                        break;
-                    }
-                }
+                net.dv8tion.jda.api.entities.channel.concrete.TextChannel ch =
+                    Channels.findByNameContaining(guild, "guideline");
+                if (ch != null) guidelinesRef = "<#" + ch.getId() + ">";
             }
         }
         sendPostMatchDM(jda, record.maleId, record.femaleId, guidelinesRef);
@@ -1005,13 +998,8 @@ public class ThreadManager {
     }
 
     private static String getProfileName(String userId) {
-        File f = new File("user_content/profiles/" + userId + ".json");
-        if (!f.exists()) return null;
-        try (FileReader reader = new FileReader(f)) {
-            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
-            if (obj.has("name") && !obj.get("name").isJsonNull()) return obj.get("name").getAsString();
-        } catch (Exception ignored) {}
-        return null;
+        AppState state = ProfileRepository.load(userId);
+        return state != null ? state.name : null;
     }
 
     // ─── /view-matches report ────────────────────────────────────────────────

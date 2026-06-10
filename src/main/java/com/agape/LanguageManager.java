@@ -1,5 +1,14 @@
 package com.agape;
 
+/**
+ * All user-facing localized text for the application questionnaire.
+ *
+ * Supports 13 languages. {@link #getQuestions} returns the 14 interview
+ * questions for a language (always exactly 14 — tests enforce this).
+ * Yes/no/cancel/sex answers are matched multilingually by the is* methods.
+ * To add a language: add it to isSupportedLanguage, normalizeLanguageName,
+ * getQuestions, and every get*(language) switch in this file.
+ */
 public class LanguageManager {
 
     public static String getWelcomeMessage() {

@@ -3,8 +3,6 @@ package com.agape;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,9 +10,23 @@ import java.util.List;
 import com.google.gson.Gson;
 import net.dv8tion.jda.api.JDA;
 
+/**
+ * Scores how compatible two profiles are, used by /compat-algo and the
+ * /match preview. Five independent categories produce a total out of
+ * {@link #MAX_TOTAL} (110):
+ *
+ *   Denomination (−5–30): same/mutually-listed denominations + target-sect bonuses
+ *   Age          (0–50):  25 per side for being inside the other's target range
+ *   Distance     (−15–10): same country > same continent > intercontinental penalty
+ *   Values       (0–20):  keyword overlap between lookFor and partner strengths/hobbies
+ *   Deal-breakers (≤0):   keyword overlap between dealBreakers and partner profile
+ *
+ * Also maintains the "precluded pairs" list (data/precluded_pairs.json) —
+ * pairs a matchmaker has permanently excluded from matching.
+ * The score* methods are pure and covered by CompatibilityEngineTest.
+ */
 public class CompatibilityEngine {
 
-    private static final String PROFILES_DIR   = "user_content/profiles/";
     private static final String PRECLUDED_FILE = "data/precluded_pairs.json";
     private static final Gson GSON = new Gson();
 
@@ -109,11 +121,11 @@ public class CompatibilityEngine {
 
     public static class CompatPair {
         public final String userId1, userId2;
-        public final ApplicationHandler.AppState profile1, profile2;
+        public final AppState profile1, profile2;
         public final int totalScore;
         public final ScoreDetail denom, age, dist, values, dealBreakers;
 
-        CompatPair(String u1, String u2, ApplicationHandler.AppState p1, ApplicationHandler.AppState p2,
+        CompatPair(String u1, String u2, AppState p1, AppState p2,
                    ScoreDetail denom, ScoreDetail age, ScoreDetail dist,
                    ScoreDetail values, ScoreDetail dealBreakers) {
             this.userId1 = u1; this.userId2 = u2;
@@ -140,18 +152,17 @@ public class CompatibilityEngine {
      * the top {@code limit} pairs sorted by score descending.
      */
     public static ScoringResult findTopMatches(int limit, JDA jda) {
-        File dir = new File(PROFILES_DIR);
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
-        if (files == null || files.length == 0)
+        File[] files = ProfileRepository.listProfileFiles();
+        if (files.length == 0)
             return new ScoringResult(Collections.emptyList(), 0, 0);
 
         List<String> ids = new ArrayList<>();
-        List<ApplicationHandler.AppState> profiles = new ArrayList<>();
+        List<AppState> profiles = new ArrayList<>();
         for (File f : files) {
-            String uid = f.getName().replace(".json", "");
-            ApplicationHandler.AppState p = loadProfile(uid);
+            String uid = ProfileRepository.userIdFromFile(f);
+            AppState p = ProfileRepository.load(uid);
             if (p != null && "ACCEPTED".equals(p.status) && !p.softDeleted && p.manualMatchEnrolled) {
-                if (!ApplicationHandler.verifyMembership(uid, p.guildId, jda)) continue;
+                if (!MembershipVerifier.verifyMembership(uid, p.guildId, jda)) continue;
                 ids.add(uid);
                 profiles.add(p);
             }
@@ -165,16 +176,14 @@ public class CompatibilityEngine {
             if (guildId == null) { unmatchedIds.add(uid); continue; }
             net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
             net.dv8tion.jda.api.entities.Member member = guild != null ? guild.getMemberById(uid) : null;
-            boolean isMatched = member != null && member.getRoles().stream()
-                .anyMatch(r -> r.getName().toLowerCase().contains("matched"));
-            if (!isMatched) unmatchedIds.add(uid);
+            if (member == null || !Roles.isMatched(member)) unmatchedIds.add(uid);
         }
 
         List<CompatPair> pairs = new ArrayList<>();
         for (int i = 0; i < ids.size(); i++) {
             for (int j = i + 1; j < ids.size(); j++) {
-                ApplicationHandler.AppState a = profiles.get(i);
-                ApplicationHandler.AppState b = profiles.get(j);
+                AppState a = profiles.get(i);
+                AppState b = profiles.get(j);
                 if (a.sex == b.sex) continue; // opposite-sex pairs only
                 if (isPrecluded(ids.get(i), ids.get(j))) continue;
                 pairs.add(new CompatPair(
@@ -197,7 +206,7 @@ public class CompatibilityEngine {
 
     // ─── Denomination scoring (-5–30) ────────────────────────────────────────
 
-    public static ScoreDetail scoreDenomination(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
+    public static ScoreDetail scoreDenomination(AppState a, AppState b) {
         String n1 = a.name != null ? a.name : "User 1";
         String n2 = b.name != null ? b.name : "User 2";
 
@@ -276,14 +285,14 @@ public class CompatibilityEngine {
 
     // ─── Age scoring (0–50) ───────────────────────────────────────────────────
 
-    public static ScoreDetail scoreAge(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
+    public static ScoreDetail scoreAge(AppState a, AppState b) {
         String n1 = a.name != null ? a.name : "User 1";
         String n2 = b.name != null ? b.name : "User 2";
 
-        int ageA = calculateAge(a.birthday);
-        int ageB = calculateAge(b.birthday);
-        int[] rangeA = parseAgeRange(a.targetAge);
-        int[] rangeB = parseAgeRange(b.targetAge);
+        int ageA = AgeUtils.calculateAge(a.birthday);
+        int ageB = AgeUtils.calculateAge(b.birthday);
+        int[] rangeA = AgeUtils.parseAgeRange(a.targetAge);
+        int[] rangeB = AgeUtils.parseAgeRange(b.targetAge);
 
         if (rangeA == null && rangeB == null)
             return new ScoreDetail(0, "No age preferences set for either user.");
@@ -331,27 +340,6 @@ public class CompatibilityEngine {
         return 0;
     }
 
-    private static int[] parseAgeRange(String targetAge) {
-        if (targetAge == null || targetAge.trim().isEmpty()) return null;
-        targetAge = targetAge.trim();
-        if (targetAge.contains("-")) {
-            String[] p = targetAge.split("-", 2);
-            try { return new int[]{Integer.parseInt(p[0].trim()), Integer.parseInt(p[1].trim())}; }
-            catch (Exception e) { return null; }
-        }
-        try { int v = Integer.parseInt(targetAge); return new int[]{v, v}; }
-        catch (Exception e) { return null; }
-    }
-
-    private static int calculateAge(String birthday) {
-        if (birthday == null) return 0;
-        try {
-            String[] p = birthday.split("/");
-            LocalDate bd = LocalDate.of(Integer.parseInt(p[2]), Integer.parseInt(p[0]), Integer.parseInt(p[1]));
-            return (int) ChronoUnit.YEARS.between(bd, LocalDate.now());
-        } catch (Exception e) { return 0; }
-    }
-
     // ─── Distance / geography scoring (−15 to +10) ───────────────────────────
 
     private enum Continent { NA, SA, EU, AF, AS, OC }
@@ -367,7 +355,7 @@ public class CompatibilityEngine {
         {  -15, -12, -12, -12,  -5,   0 }, // OC
     };
 
-    public static ScoreDetail scoreDistance(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
+    public static ScoreDetail scoreDistance(AppState a, AppState b) {
         String n1 = a.name != null ? a.name : "User 1";
         String n2 = b.name != null ? b.name : "User 2";
         String cA = a.country != null ? a.country.trim() : "";
@@ -408,7 +396,7 @@ public class CompatibilityEngine {
 
     // ─── Deal-breaker scoring (≤0, floor −30) ────────────────────────────────
 
-    public static ScoreDetail scoreDealBreakers(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
+    public static ScoreDetail scoreDealBreakers(AppState a, AppState b) {
         String n1 = a.name != null ? a.name : "User 1";
         String n2 = b.name != null ? b.name : "User 2";
 
@@ -447,7 +435,7 @@ public class CompatibilityEngine {
 
     // ─── Values / lookFor scoring (0–20) ─────────────────────────────────────
 
-    public static ScoreDetail scoreValues(ApplicationHandler.AppState a, ApplicationHandler.AppState b) {
+    public static ScoreDetail scoreValues(AppState a, AppState b) {
         String n1 = a.name != null ? a.name : "User 1";
         String n2 = b.name != null ? b.name : "User 2";
 
@@ -615,19 +603,6 @@ public class CompatibilityEngine {
             GSON.toJson(pp, writer);
         } catch (Exception e) {
             System.err.println("CompatibilityEngine: Failed to save precluded pairs: " + e.getMessage());
-        }
-    }
-
-    // ─── Persistence ──────────────────────────────────────────────────────────
-
-    private static ApplicationHandler.AppState loadProfile(String userId) {
-        File file = new File(PROFILES_DIR + userId + ".json");
-        if (!file.exists()) return null;
-        try {
-            return GSON.fromJson(new FileReader(file), ApplicationHandler.AppState.class);
-        } catch (Exception e) {
-            System.err.println("CompatAlgo: Failed to read profile for " + userId + ": " + e.getMessage());
-            return null;
         }
     }
 }

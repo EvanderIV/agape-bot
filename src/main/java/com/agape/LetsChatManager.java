@@ -20,6 +20,12 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+/**
+ * Posts the every-other-day "Let's Chat!" community question (or poll) from
+ * assets/lets_chat_questions.json into a general-chat channel at 9 AM ET.
+ * Called by the 5-minute scheduler in AgapeBot; the last posted date is
+ * tracked in user_content/lets_chat_state.json so restarts never double-post.
+ */
 public class LetsChatManager {
 
     // Master switch — flip to true to enable posting

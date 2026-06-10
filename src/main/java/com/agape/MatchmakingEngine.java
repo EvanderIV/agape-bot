@@ -3,7 +3,6 @@ package com.agape;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -14,11 +13,16 @@ import java.util.Random;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Role;
 
+/**
+ * Quickmatch: picks a random eligible candidate for a user who runs
+ * /quickmatch, enforcing enrollment, the "single" role, biweekly spin
+ * limits (1 normal / 5 premium), the 24-hour match cooldown, age brackets,
+ * and precluded pairs. Every attempt (including blocked ones) is logged to
+ * user_content/matches/{userId}.json.
+ */
 public class MatchmakingEngine {
 
-    private static final String PROFILES_DIR = "user_content/profiles/";
     private static final String MATCHES_DIR  = "user_content/matches/";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final DateTimeFormatter TIMESTAMP_FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -34,9 +38,9 @@ public class MatchmakingEngine {
 
     public static class MatchResult {
         public final String matchedUserId;
-        public final ApplicationHandler.AppState matchedProfile;
+        public final AppState matchedProfile;
 
-        MatchResult(String matchedUserId, ApplicationHandler.AppState matchedProfile) {
+        MatchResult(String matchedUserId, AppState matchedProfile) {
             this.matchedUserId = matchedUserId;
             this.matchedProfile = matchedProfile;
         }
@@ -81,7 +85,7 @@ public class MatchmakingEngine {
         MatchLog userLog = loadMatchLog(userId);
 
         // 1. Load and validate the requesting user
-        ApplicationHandler.AppState user = loadProfile(userId);
+        AppState user = ProfileRepository.load(userId);
         if (user == null) {
             System.out.println("Quickmatch: No profile found for user " + userId);
             logBlocked(userId, userLog, "No profile found");
@@ -122,7 +126,7 @@ public class MatchmakingEngine {
         }
 
         // 3. Determine user's age bracket
-        int userAge = calculateAge(user.birthday);
+        int userAge = AgeUtils.calculateAge(user.birthday);
         int[] bracket = ageBracket(userAge);
         if (bracket == null) {
             System.err.println("Quickmatch: User " + userId + " has an invalid or missing birthday (computed age = " + userAge + ").");
@@ -131,27 +135,26 @@ public class MatchmakingEngine {
         }
 
         // 4. Scan all profiles for eligible candidates
-        File dir = new File(PROFILES_DIR);
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
-        if (files == null || files.length == 0) {
+        File[] files = ProfileRepository.listProfileFiles();
+        if (files.length == 0) {
             logQuickmatch(userId, userLog, "NO_MATCH", null);
             return null;
         }
 
-        List<ApplicationHandler.AppState> candidates = new ArrayList<>();
+        List<AppState> candidates = new ArrayList<>();
         List<String> candidateIds = new ArrayList<>();
         for (File file : files) {
-            String candidateId = file.getName().replace(".json", "");
+            String candidateId = ProfileRepository.userIdFromFile(file);
             if (candidateId.equals(userId)) continue;
 
-            ApplicationHandler.AppState candidate = loadProfile(candidateId);
+            AppState candidate = ProfileRepository.load(candidateId);
             if (candidate == null) continue;
             if (!"ACCEPTED".equals(candidate.status)) continue;
             if (candidate.softDeleted) continue;
             if (!candidate.quickmatchEnrolled) continue;
-            if (!ApplicationHandler.verifyMembership(candidateId, candidate.guildId, jda)) continue;
+            if (!MembershipVerifier.verifyMembership(candidateId, candidate.guildId, jda)) continue;
 
-            int candidateAge = calculateAge(candidate.birthday);
+            int candidateAge = AgeUtils.calculateAge(candidate.birthday);
             if (candidateAge < bracket[0] || candidateAge > bracket[1]) continue;
 
             MatchLog candidateLog = loadMatchLog(candidateId);
@@ -171,7 +174,7 @@ public class MatchmakingEngine {
 
         // 5. Pick a random candidate
         int idx = new Random().nextInt(candidates.size());
-        ApplicationHandler.AppState match = candidates.get(idx);
+        AppState match = candidates.get(idx);
         String matchId = candidateIds.get(idx);
 
         System.out.println("Quickmatch: Matched user " + userId + " with " + matchId + ".");
@@ -276,8 +279,8 @@ public class MatchmakingEngine {
 
     // ─── Profile / age helpers ────────────────────────────────────────────────
 
-    /** Returns [min, max] for the age bracket, or null if age < 18. */
-    private static int[] ageBracket(int age) {
+    /** Returns [min, max] for the age bracket, or null if age < 18. Package-private for tests. */
+    static int[] ageBracket(int age) {
         if (age >= 56) return new int[]{56, Integer.MAX_VALUE};
         if (age >= 41) return new int[]{41, 55};
         if (age >= 33) return new int[]{33, 40};
@@ -288,9 +291,8 @@ public class MatchmakingEngine {
     }
 
     /**
-     * Returns true if the user qualifies for premium quickmatch spins:
-     *   - Has a role whose name contains "booster", OR
-     *   - Has a role matching "lvl <N>" where N >= 100
+     * Returns true if the user qualifies for premium quickmatch spins
+     * (see {@link Roles#isPremium}). Retrieves the member via the API.
      */
     private static boolean isPremiumUser(String userId, String guildId, JDA jda) {
         if (guildId == null || jda == null) return false;
@@ -298,58 +300,24 @@ public class MatchmakingEngine {
             net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
             if (guild == null) return false;
             net.dv8tion.jda.api.entities.Member member = guild.retrieveMemberById(userId).complete();
-            if (member == null) return false;
-            java.util.regex.Pattern lvlPattern = java.util.regex.Pattern.compile("lvl\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE);
-            for (Role role : member.getRoles()) {
-                String name = role.getName();
-                if (name.toLowerCase().contains("booster")) return true;
-                java.util.regex.Matcher m = lvlPattern.matcher(name);
-                if (m.find() && Integer.parseInt(m.group(1)) >= 100) return true;
-            }
+            return Roles.isPremium(member);
         } catch (Exception e) {
             System.err.println("Quickmatch: Error checking premium roles for user " + userId + ": " + e.getMessage());
         }
         return false;
     }
 
-    /** Returns true if the Discord member has a role whose name contains "single". */
+    /** Returns true if the Discord member has the "single" role (see {@link Roles#isSingle}). */
     private static boolean isSingleInGuild(String userId, String guildId, JDA jda) {
         if (guildId == null || jda == null) return false;
         try {
             net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
             if (guild == null) return false;
             net.dv8tion.jda.api.entities.Member member = guild.retrieveMemberById(userId).complete();
-            if (member == null) return false;
-            for (Role role : member.getRoles()) {
-                if (role.getName().toLowerCase().contains("single") && !role.getName().toLowerCase().contains("but") && !role.getName().toLowerCase().contains("not")) return true;
-            }
+            return Roles.isSingle(member);
         } catch (Exception e) {
             System.err.println("Quickmatch: Error checking roles for user " + userId + ": " + e.getMessage());
         }
         return false;
-    }
-
-    /** Loads an AppState from disk. Returns null on any failure. */
-    private static ApplicationHandler.AppState loadProfile(String userId) {
-        File file = new File(PROFILES_DIR + userId + ".json");
-        if (!file.exists()) return null;
-        try {
-            return GSON.fromJson(new FileReader(file), ApplicationHandler.AppState.class);
-        } catch (Exception e) {
-            System.err.println("Quickmatch: Failed to read profile for " + userId + ": " + e.getMessage());
-            return null;
-        }
-    }
-
-    /** Calculates current age from a birthday string in M/D/YYYY format. Returns 0 on any failure. */
-    private static int calculateAge(String birthday) {
-        if (birthday == null) return 0;
-        try {
-            String[] p = birthday.split("/");
-            LocalDate bd = LocalDate.of(Integer.parseInt(p[2]), Integer.parseInt(p[0]), Integer.parseInt(p[1]));
-            return (int) ChronoUnit.YEARS.between(bd, LocalDate.now());
-        } catch (Exception e) {
-            return 0;
-        }
     }
 }

@@ -23,6 +23,17 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.vdurmont.emoji.EmojiParser;
 
+/**
+ * Renders profile-card PNGs with Java2D: background + circular profile photo
+ * + frame overlay + rich text (the card text format is produced by
+ * ApplicationHandler.buildCardText and supports tags like {s:..}, {g:..},
+ * {autoscale:N}, {img:..}, and Twemoji emoji rendering).
+ *
+ * Entry points: {@link #generateForUser} (writes matchmaking_{userId}.png in
+ * the working directory; callers delete it after upload) and
+ * {@link #decodeDesignCode} ("BTW-PST" → background/frame paths via
+ * assets/design_codes.json).
+ */
 public class ImageGenerator {
 
     static class FontLoader {

@@ -20,101 +20,33 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.components.text.TextInput;
-import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 
+/**
+ * The DM application questionnaire — a JDA listener that walks applicants
+ * through the 15-step profile interview entirely in direct messages.
+ *
+ * State machine: each user's progress lives in {@link AppState#currentStep}
+ * (an {@link AppStep}), held in the in-memory {@code activeApplications} map
+ * and mirrored to user_content/in_progress/ after every answer so an
+ * application survives bot restarts (see {@link #recoverInProgressApplications}).
+ *
+ * On final submission the profile is checked by {@link AutoModerator}; clean
+ * submissions are saved via {@link ProfileRepository} and posted for review
+ * by {@link ApplicationReview}. This class also owns the DM buttons for the
+ * re-apply flow, per-section edits, the design customization prompt, and
+ * quickmatch enrollment.
+ */
 public class ApplicationHandler extends ListenerAdapter {
-
-    // Enum to represent exactly where the user is in the application process
-    public enum AppStep {
-        LANGUAGE,
-        APPLICATION_LANGUAGE,
-        NAME,
-        COUNTRY,
-        AGE,
-        SEX,
-        SECT,
-        PHYSICAL,
-        HOBBIES,
-        STRENGTHS,
-        WEAKNESSES,
-        PHOTO,
-        TARGET_AGE,
-        TARGET_SECT,
-        LOOK_FOR,
-        DEAL_BREAKERS,
-        CUSTOMIZE_PROMPT,
-        EDIT_WHICH_FIELD,      // User is selecting which field to edit
-        EDITING_FIELD,          // User is editing a specific field
-        WAITING_FOR_DESIGN_CODE,
-        COMPLETED
-    }
-
-    // A simple data class to hold the user's answers as they progress
-    public static class AppState {
-        public AppStep currentStep = AppStep.LANGUAGE;
-        
-        public String language;
-        public String username; // Store the Discord Handle
-        public String name;
-        public String country;
-        public String birthday; // stored as M/D/YYYY
-        public boolean sex;
-        public String sect;
-        public String physicalDescription;
-        public String hobbies;
-        public String strengths;
-        public String weaknesses;
-        public String photoPath; // Local file path OR avatar URL
-        public String targetAge;
-        public String targetSect;
-        public String lookFor;
-        public String dealBreakers;
-        public String designCode;
-        
-        // Application status tracking
-        public String status = "PENDING"; // PENDING, ACCEPTED, REJECTED
-        public String submittedAt;
-        public String reviewedAt;
-        public String reviewedBy; // Matchmaker's ID who reviewed it
-        public String rejectionReason; // Reason for rejection with request for change
-        public String guildId; // Guild where /apply was used
-        
-        // Quickmatch system
-        public boolean quickmatchEnrolled = false;
-        public boolean quickmatchPromptSent = false;
-
-        // Soft-delete: when true, the profile is invisible to all matchmaking systems
-        public boolean softDeleted = false;
-
-        // Manual matchmaking opt-in; false blocks /match and compat-algo but not quickmatch
-        public boolean manualMatchEnrolled = true;
-
-        // Track which field is being edited
-        public String fieldBeingEdited; // Store the AppStep enum name of the field being edited
-    }
 
     // Thread pool for scheduling delayed tasks (like the fake human auto-rejections)
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
-
-    // Helper class to store auto-mod results
-    private static class AutoModResult {
-        public String reason;
-        public int sectionNum;
-        public AutoModResult(String reason, int sectionNum) {
-            this.reason = reason;
-            this.sectionNum = sectionNum;
-        }
-    }
 
     // This HashMap acts as the bot's short-term memory. Key = User ID, Value = Their AppState
     private static final Map<String, AppState> activeApplications = new HashMap<>();
@@ -185,77 +117,6 @@ public class ApplicationHandler extends ListenerAdapter {
         }
     }
 
-    // Compile pattern once to save resources. Matches ISFP, ENTJ-A, etc.
-    private static final java.util.regex.Pattern MBTI_PATTERN = java.util.regex.Pattern.compile("(?i)\\b(I|E)(N|S)(F|T)(J|P)(-[TA])?\\b");
-
-    /**
-     * Helper method to accurately scan a sentence for MBTI / Enneagram terms
-     */
-    private boolean containsMBTI(String text) {
-        if (text == null) return false;
-        String lower = text.toUpperCase();
-        if (lower.contains("MBTI") || lower.contains("ENNEAGRAM")) return true;
-        
-        // .find() correctly scans the whole string, unlike .matches() which requires a 100% exact match
-        return MBTI_PATTERN.matcher(text).find();
-    }
-
-    /**
-     * Evaluates the application against automated quality rules.
-     * Returns an AutoModResult if it fails, or null if it passes.
-     */
-    private AutoModResult checkAutoRules(AppState state) {
-        
-        // 1. Check all relevant fields for MBTI / Enneagram types
-        if (containsMBTI(state.physicalDescription)) {
-            return new AutoModResult("Don't use MBTI or Enneagram to describe yourself. Tell us about yourself in your own words!", 6);
-        }
-        if (containsMBTI(state.hobbies)) {
-            return new AutoModResult("Don't use MBTI or Enneagram to describe yourself. Tell us about yourself in your own words!", 7);
-        }
-        if (containsMBTI(state.strengths)) {
-            return new AutoModResult("Don't use MBTI or Enneagram to describe yourself. Tell us about yourself in your own words!", 8);
-        }
-        if (containsMBTI(state.weaknesses)) {
-            return new AutoModResult("Don't use MBTI or Enneagram to describe yourself. Tell us about yourself in your own words!", 9);
-        }
-        if (containsMBTI(state.lookFor)) {
-            return new AutoModResult("Don't use MBTI or Enneagram as a benchmark. Describe what makes a good partner in your own words!", 12);
-        }
-        if (containsMBTI(state.dealBreakers)) {
-            return new AutoModResult("Don't use MBTI or Enneagram as a benchmark. Describe what makes a good partner in your own words!", 13);
-        }
-
-        // 2. Length Checks
-        // Require at least 6 characters to prevent things like "5'11"" from slipping through
-        if (state.physicalDescription != null && state.physicalDescription.trim().length() < 6) {
-            System.out.println("Auto-Mod: Physical description too short for user " + state.username + " | Content: `" + state.physicalDescription + "`");
-            return new AutoModResult("Your physical description is a bit too brief. Please provide a few more details so potential matches have a better idea of what you look like!", 6);
-        }
-        
-        // Require at least 6 characters to force a real answer
-        if (state.dealBreakers != null && state.dealBreakers.trim().length() < 6) {
-            System.out.println("Auto-Mod: Deal breakers too short for user " + state.username + " | Content: `" + state.dealBreakers + "`");
-            return new AutoModResult("Please list at least one or two specific deal breakers / red flags", 13);
-        }
-
-        // Gooning? Really man?
-        if (state.hobbies != null && state.hobbies.toLowerCase().contains("gooning")) {
-            System.out.println("Auto-Mod: Bro is GOONING??? - " + state.username + " | Content: `" + state.hobbies + "`");
-            return new AutoModResult("Gooning? Really??? Please change that", 13);
-        }
-
-        // Breedable? Really man?
-        if (state.physicalDescription != null && state.physicalDescription.toLowerCase().contains("breedable")) {
-            System.out.println("Auto-Mod: I... really didn't think anyone would ever type that: " + state.username + " | Content: `" + state.physicalDescription + "`");
-            return new AutoModResult("Please don't include obscene or sexual language in your self-description", 6);
-        }
-
-        // Add more regex or length checks here!
-        
-        return null; // Null means it passed all auto-mod rules!
-    }
-
     /**
      * Starts a new application for a user and sends the very first question.
      */
@@ -322,47 +183,6 @@ public class ApplicationHandler extends ListenerAdapter {
                 deleteInProgress(user.getId());
             }
         );
-    }
-
-    /**
-     * Validates target age input. Accepts single ages (e.g., "25") or ranges (e.g., "18-25").
-     * Handles various dash formats and spacing: "18-25", "18 - 25", "18—25", etc.
-     * @param input The user's target age input
-     * @return true if valid (ages 18-70), false otherwise
-     */
-    private boolean isValidTargetAge(String input) {
-        input = input.trim();
-        
-        // Replace all types of dashes and hyphens with a standard hyphen
-        // This includes: - (hyphen), – (en-dash), — (em-dash)
-        input = input.replaceAll("[–—]", "-");
-        
-        // Handle ranges (e.g., "18-25", "18 - 25", "18- 25", etc.)
-        if (input.contains("-")) {
-            // Split by hyphen and trim whitespace from each part
-            String[] parts = input.split("-");
-            if (parts.length != 2) {
-                return false; // Invalid format with multiple dashes
-            }
-            
-            try {
-                int minAge = Integer.parseInt(parts[0].trim());
-                int maxAge = Integer.parseInt(parts[1].trim());
-                
-                // Both ages must be 18-70
-                return minAge >= 18 && minAge <= 70 && maxAge >= 18 && maxAge <= 70 && minAge <= maxAge;
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        } else {
-            // Single age (e.g., "25")
-            try {
-                int age = Integer.parseInt(input);
-                return age >= 18 && age <= 70;
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        }
     }
 
     /**
@@ -479,7 +299,7 @@ public class ApplicationHandler extends ListenerAdapter {
                     // Construct the beautiful rich text using their actual answers!
                     String text = "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}" + state.name + "{/}*\n" +
                                     "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:6.0}{f:Arial Rounded MT Bold}@" + user.getName() + "{/}*\n\n" +
-                                    calculateAge(state.birthday) + " | " + getBirthYear(state.birthday) + "\n" +
+                                    AgeUtils.calculateAge(state.birthday) + " | " + AgeUtils.birthYear(state.birthday) + "\n" +
                                     (state.sex ? "Female" : "Male") + "\n" +
                                     state.sect + "\n" +
                                     "{autoscale:2}" + state.physicalDescription + "{/autoscale}" + "\n\n" +
@@ -545,7 +365,7 @@ public class ApplicationHandler extends ListenerAdapter {
 
         return "{blob}{s:70}*{g:line:#FF6699:#9966FF}{o:#FFFFFF:8.0}{f:Arial Rounded MT Bold}" + state.name + "{/}*\n"
             + "{blob}{s:45}*{g:line:#FF6699:#FF9966}{o:#FFFFFF:6.0}{f:Arial Rounded MT Bold}@" + username + "{/}*\n\n"
-            + calculateAge(state.birthday) + " | " + getBirthYear(state.birthday) + "\n"
+            + AgeUtils.calculateAge(state.birthday) + " | " + AgeUtils.birthYear(state.birthday) + "\n"
             + (state.sex ? "Female" : "Male") + "\n"
             + state.sect + "\n"
             + (location != null ? location + "\n" : "")
@@ -657,7 +477,7 @@ public class ApplicationHandler extends ListenerAdapter {
         boolean sendQMPrompt = !state.quickmatchPromptSent;
         if (sendQMPrompt) state.quickmatchPromptSent = true;
 
-        AutoModResult autoMod = checkAutoRules(state);
+        AutoModerator.AutoModResult autoMod = AutoModerator.check(state);
 
         if (autoMod != null) {
             // --- AUTO REJECTION TRIGGERED ---
@@ -674,7 +494,7 @@ public class ApplicationHandler extends ListenerAdapter {
                         Button editBtn = Button.primary("user_edit_app_" + autoMod.sectionNum, "✏️ Edit Application");
                         Button deleteBtn = Button.danger("user_delete_app", "🗑️ Delete Application");
 
-                        dm.sendMessage("⚠️ A matchmaker has requested changes to your application. Please review the feedback and update the requested section.\n\n**Matchmaker Note:** " + autoMod.reason + "\n**Section to Edit:** #" + autoMod.sectionNum + " (" + getSectionName(autoMod.sectionNum) + ")")
+                        dm.sendMessage("⚠️ A matchmaker has requested changes to your application. Please review the feedback and update the requested section.\n\n**Matchmaker Note:** " + autoMod.reason + "\n**Section to Edit:** #" + autoMod.sectionNum + " (" + ApplicationReview.sectionName(autoMod.sectionNum) + ")")
                             .setComponents(ActionRow.of(editBtn, deleteBtn))
                             .queue();
                     });
@@ -690,19 +510,13 @@ public class ApplicationHandler extends ListenerAdapter {
         state.status = "PENDING";
         saveProfileJson(state, userId);
         cleanUpSrvJson(userId);
-        postApplicationToChannel(state, userId, jda);
+        ApplicationReview.postApplicationToChannel(state, userId, jda);
         if (sendQMPrompt) sendQuickmatchEnrollmentPrompt(userId, jda);
     }
 
     // Helper to save JSON
     private void saveProfileJson(AppState state, String userId) {
-        File profilesDir = new File("user_content/profiles/");
-        if (!profilesDir.exists()) profilesDir.mkdirs();
-        try (FileWriter writer = new FileWriter(new File(profilesDir, userId + ".json"))) {
-            new GsonBuilder().setPrettyPrinting().create().toJson(state, writer);
-        } catch (IOException e) {
-            System.err.println("❌ Failed to save profile JSON for user: " + userId);
-        }
+        ProfileRepository.save(userId, state);
     }
 
     // Helper to clean srv
@@ -723,15 +537,10 @@ public class ApplicationHandler extends ListenerAdapter {
             user.openPrivateChannel().queue(dm -> {
                 // Load the user's profile to get their language preference
                 try {
-                    File profileFile = new File("user_content/profiles/" + userId + ".json");
                     String language = "english";
-                    
-                    if (profileFile.exists()) {
-                        Gson gson = new Gson();
-                        AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-                        if (state.language != null) {
-                            language = state.language;
-                        }
+                    AppState state = ProfileRepository.load(userId);
+                    if (state != null && state.language != null) {
+                        language = state.language;
                     }
                     
                     Button enrollBtn = Button.success("quickmatch_enroll_" + userId, "✅ Enroll in Quickmatch");
@@ -764,381 +573,6 @@ public class ApplicationHandler extends ListenerAdapter {
     }
 
     /**
-     * Posts the submitted application to the guild's applications channel with review buttons
-     */
-    private void postApplicationToChannel(AppState state, String userId, JDA jda) {
-        if (state.guildId == null) {
-            System.out.println("⚠️ No guild ID found for application - skipping channel post");
-            return;
-        }
-
-        try {
-            // Get the guild
-            net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(state.guildId);
-            if (guild == null) {
-                System.err.println("❌ Guild not found for ID: " + state.guildId);
-                return;
-            }
-
-            // Look for a channel named "applications" or "pending-applications"
-            java.util.List<?> applicationsList = guild.getTextChannelsByName("matchmaker-backroom", true);
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("matchmakers", true);
-            }
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("applications", true);
-            }
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("pending-applications", true);
-            }
-
-            if (applicationsList.isEmpty()) {
-                System.err.println("⚠️ No 'applications' or 'pending-applications' channel found in guild: " + guild.getName());
-                return;
-            }
-
-            // Determine photo display
-            boolean isLocalPhoto = state.photoPath != null && !state.photoPath.startsWith("http");
-            String photoDesc;
-            EmbedBuilder embed = new EmbedBuilder()
-                    .setTitle("📋 New Application: " + state.name)
-                    .setColor(state.sex ? 0xFF6699 : 0x9966FF)
-                    .addField("1. Name", state.name + " (<@" + userId + ">)", true)
-                    .addField("2. Birthday", state.birthday != null ? state.birthday + " (age " + calculateAge(state.birthday) + ")" : "N/A", true)
-                    .addField("3. Location", state.country, true)
-                    .addField("4. Gender", state.sex ? "Female" : "Male", true)
-                    .addField("5. Denomination", state.sect, true)
-                    .addField("6. Target Age Range", state.targetAge, true)
-                    .addField("7. Target Denomination", state.targetSect != null ? state.targetSect : "N/A", true)
-                    .addField("8. Physical Description", state.physicalDescription != null ? state.physicalDescription : "N/A", false)
-                    .addField("9. Hobbies", state.hobbies != null ? state.hobbies : "N/A", false)
-                    .addField("10. Strengths", state.strengths != null ? state.strengths : "N/A", false)
-                    .addField("11. Weaknesses", state.weaknesses != null ? state.weaknesses : "N/A", false)
-                    .addField("12. What They're Looking For", state.lookFor != null ? state.lookFor : "N/A", false)
-                    .addField("13. Deal Breakers", state.dealBreakers != null ? state.dealBreakers : "N/A", false)
-                    .setFooter("User ID: " + userId + " | Submitted: " + state.submittedAt)
-                    .setTimestamp(java.time.Instant.now());
-
-            if (state.photoPath == null || state.photoPath.isEmpty()) {
-                photoDesc = "N/A";
-            } else if (isLocalPhoto) {
-                photoDesc = "(Uploaded file — see image below)";
-                embed.setImage("attachment://photo.png");
-            } else {
-                photoDesc = state.photoPath;
-                embed.setImage(state.photoPath);
-            }
-            embed.addField("14. Photo", photoDesc, false);
-
-            // Create action buttons
-            Button acceptBtn = Button.success("app_accept_" + userId, "✅ Accept");
-            Button requestChangeBtn = Button.secondary("app_request_change_" + userId, "⚠️ Request Change");
-            Button requestPhotoChangeBtn = Button.primary("app_request_photo_change_" + userId, "📷 Request Photo Change");
-            Button rejectBtn = Button.danger("app_reject_" + userId, "❌ Reject");
-
-            ActionRow actionRow = ActionRow.of(acceptBtn, requestChangeBtn, requestPhotoChangeBtn, rejectBtn);
-
-            TextChannel channel = (TextChannel) applicationsList.get(0);
-            File photoFile = isLocalPhoto ? new File(state.photoPath) : null;
-
-            if (photoFile != null && photoFile.exists()) {
-                channel.sendMessageEmbeds(embed.build())
-                        .addFiles(FileUpload.fromData(photoFile, "photo.png"))
-                        .setComponents(actionRow)
-                        .queue(
-                            msg -> System.out.println("✅ Application posted to channel"),
-                            err -> System.err.println("❌ Failed to post application: " + err.getMessage())
-                        );
-            } else {
-                channel.sendMessageEmbeds(embed.build())
-                        .setComponents(actionRow)
-                        .queue(
-                            msg -> System.out.println("✅ Application posted to channel"),
-                            err -> System.err.println("❌ Failed to post application: " + err.getMessage())
-                        );
-            }
-
-        } catch (Exception e) {
-            System.err.println("❌ Error posting application to channel: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Posts a conversation start message to the applications channel
-     */
-    public static void postConversationStartToChannel(User applicant, String messageContent, String matchmakerId, String guildId, JDA jda) {
-        try {
-            net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
-            if (guild == null) {
-                System.err.println("❌ Guild not found for ID: " + guildId);
-                return;
-            }
-
-            // Find the applications channel
-            java.util.List<?> applicationsList = guild.getTextChannelsByName("matchmaker-backroom", true);
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("matchmakers", true);
-            }
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("applications", true);
-            }
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("pending-applications", true);
-            }
-
-            if (applicationsList.isEmpty()) {
-                System.err.println("⚠️ No applications channel found in guild: " + guild.getName());
-                return;
-            }
-
-            // Create embed for conversation start (without button - it goes in the DM instead)
-            EmbedBuilder embed = new EmbedBuilder()
-                    .setTitle("💬 Anonymous Conversation with " + applicant.getName())
-                    .setColor(0x6699FF)
-                    .addField("Applicant", applicant.getAsMention() + " (ID: " + applicant.getId() + ")", false)
-                    .addField("Matchmaker Message", messageContent, false)
-                    .setFooter("ID: " + applicant.getId() + " | Matchmaker: " + matchmakerId)
-                    .setTimestamp(java.time.Instant.now());
-
-            // Send to channel (no buttons - reply button is in the DM)
-            Object channelObj = applicationsList.get(0);
-            try {
-                java.lang.reflect.Method sendEmbedMethod = channelObj.getClass().getMethod("sendMessageEmbeds", java.util.Collection.class);
-                Object messageAction = sendEmbedMethod.invoke(channelObj, java.util.Collections.singletonList(embed.build()));
-                
-                java.lang.reflect.Method queueMethod = messageAction.getClass().getMethod("queue");
-                queueMethod.invoke(messageAction);
-                
-                System.out.println("✅ Conversation message posted to channel");
-            } catch (Exception ex) {
-                System.err.println("❌ Failed to post conversation message: " + ex.getMessage());
-                ex.printStackTrace();
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Error posting conversation to channel: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Handles the reply button click from applicant's DM - shows modal
-     */
-    private void handleConversationReplyButton(ButtonInteractionEvent event) {
-        String buttonId = event.getComponentId();
-        String applicantId, matchmakerId;
-        String modalTitle = "Reply to Matchmaker";
-        String modalId;
-        
-        if (buttonId.startsWith("convo_reply_mm_")) {
-            // Matchmaker replying to applicant
-            String[] parts = buttonId.substring("convo_reply_mm_".length()).split("_");
-            if (parts.length < 2) {
-                event.reply("❌ Invalid conversation reference.").setEphemeral(true).queue();
-                return;
-            }
-            matchmakerId = parts[0];
-            applicantId = parts[1];
-            modalTitle = "Reply to Applicant";
-            modalId = "modal_convo_reply_mm_" + matchmakerId + "_" + applicantId;
-        } else {
-            // Applicant replying to matchmaker
-            String[] parts = buttonId.substring("convo_reply_".length()).split("_");
-            if (parts.length < 2) {
-                event.reply("❌ Invalid conversation reference.").setEphemeral(true).queue();
-                return;
-            }
-            applicantId = parts[0];
-            matchmakerId = parts[1];
-            modalId = "modal_convo_reply_" + applicantId + "_" + matchmakerId;
-        }
-        
-        // Create modal for reply
-        TextInput replyInput = TextInput.create("reply_message", "Your Reply", TextInputStyle.PARAGRAPH)
-                .setPlaceholder("Type your response here...")
-                .setRequired(true)
-                .build();
-        
-        Modal modal = Modal.create(modalId, modalTitle)
-                .addActionRow(replyInput)
-                .build();
-        
-        event.replyModal(modal).queue();
-    }
-
-    /**
-     * Posts a conversation reply to the applications channel when applicant replies via DM modal
-     */
-    private void postConversationReplyToChannel(String applicantId, String matchmakerId, String replyContent, JDA jda, String sender) {
-        try {
-            // Try to get the guild ID from the applicant's profile first
-            String guildId = null;
-            File profileFile = new File("user_content/profiles/" + applicantId + ".json");
-            if (profileFile.exists()) {
-                Gson gson = new Gson();
-                AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-                guildId = state.guildId;
-            }
-
-            // Fall back to the guild ID stored when the conversation was initiated
-            if (guildId == null) {
-                guildId = MessagingHandler.getConversationGuildId(applicantId, matchmakerId);
-            }
-
-            if (guildId == null) {
-                System.err.println("❌ Could not determine guild ID for conversation: " + applicantId + " <-> " + matchmakerId);
-                return;
-            }
-
-            net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
-            if (guild == null) {
-                System.err.println("❌ Guild not found for ID: " + guildId);
-                return;
-            }
-
-            // Find the applications channel
-            java.util.List<?> applicationsList = guild.getTextChannelsByName("matchmaker-backroom", true);
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("matchmakers", true);
-            }
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("applications", true);
-            }
-            if (applicationsList.isEmpty()) {
-                applicationsList = guild.getTextChannelsByName("pending-applications", true);
-            }
-
-            if (applicationsList.isEmpty()) {
-                System.err.println("⚠️ No applications channel found in guild: " + guild.getName());
-                return;
-            }
-
-            // Create embed for reply
-            String senderLabel = "applicant".equals(sender) ? "Applicant Reply" : "Matchmaker Reply";
-            int embedColor = "applicant".equals(sender) ? 0x99FF99 : 0xFF9999;
-
-            // Ping the matchmaker in message content (not embed) so Discord delivers the notification
-            String mention = "applicant".equals(sender) ? "<@" + matchmakerId + ">" : "";
-
-            EmbedBuilder embed = new EmbedBuilder()
-                    .setTitle(senderLabel)
-                    .setColor(embedColor)
-                    .setDescription(replyContent)
-                    .setFooter("Applicant ID: " + applicantId)
-                    .setTimestamp(java.time.Instant.now());
-
-            // Send to channel
-            TextChannel channel = (TextChannel) applicationsList.get(0);
-            if ("applicant".equals(sender)) {
-                Button replyBtn = Button.primary("convo_reply_mm_" + matchmakerId + "_" + applicantId, "💬 Reply");
-                channel.sendMessage(mention).setEmbeds(embed.build())
-                        .setComponents(ActionRow.of(replyBtn))
-                        .queue(
-                            msg -> System.out.println("✅ Applicant reply posted to channel"),
-                            err -> System.err.println("❌ Failed to post applicant reply: " + err.getMessage())
-                        );
-            } else {
-                channel.sendMessageEmbeds(embed.build())
-                        .queue(
-                            msg -> System.out.println("✅ Matchmaker reply posted to channel"),
-                            err -> System.err.println("❌ Failed to post matchmaker reply: " + err.getMessage())
-                        );
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Error posting conversation reply to channel: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Sends a matchmaker's reply to the applicant via DM
-     */
-    private void sendConversationReplyToApplicant(String applicantId, String matchmakerId, String replyContent, JDA jda) {
-        try {
-            net.dv8tion.jda.api.entities.User applicant = jda.retrieveUserById(applicantId).complete();
-            if (applicant == null) {
-                System.err.println("❌ Could not retrieve applicant with ID: " + applicantId);
-                return;
-            }
-
-            applicant.openPrivateChannel().queue(dm -> {
-                EmbedBuilder embed = new EmbedBuilder()
-                        .setTitle("💬 Message from Matchmaker")
-                        .setColor(0xFF9999)
-                        .setDescription(replyContent)
-                        .setFooter("Matchmaker ID: " + matchmakerId)
-                        .setTimestamp(java.time.Instant.now());
-
-                Button replyBtn = Button.primary("convo_reply_" + applicantId + "_" + matchmakerId, "💬 Reply");
-                ActionRow actionRow = ActionRow.of(replyBtn);
-
-                dm.sendMessageEmbeds(embed.build())
-                        .setComponents(actionRow)
-                        .queue(
-                            success -> System.out.println("✅ Conversation reply sent to applicant via DM"),
-                            error -> System.err.println("❌ Failed to send conversation reply to applicant: " + error.getMessage())
-                        );
-            });
-        } catch (Exception e) {
-            System.err.println("❌ Error sending conversation reply to applicant: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Edits the original DM message to include the applicant's reply
-     */
-    private void editDMWithApplicantReply(String applicantId, String matchmakerId, String replyContent, JDA jda) {
-        try {
-            net.dv8tion.jda.api.entities.User applicant = jda.retrieveUserById(applicantId).complete();
-            if (applicant == null) {
-                System.err.println("❌ Could not retrieve applicant with ID: " + applicantId);
-                return;
-            }
-
-            applicant.openPrivateChannel().queue(dm -> {
-                String messageId = MessagingHandler.getDMMessageId(applicantId, matchmakerId);
-                if (messageId == null) {
-                    System.err.println("⚠️ No DM message ID found for editing");
-                    return;
-                }
-
-                dm.retrieveMessageById(messageId).queue(msg -> {
-                    try {
-                        // Get the current embed
-                        if (msg.getEmbeds().isEmpty()) {
-                            System.err.println("⚠️ Original message has no embed");
-                            return;
-                        }
-
-                        net.dv8tion.jda.api.entities.MessageEmbed originalEmbed = msg.getEmbeds().get(0);
-                        String originalDescription = originalEmbed.getDescription();
-
-                        // Append the reply to the embed
-                        String updatedDescription = originalDescription + "\n\n✅ **Your reply:**\n" + replyContent;
-
-                        EmbedBuilder embed = new EmbedBuilder(originalEmbed)
-                                .setDescription(updatedDescription);
-
-                        // Remove reply button (set components to empty)
-                        msg.editMessageEmbeds(embed.build())
-                                .setComponents(java.util.Collections.emptyList())
-                                .queue(
-                                    editSuccess -> System.out.println("✅ Edited DM to include applicant reply"),
-                                    editError -> System.err.println("⚠️ Could not edit DM: " + editError.getMessage())
-                                );
-                    } catch (Exception ex) {
-                        System.err.println("⚠️ Error editing message: " + ex.getMessage());
-                    }
-                }, msgError -> System.err.println("⚠️ Could not retrieve message for editing"));
-            });
-        } catch (Exception e) {
-            System.err.println("❌ Error editing DM with reply: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * Displays all user answers in a numbered list so they can select which to edit
      */
     private String displayAnswersForEditing(AppState state) {
@@ -1146,7 +580,7 @@ public class ApplicationHandler extends ListenerAdapter {
         sb.append("✏️ **Which answer would you like to edit?**\n\n");
         
         sb.append("` 1)` Name: ").append(state.name).append("\n");
-        sb.append("` 2)` Birthday: ").append(state.birthday != null ? state.birthday + " (age " + calculateAge(state.birthday) + ")" : "N/A").append("\n");
+        sb.append("` 2)` Birthday: ").append(state.birthday != null ? state.birthday + " (age " + AgeUtils.calculateAge(state.birthday) + ")" : "N/A").append("\n");
         sb.append("` 3)` Location: ").append(state.country).append("\n");
         sb.append("` 4)` Sex: ").append(state.sex ? "Female" : "Male").append("\n");
         sb.append("` 5)` Denomination: ").append(state.sect).append("\n");
@@ -1214,86 +648,6 @@ public class ApplicationHandler extends ListenerAdapter {
             case 14: return AppStep.PHOTO;
             default: return null;
         }
-    }
-
-    /**
-     * Helper to get a human-readable section name from its number
-     */
-    /**
-     * Maps embed section numbers to edit field numbers.
-     * This ensures matchmakers see the correct field names when entering section numbers in the modal.
-     * The embed now displays all 13 sections in order, so this is a 1:1 mapping.
-     */
-    @SuppressWarnings("unused")
-    private int mapEmbedSectionToEditField(int embedSection) {
-        // Embed sections now match edit field numbers exactly
-        if (embedSection >= 1 && embedSection <= 13) {
-            return embedSection;
-        }
-        return 1; // Default to first field if invalid
-    }
-
-    private String getSectionName(int sectionNum) {
-        switch (sectionNum) {
-            case 1: return "Name";
-            case 2: return "Birthday";
-            case 3: return "Location";
-            case 4: return "Gender";
-            case 5: return "Denomination";
-            case 6: return "Target Age Range";
-            case 7: return "Target Denomination";
-            case 8: return "Physical Description";
-            case 9: return "Hobbies";
-            case 10: return "Strengths";
-            case 11: return "Weaknesses";
-            case 12: return "What They're Looking For";
-            case 13: return "Deal Breakers";
-            case 14: return "Photo";
-            default: return "Unknown Section";
-        }
-    }
-
-    /** Parses birthday input: M/D/YYYY date string or plain age integer (fallback sets birthday to today minus N years). Returns null if unparseable. */
-    private static String parseBirthday(String input) {
-        if (input == null) return null;
-        input = input.trim();
-        // Fallback: plain age number
-        try {
-            int age = Integer.parseInt(input);
-            if (age < 1 || age > 120) return null;
-            java.time.LocalDate bd = java.time.LocalDate.now().minusYears(age);
-            return bd.getMonthValue() + "/" + bd.getDayOfMonth() + "/" + bd.getYear();
-        } catch (NumberFormatException ignored) {}
-        // Primary: M/D/YYYY (also accepts M-D-YYYY)
-        String[] parts = input.split("[/\\-]");
-        if (parts.length == 3) {
-            try {
-                int month = Integer.parseInt(parts[0].trim());
-                int day   = Integer.parseInt(parts[1].trim());
-                int year  = Integer.parseInt(parts[2].trim());
-                if (year < 100) year += 1900;
-                java.time.LocalDate.of(year, month, day); // validates ranges
-                if (year < 1900 || year > java.time.LocalDate.now().getYear()) return null;
-                return month + "/" + day + "/" + year;
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
-
-    private static int calculateAge(String birthday) {
-        if (birthday == null) return 0;
-        try {
-            String[] p = birthday.split("/");
-            java.time.LocalDate bd = java.time.LocalDate.of(Integer.parseInt(p[2]), Integer.parseInt(p[0]), Integer.parseInt(p[1]));
-            return (int) java.time.temporal.ChronoUnit.YEARS.between(bd, java.time.LocalDate.now());
-        } catch (Exception e) { return 0; }
-    }
-
-    private static int getBirthYear(String birthday) {
-        if (birthday == null) return 0;
-        try {
-            return Integer.parseInt(birthday.split("/")[2]);
-        } catch (Exception e) { return 0; }
     }
 
     @Override
@@ -1365,12 +719,12 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case AGE:
-                String parsedBirthday = parseBirthday(messageContent);
+                String parsedBirthday = AgeUtils.parseBirthday(messageContent);
                 if (parsedBirthday == null) {
                     event.getChannel().sendMessage("⚠️ " + LanguageManager.getInvalidAgeWarning(state.language)).queue();
                     return;
                 }
-                if (calculateAge(parsedBirthday) < 18) {
+                if (AgeUtils.calculateAge(parsedBirthday) < 18) {
                     event.getChannel().sendMessage("❌ " + LanguageManager.getUnderageWarning(state.language)).queue();
                     activeApplications.remove(userId);
                     deleteInProgress(userId);
@@ -1464,7 +818,7 @@ public class ApplicationHandler extends ListenerAdapter {
                 break;
 
             case TARGET_AGE:
-                if (isValidTargetAge(messageContent)) {
+                if (AgeUtils.isValidTargetAge(messageContent)) {
                     state.targetAge = messageContent;
                     state.currentStep = AppStep.TARGET_SECT;
                     // List<String> denomSuggestions = DenominationCompatibility.getCompatibleDenominations(state.sect, false);
@@ -1569,12 +923,12 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.country = messageContent.equalsIgnoreCase("skip") ? "" : messageContent;
                         break;
                     case AGE:
-                        String editedBirthday = parseBirthday(messageContent);
+                        String editedBirthday = AgeUtils.parseBirthday(messageContent);
                         if (editedBirthday == null) {
                             event.getChannel().sendMessage("⚠️ " + LanguageManager.getInvalidAgeWarning(state.language)).queue();
                             return;
                         }
-                        if (calculateAge(editedBirthday) < 18) {
+                        if (AgeUtils.calculateAge(editedBirthday) < 18) {
                             event.getChannel().sendMessage("❌ " + LanguageManager.getUnderageWarning(state.language)).queue();
                             activeApplications.remove(userId);
                             deleteInProgress(userId);
@@ -1604,7 +958,7 @@ public class ApplicationHandler extends ListenerAdapter {
                         state.weaknesses = messageContent.equalsIgnoreCase("skip") ? "" : normalizeLineBreaks(messageContent);
                         break;
                     case TARGET_AGE:
-                        if (!isValidTargetAge(messageContent)) {
+                        if (!AgeUtils.isValidTargetAge(messageContent)) {
                             event.getChannel().sendMessage("⚠️ " + LanguageManager.getTargetAgeValidationError(state.language)).queue();
                             return;
                         }
@@ -1702,13 +1056,13 @@ public class ApplicationHandler extends ListenerAdapter {
         
         // Check if it's a matchmaker review button
         if (buttonId.startsWith("app_accept_") || buttonId.startsWith("app_request_change_") || buttonId.startsWith("app_request_photo_change_") || buttonId.startsWith("app_reject_")) {
-            handleMatchmakerAction(event);
+            ApplicationReview.handleReviewButton(event);
             return;
         }
 
         // Check if it's a conversation reply button
         if (buttonId.startsWith("convo_reply_")) {
-            handleConversationReplyButton(event);
+            ConversationRelay.handleReplyButton(event);
             return;
         }
 
@@ -1781,90 +1135,6 @@ public class ApplicationHandler extends ListenerAdapter {
         event.getChannel().sendMessage(currentQuestions[10].replaceAll("__PROGRESS_MAP__", "**(12/15)**")).queue();
     }
 
-    /**
-     * Handles the Accept/Reject/Request Change buttons pressed by matchmakers
-     */
-    private void handleMatchmakerAction(ButtonInteractionEvent event) {
-        String buttonId = event.getComponentId();
-        // Extract the userId from the button ID (e.g., "app_reject_123456789")
-        String targetUserId = buttonId.substring(buttonId.lastIndexOf("_") + 1);
-
-        if (buttonId.startsWith("app_request_photo_change_")) {
-            TextInput reason = TextInput.create("reason", "Reason for Photo Change", TextInputStyle.PARAGRAPH)
-                .setPlaceholder("Why does the photo need to be changed?")
-                .setRequired(true)
-                .build();
-
-            Modal modal = Modal.create("modal_request_photo_change_" + targetUserId, "Request Photo Change")
-                .addActionRow(reason)
-                .build();
-
-            event.replyModal(modal).queue();
-        } else if (buttonId.startsWith("app_request_change_")) {
-            // 1. Send Modal for Request Change (This acts as the interaction ACK!)
-            TextInput reason = TextInput.create("reason", "Reason for Change", TextInputStyle.PARAGRAPH)
-                .setPlaceholder("What needs to be changed in their application?")
-                .setRequired(true)
-                .build();
-
-            TextInput section = TextInput.create("section_number", "Section Number (1-14)", TextInputStyle.SHORT)
-                .setPlaceholder("Which section needs editing? (e.g., 5)")
-                .setRequired(true)
-                .setMinLength(1)
-                .setMaxLength(2)
-                .build();
-
-            Modal modal = Modal.create("modal_request_change_" + targetUserId, "Request Application Change")
-                .addActionRow(reason)
-                .addActionRow(section)
-                .build();
-
-            event.replyModal(modal).queue();
-        } else {
-            // 2. For Accept / Reject: Defer the edit, then remove buttons (This acts as the ACK!)
-            event.deferEdit().queue();
-            event.getHook().editOriginalComponents(Collections.emptyList()).queue();
-            
-            // Update profile status before sending DM
-            String newStatus = buttonId.startsWith("app_accept_") ? "ACCEPTED" : "REJECTED";
-            File profileFile = new File("user_content/profiles/" + targetUserId + ".json");
-            if (profileFile.exists()) {
-                try {
-                    Gson gson = new Gson();
-                    AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-                    state.status = newStatus;
-                    try (FileWriter writer = new FileWriter(profileFile)) {
-                        Gson gsonWriter = new GsonBuilder().setPrettyPrinting().create();
-                        gsonWriter.toJson(state, writer);
-                    }
-                    System.out.println("✅ Profile status updated to " + newStatus + " for user " + targetUserId);
-                    if ("ACCEPTED".equals(newStatus)) {
-                        UserInsightsManager.processProfile(targetUserId);
-                    }
-                } catch (Exception ex) {
-                    System.err.println("❌ Error updating profile status: " + ex.getMessage());
-                }
-            }
-            
-            // Now safely fetch user using the API (bypassing local cache) and send DM
-            event.getJDA().retrieveUserById(targetUserId).queue(user -> {
-                user.openPrivateChannel().queue(channel -> {
-                    if (buttonId.startsWith("app_accept_")) {
-                        channel.sendMessage("🎉 Good news! Your matchmaking application has been **ACCEPTED**!").queue();
-                        event.getHook().sendMessage("✅ Accepted application for " + user.getName()).queue();
-                    } else if (buttonId.startsWith("app_reject_")) {
-                        channel.sendMessage("❌ We're sorry, but your matchmaking application has been **REJECTED**.").queue();
-                        event.getHook().sendMessage("❌ Rejected application for " + user.getName()).queue();
-                    }
-                }, error -> {
-                    event.getHook().sendMessage("⚠️ Processed, but could not send a DM to user ID " + targetUserId + " (DMs closed).").queue();
-                });
-            }, error -> {
-                event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
-            });
-        }
-    }
-
     @Override
     public void onModalInteraction(ModalInteractionEvent event) {
         // Validate guild for this environment (if in a guild)
@@ -1874,149 +1144,16 @@ public class ApplicationHandler extends ListenerAdapter {
             return;
         }
         
-        if (event.getModalId().startsWith("modal_request_change_")) {
-            String targetUserId = event.getModalId().substring(event.getModalId().lastIndexOf("_") + 1);
-            String reason = event.getValue("reason").getAsString();
-            String sectionStr = event.getValue("section_number").getAsString().trim();
+        String modalId = event.getModalId();
 
-            int sectionNum;
-            try {
-                sectionNum = Integer.parseInt(sectionStr);
-                if (sectionNum < 1 || sectionNum > 14) throw new NumberFormatException();
-            } catch (NumberFormatException e) {
-                event.reply("❌ Invalid section number. Please provide a number between 1 and 14.").setEphemeral(true).queue();
-                return;
-            }
-
-            // Defer the edit to ACK the modal, then remove the buttons from the original message!
-            event.deferEdit().queue();
-            event.getHook().editOriginalComponents(Collections.emptyList()).queue();
-
-            // Update user profile status
-            File profileFile = new File("user_content/profiles/" + targetUserId + ".json");
-            if (profileFile.exists()) {
-                try {
-                    Gson gson = new Gson();
-                    AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-                    state.status = "CHANGES_REQUESTED";
-                    try (FileWriter writer = new FileWriter(profileFile)) {
-                        Gson gsonWriter = new GsonBuilder().setPrettyPrinting().create();
-                        gsonWriter.toJson(state, writer);
-                    }
-                } catch (Exception ex) {
-                    System.err.println("Error updating profile status: " + ex.getMessage());
-                }
-            }
-
-            // Guaranteed API fetch to prevent the null pointer cache errors
-            event.getJDA().retrieveUserById(targetUserId).queue(user -> {
-                user.openPrivateChannel().queue(channel -> {
-                    Button editBtn = Button.primary("user_edit_app_" + sectionNum, "✏️ Edit Application");
-                    Button deleteBtn = Button.danger("user_delete_app", "🗑️ Delete Application");
-                    
-                    channel.sendMessage("⚠️ A matchmaker has requested changes to your application. Please review the feedback and update the requested section.\n\n**Matchmaker Note:** " + reason + "\n**Section to Edit:** #" + sectionNum + " (" + getSectionName(sectionNum) + ")")
-                           .setComponents(ActionRow.of(editBtn, deleteBtn))
-                           .queue();
-                           
-                    event.getHook().sendMessage("⚠️ Requested changes from " + user.getName() + " for reason: " + reason + " (Section #" + sectionNum + " - " + getSectionName(sectionNum) + ")").queue();
-                }, error -> {
-                    event.getHook().sendMessage("⚠️ Processed change request, but could not send a DM to user ID " + targetUserId + " (DMs closed).").queue();
-                });
-            }, error -> {
-                event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
-            });
-        } else if (event.getModalId().startsWith("modal_request_photo_change_")) {
-            String targetUserId = event.getModalId().substring("modal_request_photo_change_".length());
-            String reason = event.getValue("reason").getAsString();
-
-            event.deferEdit().queue();
-            event.getHook().editOriginalComponents(Collections.emptyList()).queue();
-
-            File profileFile = new File("user_content/profiles/" + targetUserId + ".json");
-            if (profileFile.exists()) {
-                try {
-                    Gson gson = new Gson();
-                    AppState pState = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-                    pState.status = "CHANGES_REQUESTED";
-                    try (FileWriter writer = new FileWriter(profileFile)) {
-                        new GsonBuilder().setPrettyPrinting().create().toJson(pState, writer);
-                    }
-                } catch (Exception ex) {
-                    System.err.println("Error updating profile status: " + ex.getMessage());
-                }
-            }
-
-            event.getJDA().retrieveUserById(targetUserId).queue(user -> {
-                user.openPrivateChannel().queue(channel -> {
-                    Button editBtn = Button.primary("user_edit_app_14", "📷 Re-upload Photo");
-                    Button deleteBtn = Button.danger("user_delete_app", "🗑️ Delete Application");
-
-                    channel.sendMessage("⚠️ A matchmaker has requested a change to your **profile photo**.\n\n**Matchmaker Note:** " + reason + "\n\nPlease re-upload your photo using the button below.")
-                           .setComponents(ActionRow.of(editBtn, deleteBtn))
-                           .queue();
-
-                    event.getHook().sendMessage("📷 Requested photo change from " + user.getName() + " for reason: " + reason).queue();
-                }, error -> {
-                    event.getHook().sendMessage("⚠️ Processed photo change request, but could not DM user ID " + targetUserId + " (DMs closed).").queue();
-                });
-            }, error -> {
-                event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
-            });
-
-        } else if (event.getModalId().startsWith("modal_convo_reply_mm_")) {
-            // Handle conversation reply from matchmaker
-            String[] parts = event.getModalId().substring("modal_convo_reply_mm_".length()).split("_");
-            if (parts.length < 2) {
-                event.reply("❌ Invalid conversation reference.").setEphemeral(true).queue();
-                return;
-            }
-            
-            String matchmakerId = parts[0];
-            String applicantId = parts[1];
-            String replyContent = event.getValue("reply_message").getAsString();
-            
-            event.deferReply(true).queue();
-            
-            // Save the conversation
-            MessagingHandler.saveMessage(applicantId, matchmakerId, "matchmaker", replyContent);
-            
-            // Try to post to applications channel
-            postConversationReplyToChannel(
-                applicantId, matchmakerId, replyContent, 
-                event.getJDA(), "matchmaker"
-            );
-            
-            // Send reply to applicant via DM
-            sendConversationReplyToApplicant(applicantId, matchmakerId, replyContent, event.getJDA());
-            
-            event.getHook().sendMessage("✅ Your reply has been sent to the applicant.").queue();
-        } else if (event.getModalId().startsWith("modal_convo_reply_")) {
-            // Handle conversation reply from applicant
-            String[] parts = event.getModalId().substring("modal_convo_reply_".length()).split("_");
-            if (parts.length < 2) {
-                event.reply("❌ Invalid conversation reference.").setEphemeral(true).queue();
-                return;
-            }
-            
-            String applicantId = parts[0];
-            String matchmakerId = parts[1];
-            String replyContent = event.getValue("reply_message").getAsString();
-            
-            event.deferReply(true).queue();
-            
-            // Save the conversation
-            MessagingHandler.saveMessage(applicantId, matchmakerId, "applicant", replyContent);
-            
-            // Edit the original DM to include the reply
-            editDMWithApplicantReply(applicantId, matchmakerId, replyContent, event.getJDA());
-            
-            // Try to post to applications channel
-            postConversationReplyToChannel(
-                applicantId, matchmakerId, replyContent, 
-                event.getJDA(), "applicant"
-            );
-            
-            event.getHook().sendMessage("✅ Your reply has been sent to the matchmaker.").queue();
+        if (modalId.startsWith("modal_request_change_")) {
+            ApplicationReview.handleRequestChangeModal(event);
+        } else if (modalId.startsWith("modal_request_photo_change_")) {
+            ApplicationReview.handlePhotoChangeModal(event);
+        } else if (modalId.startsWith("modal_convo_reply_mm_")) {
+            ConversationRelay.handleMatchmakerReplyModal(event);
+        } else if (modalId.startsWith("modal_convo_reply_")) {
+            ConversationRelay.handleApplicantReplyModal(event);
         }
     }
 
@@ -2038,22 +1175,20 @@ public class ApplicationHandler extends ListenerAdapter {
         event.getHook().editOriginalComponents(Collections.emptyList()).queue();
 
         if (buttonId.startsWith("reapply_edit_")) {
-            File profileFile = new File("user_content/profiles/" + userId + ".json");
-            if (!profileFile.exists()) {
+            if (!ProfileRepository.exists(userId)) {
                 event.getHook().sendMessage("❌ Could not find your profile. It may have already been deleted.").queue();
                 return;
             }
-            try {
-                AppState state = new Gson().fromJson(new java.io.FileReader(profileFile), AppState.class);
-                // Mark as pending review so they're invisible to matchmaking during editing
-                state.status = "CHANGES_REQUESTED";
-                activeApplications.put(userId, state);
-                saveProfileJson(state, userId);
-                saveInProgress(userId, state);
-            } catch (Exception e) {
+            AppState state = ProfileRepository.load(userId);
+            if (state == null) {
                 event.getHook().sendMessage("❌ Failed to load your profile data.").queue();
                 return;
             }
+            // Mark as pending review so they're invisible to matchmaking during editing
+            state.status = "CHANGES_REQUESTED";
+            activeApplications.put(userId, state);
+            saveProfileJson(state, userId);
+            saveInProgress(userId, state);
 
             // 14 section buttons across 3 rows (5 + 5 + 4)
             java.util.List<Button> btns = java.util.Arrays.asList(
@@ -2084,14 +1219,9 @@ public class ApplicationHandler extends ListenerAdapter {
 
         } else if (buttonId.startsWith("reapply_delete_")) {
             String guildId = null;
-            File profileFile = new File("user_content/profiles/" + userId + ".json");
-            if (profileFile.exists()) {
-                try {
-                    AppState existing = new Gson().fromJson(new java.io.FileReader(profileFile), AppState.class);
-                    guildId = existing.guildId;
-                } catch (Exception ignored) {}
-                profileFile.delete();
-            }
+            AppState existing = ProfileRepository.load(userId);
+            if (existing != null) guildId = existing.guildId;
+            ProfileRepository.delete(userId);
             activeApplications.remove(userId);
             deleteInProgress(userId);
 
@@ -2118,20 +1248,16 @@ public class ApplicationHandler extends ListenerAdapter {
             
             // Load application back into short-term memory if it's not already there
             if (!activeApplications.containsKey(userId)) {
-                File profileFile = new File("user_content/profiles/" + userId + ".json");
-                if (profileFile.exists()) {
-                    try {
-                        Gson gson = new Gson();
-                        AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-                        activeApplications.put(userId, state);
-                    } catch (Exception e) {
-                        event.getHook().sendMessage("❌ Failed to load your application data.").queue();
-                        return;
-                    }
-                } else {
+                if (!ProfileRepository.exists(userId)) {
                     event.getHook().sendMessage("❌ Could not find your application data.").queue();
                     return;
                 }
+                AppState loaded = ProfileRepository.load(userId);
+                if (loaded == null) {
+                    event.getHook().sendMessage("❌ Failed to load your application data.").queue();
+                    return;
+                }
+                activeApplications.put(userId, loaded);
             }
             
             AppState state = activeApplications.get(userId);
@@ -2148,21 +1274,15 @@ public class ApplicationHandler extends ListenerAdapter {
             saveInProgress(userId, state);
         }
         else if (buttonId.equals("user_delete_app")) {
-            File profileFile = new File("user_content/profiles/" + userId + ".json");
             String guildIdToNotify = null;
             String userName = event.getUser().getName();
 
-            if (profileFile.exists()) {
-                try {
-                    Gson gson = new Gson();
-                    AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-                    guildIdToNotify = state.guildId;
-                    userName = state.name;
-                } catch (Exception e) {
-                    // Ignore
-                }
-                profileFile.delete(); // Physically delete the application
+            AppState state = ProfileRepository.load(userId);
+            if (state != null) {
+                guildIdToNotify = state.guildId;
+                userName = state.name;
             }
+            ProfileRepository.delete(userId); // Physically delete the application
 
             activeApplications.remove(userId);
             deleteInProgress(userId);
@@ -2173,16 +1293,9 @@ public class ApplicationHandler extends ListenerAdapter {
                 try {
                     net.dv8tion.jda.api.entities.Guild guild = event.getJDA().getGuildById(guildIdToNotify);
                     if (guild != null) {
-                        java.util.List<?> applicationsList = guild.getTextChannelsByName("matchmaker-backroom", true);
-                        if (applicationsList.isEmpty()) applicationsList = guild.getTextChannelsByName("matchmakers", true);
-                        if (applicationsList.isEmpty()) applicationsList = guild.getTextChannelsByName("applications", true);
-                        if (applicationsList.isEmpty()) applicationsList = guild.getTextChannelsByName("pending-applications", true);
-                        
-                        if (!applicationsList.isEmpty()) {
-                            Object channelObj = applicationsList.get(0);
-                            java.lang.reflect.Method sendMsgMethod = channelObj.getClass().getMethod("sendMessage", CharSequence.class);
-                            Object msgAction = sendMsgMethod.invoke(channelObj, "🗑️ Applicant **" + userName + "** (<@" + userId + ">) has deleted/withdrawn their application.");
-                            msgAction.getClass().getMethod("queue").invoke(msgAction);
+                        TextChannel mmChannel = Channels.findMatchmakerChannel(guild);
+                        if (mmChannel != null) {
+                            mmChannel.sendMessage("🗑️ Applicant **" + userName + "** (<@" + userId + ">) has deleted/withdrawn their application.").queue();
                         }
                     }
                 } catch (Exception e) {
@@ -2197,87 +1310,27 @@ public class ApplicationHandler extends ListenerAdapter {
      */
     private void handleQuickmatchEnrollment(String userId, boolean enrolled, ButtonInteractionEvent event) {
         event.deferEdit().queue();
-        
-        File profileFile = new File("user_content/profiles/" + userId + ".json");
-        if (!profileFile.exists()) {
+
+        if (!ProfileRepository.exists(userId)) {
             event.getHook().sendMessage("❌ Could not find your profile. Please contact support.").queue();
             return;
         }
 
-        try {
-            Gson gson = new Gson();
-            AppState state = gson.fromJson(new java.io.FileReader(profileFile), AppState.class);
-            
-            state.quickmatchEnrolled = enrolled;
-            
-            // Save updated profile
-            try (FileWriter writer = new FileWriter(profileFile)) {
-                new GsonBuilder().setPrettyPrinting().create().toJson(state, writer);
-            }
-            
-            // Get the appropriate message based on language
-            String message = enrolled 
-                ? LanguageManager.getQuickmatchEnrollSuccess(state.language)
-                : LanguageManager.getQuickmatchDeclineMessage(state.language);
-            
-            event.getHook().sendMessage(message).queue();
-        } catch (Exception e) {
-            System.err.println("Error updating quickmatch enrollment for user " + userId + ": " + e.getMessage());
+        AppState state = ProfileRepository.load(userId);
+        if (state == null) {
+            System.err.println("Error updating quickmatch enrollment for user " + userId);
             event.getHook().sendMessage("❌ Something went wrong. Please try again later.").queue();
+            return;
         }
-    }
 
-    // ─── Guild membership verification ────────────────────────────────────────
+        state.quickmatchEnrolled = enrolled;
+        ProfileRepository.save(userId, state);
 
-    /**
-     * Confirms a user is still a member of their guild before including them in any matchmaking operation.
-     * Uses the GUILD_MEMBERS cache as a fast path; falls back to the Discord API only when not cached.
-     * If the user has left, their profile is soft-deleted automatically and false is returned.
-     * Returns true whenever membership cannot be determined (missing guildId, API errors, etc.) so that
-     * a network hiccup never accidentally soft-deletes an active user.
-     */
-    public static boolean verifyMembership(String userId, String guildId, net.dv8tion.jda.api.JDA jda) {
-        if (guildId == null || jda == null) return true;
-        net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(guildId);
-        if (guild == null) return true;
+        // Get the appropriate message based on language
+        String message = enrolled
+            ? LanguageManager.getQuickmatchEnrollSuccess(state.language)
+            : LanguageManager.getQuickmatchDeclineMessage(state.language);
 
-        // Fast path: GUILD_MEMBERS intent keeps the cache current
-        if (guild.getMemberById(userId) != null) return true;
-
-        // Slow path: not in cache — confirm with the API before acting
-        try {
-            guild.retrieveMemberById(userId).complete();
-            return true;
-        } catch (net.dv8tion.jda.api.exceptions.ErrorResponseException e) {
-            // 10007 = Unknown Member  |  10013 = Unknown User
-            if (e.getErrorCode() == 10007 || e.getErrorCode() == 10013) {
-                softDeleteAbsentMember(userId);
-                return false;
-            }
-            // Any other code is an API or permissions issue — do not soft-delete
-            System.err.println("Membership check: API error for " + userId
-                + " (code " + e.getErrorCode() + "): " + e.getMessage());
-            return true;
-        } catch (Exception e) {
-            System.err.println("Membership check: Unexpected error for " + userId + ": " + e.getMessage());
-            return true;
-        }
-    }
-
-    private static void softDeleteAbsentMember(String userId) {
-        File profileFile = new File("user_content/profiles/" + userId + ".json");
-        if (!profileFile.exists()) return;
-        try {
-            com.google.gson.Gson g = new GsonBuilder().setPrettyPrinting().create();
-            AppState state = g.fromJson(new java.io.FileReader(profileFile), AppState.class);
-            if (state == null || state.softDeleted) return;
-            state.softDeleted = true;
-            try (FileWriter w = new FileWriter(profileFile)) {
-                g.toJson(state, w);
-            }
-            System.out.println("Membership check: User " + userId + " has left the server — profile soft-deleted.");
-        } catch (Exception e) {
-            System.err.println("Membership check: Failed to soft-delete profile for " + userId + ": " + e.getMessage());
-        }
+        event.getHook().sendMessage(message).queue();
     }
 }

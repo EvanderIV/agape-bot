@@ -15,7 +15,6 @@ import com.google.gson.GsonBuilder;
 public class UserInsightsManager {
 
     private static final String INSIGHTS_DIR  = "data/insights/";
-    private static final String PROFILES_DIR  = "user_content/profiles/";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final DateTimeFormatter FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
@@ -330,14 +329,10 @@ public class UserInsightsManager {
      * accepted one. Safe to call on startup — duplicate tags are silently skipped.
      */
     public static void syncAllProfiles() {
-        File dir = new File(PROFILES_DIR);
-        if (!dir.exists()) return;
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
-        if (files == null) return;
+        File[] files = ProfileRepository.listProfileFiles();
         int count = 0;
         for (File f : files) {
-            String userId = f.getName().replace(".json", "");
-            processProfile(userId);
+            processProfile(ProfileRepository.userIdFromFile(f));
             count++;
         }
         System.out.println("UserInsightsManager: Synced insights for " + count + " profile(s).");
@@ -349,20 +344,14 @@ public class UserInsightsManager {
      * Safe to call multiple times — duplicate tags are silently skipped.
      */
     public static void processProfile(String userId) {
-        File f = new File(PROFILES_DIR + userId + ".json");
-        if (!f.exists()) return;
-        try (FileReader reader = new FileReader(f)) {
-            ApplicationHandler.AppState state = new Gson().fromJson(reader, ApplicationHandler.AppState.class);
-            if (state == null || !"ACCEPTED".equals(state.status)) return;
+        AppState state = ProfileRepository.load(userId);
+        if (state == null || !"ACCEPTED".equals(state.status)) return;
 
-            if (state.dealBreakers != null && !state.dealBreakers.trim().isEmpty()) {
-                addTagsIfAbsent(userId, extractPreferences(state.dealBreakers, false));
-            }
-            if (state.lookFor != null && !state.lookFor.trim().isEmpty()) {
-                addTagsIfAbsent(userId, extractPreferences(state.lookFor, true));
-            }
-        } catch (Exception e) {
-            System.err.println("UserInsightsManager: Failed to process profile for " + userId + ": " + e.getMessage());
+        if (state.dealBreakers != null && !state.dealBreakers.trim().isEmpty()) {
+            addTagsIfAbsent(userId, extractPreferences(state.dealBreakers, false));
+        }
+        if (state.lookFor != null && !state.lookFor.trim().isEmpty()) {
+            addTagsIfAbsent(userId, extractPreferences(state.lookFor, true));
         }
     }
 
