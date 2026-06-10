@@ -341,11 +341,13 @@ public class AgapeBot extends ListenerAdapter {
                 .addOption(OptionType.USER, "user", "The user to tag", true)
                 .addOption(OptionType.STRING, "tags", "Space-separated tags, e.g. +touchy -horror -smoking", true);
 
+        SlashCommandData pardonCmd = Commands.slash("pardon", "Issue a pardon to a user, offsetting one active strike (Matchmakers only)")
+                .addOption(OptionType.USER, "user", "The user to pardon", true);
 
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         event.getJDA().getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userInsightsCmd, tagUserCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -821,11 +823,14 @@ public class AgapeBot extends ListenerAdapter {
                 }
 
                 if (!state.quickmatchEnrolled) {
-                    int recentStrikes = ThreadManager.getRecentStrikeCount(userId);
-                    if (recentStrikes >= 3) {
+                    int netStrikes = ThreadManager.getNetStrikeCount(userId);
+                    if (netStrikes >= 3) {
+                        int rawStrikes = ThreadManager.getRecentStrikeCount(userId);
+                        int rawPardons = ThreadManager.getRecentPardonCount(userId);
                         event.getHook().sendMessage(
-                            "❌ You cannot re-enroll in quickmatch — you have **" + recentStrikes
-                            + " strikes** within the past 6 months. Strikes expire after 6 months."
+                            "❌ You cannot re-enroll in quickmatch — your aggregate standing is **" + netStrikes
+                            + "/3 strikes** (" + rawStrikes + " strike(s) − " + rawPardons + " pardon(s)). "
+                            + "Strikes and pardons expire after 6 months."
                         ).queue();
                         return;
                     }
@@ -936,128 +941,7 @@ public class AgapeBot extends ListenerAdapter {
             }
 
             event.deferReply().queue();
-
-            new Thread(() -> {
-                ApplicationHandler.AppState p1 = null, p2 = null;
-                try {
-                    com.google.gson.Gson gson = new com.google.gson.Gson();
-                    p1 = gson.fromJson(new FileReader("user_content/profiles/" + uid1 + ".json"), ApplicationHandler.AppState.class);
-                    p2 = gson.fromJson(new FileReader("user_content/profiles/" + uid2 + ".json"), ApplicationHandler.AppState.class);
-                } catch (Exception e) {
-                    System.err.println("Match: could not load profiles: " + e.getMessage());
-                }
-
-                if (p1 == null) {
-                    event.getHook().sendMessage("❌ No profile found for <@" + uid1 + ">.").queue();
-                    return;
-                }
-                if (p2 == null) {
-                    event.getHook().sendMessage("❌ No profile found for <@" + uid2 + ">.").queue();
-                    return;
-                }
-                if (!"ACCEPTED".equals(p1.status)) {
-                    event.getHook().sendMessage("❌ <@" + uid1 + ">'s profile is not accepted (status: " + p1.status + ").").queue();
-                    return;
-                }
-                if (!"ACCEPTED".equals(p2.status)) {
-                    event.getHook().sendMessage("❌ <@" + uid2 + ">'s profile is not accepted (status: " + p2.status + ").").queue();
-                    return;
-                }
-                if (p1.softDeleted) {
-                    event.getHook().sendMessage("❌ <@" + uid1 + ">'s profile is soft-deleted and cannot be matched.").queue();
-                    return;
-                }
-                if (p2.softDeleted) {
-                    event.getHook().sendMessage("❌ <@" + uid2 + ">'s profile is soft-deleted and cannot be matched.").queue();
-                    return;
-                }
-                if (!p1.manualMatchEnrolled) {
-                    event.getHook().sendMessage("❌ <@" + uid1 + "> is not enrolled in manual matchmaking.").queue();
-                    return;
-                }
-                if (!p2.manualMatchEnrolled) {
-                    event.getHook().sendMessage("❌ <@" + uid2 + "> is not enrolled in manual matchmaking.").queue();
-                    return;
-                }
-                if (p1.sex == p2.sex) {
-                    event.getHook().sendMessage("❌ Both users are the same sex — this server only supports opposite-sex matches.").queue();
-                    return;
-                }
-
-                CompatibilityEngine.ScoreDetail denom  = CompatibilityEngine.scoreDenomination(p1, p2);
-                CompatibilityEngine.ScoreDetail age    = CompatibilityEngine.scoreAge(p1, p2);
-                CompatibilityEngine.ScoreDetail dist   = CompatibilityEngine.scoreDistance(p1, p2);
-                CompatibilityEngine.ScoreDetail values = CompatibilityEngine.scoreValues(p1, p2);
-                CompatibilityEngine.ScoreDetail db     = CompatibilityEngine.scoreDealBreakers(p1, p2);
-                int total = denom.score + age.score + dist.score + values.score + db.score;
-
-                String name1 = p1.name != null ? p1.name : uid1;
-                String name2 = p2.name != null ? p2.name : uid2;
-
-                // ── Warnings ──────────────────────────────────────────────────
-                java.util.List<String> warnings = new java.util.ArrayList<>();
-
-                if (dist.score <= -10) {
-                    warnings.add("**Extreme Distance** — These users appear to be on opposite sides of the globe. "
-                        + "The time zone gap will likely make it very hard for them to find mutual availability.");
-                }
-
-                if (db.score < 0) {
-                    warnings.add("**Flagged Deal Breakers** — The compatibility check detected one or more potential "
-                        + "deal breaker conflicts between these users' profiles. Review the details before proceeding.");
-                }
-
-                java.util.List<DenominationCompatibility.DoctrinalConflict> doctrinalConflicts =
-                    DenominationCompatibility.getDoctrinalConflicts(p1.sect, p2.sect);
-                if (!doctrinalConflicts.isEmpty()) {
-                    StringBuilder dcMsg = new StringBuilder(
-                        "**Doctrinal Conflicts** — Significant theological incompatibilities were found"
-                        + " between " + name1 + "'s and " + name2 + "'s denominations:\n");
-                    for (DenominationCompatibility.DoctrinalConflict dc : doctrinalConflicts) {
-                        dcMsg.append("• **").append(dc.issue).append("** — ")
-                             .append(dc.description).append("\n");
-                    }
-                    warnings.add(dcMsg.toString().trim());
-                }
-
-                // ── Embed ─────────────────────────────────────────────────────
-                String scoreLine = "🙏 " + denom.score
-                    + "   👶 " + age.score
-                    + "   🌍 " + dist.score
-                    + "   💛 " + values.score
-                    + "   🚩 " + db.score;
-
-                net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
-                    .setTitle("💘 Match Preview: " + name1 + " & " + name2)
-                    .setDescription("<@" + uid1 + "> × <@" + uid2 + ">")
-                    .setColor(warnings.isEmpty() ? 0xFF6699 : 0xFF8800)
-                    .addField("Compatibility Score",
-                        "**" + total + " / " + CompatibilityEngine.MAX_TOTAL + "**\n" + scoreLine, false);
-
-                if (!warnings.isEmpty()) {
-                    StringBuilder wb = new StringBuilder();
-                    for (String w : warnings) {
-                        wb.append("⚠️  ").append(w).append("\n\n");
-                    }
-                    embed.addField("━━━━━━━━━━━━━━━━━━\n⚠️  WARNINGS  ⚠️\n━━━━━━━━━━━━━━━━━━", wb.toString().trim(), false);
-                }
-
-                embed.setTimestamp(java.time.Instant.now());
-
-                // ── Buttons ───────────────────────────────────────────────────
-                String confirmLabel = warnings.isEmpty() ? "Continue" : "I understand, continue anyway";
-                net.dv8tion.jda.api.interactions.components.buttons.Button confirmBtn =
-                    net.dv8tion.jda.api.interactions.components.buttons.Button.success(
-                        "match_confirm_" + uid1 + "_" + uid2, confirmLabel);
-                net.dv8tion.jda.api.interactions.components.buttons.Button cancelBtn =
-                    net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
-                        "match_cancel_" + uid1 + "_" + uid2, "Cancel");
-
-                event.getHook().sendMessageEmbeds(embed.build())
-                    .setComponents(net.dv8tion.jda.api.interactions.components.ActionRow.of(confirmBtn, cancelBtn))
-                    .queue();
-
-            }, "match-preview").start();
+            sendMatchPreview(uid1, uid2, event.getHook());
 
         } else if (event.getName().equals("qm-thread")) {
             if (!hasMatchmakerOrAdminRole(event.getMember())) {
@@ -1362,6 +1246,48 @@ public class AgapeBot extends ListenerAdapter {
             }
             event.reply(reply.toString()).queue();
 
+        } else if (event.getName().equals("pardon")) {
+            if (!hasMatchmakerRole(event)) {
+                event.reply("❌ Only matchmakers can issue pardons.").setEphemeral(true).queue();
+                return;
+            }
+            event.deferReply().queue();
+
+            net.dv8tion.jda.api.entities.User targetUser = event.getOption("user").getAsUser();
+            String targetId    = targetUser.getId();
+            String grantedById = event.getUser().getId();
+
+            ThreadManager.addPardon(targetId, grantedById, event.getJDA());
+
+            int strikes = ThreadManager.getRecentStrikeCount(targetId);
+            int pardons = ThreadManager.getRecentPardonCount(targetId);
+            int net     = ThreadManager.getNetStrikeCount(targetId);
+
+            if (event.getGuild() != null) {
+                net.dv8tion.jda.api.entities.channel.concrete.TextChannel mmChannel = findMatchmakerChannel(event.getGuild());
+                if (mmChannel != null) {
+                    String grantor = event.getMember() != null
+                        ? event.getMember().getAsMention()
+                        : event.getUser().getAsMention();
+                    net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                        .setTitle("✅ Pardon Issued")
+                        .setColor(0x00CC66)
+                        .setDescription("Aggregate standing: **" + net + "/3** active strikes")
+                        .addField("User", targetUser.getAsMention(), true)
+                        .addField("Pardoned by", grantor, true)
+                        .addField("Active strikes", String.valueOf(strikes), true)
+                        .addField("Active pardons", String.valueOf(pardons), true)
+                        .setFooter("User ID: " + targetId)
+                        .setTimestamp(java.time.Instant.now());
+                    mmChannel.sendMessageEmbeds(embed.build()).queue();
+                }
+            }
+
+            event.getHook().sendMessage(
+                "✅ Pardon issued to " + targetUser.getAsMention()
+                + ". Aggregate standing: **" + net + "/3 strikes** ("
+                + strikes + " strike(s) − " + pardons + " pardon(s))."
+            ).queue();
         }
     }
 
@@ -1759,12 +1685,31 @@ public class AgapeBot extends ListenerAdapter {
                 .addField("🚩 Deal Breakers (" + db.score + ")", db.detail, false)
                 .setTimestamp(java.time.Instant.now());
 
+            net.dv8tion.jda.api.interactions.components.buttons.Button matchmakeBtn =
+                net.dv8tion.jda.api.interactions.components.buttons.Button.success(
+                    "breakdown_matchmake_" + uid1 + "_" + uid2, "💘 Matchmake");
             net.dv8tion.jda.api.interactions.components.buttons.Button precludeBtn =
                 net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
                     "preclude_match_" + uid1 + "_" + uid2, "❌ Preclude Match");
             event.getHook().sendMessageEmbeds(breakdown.build())
-                .addActionRow(precludeBtn)
+                .addActionRow(matchmakeBtn, precludeBtn)
                 .queue();
+
+        } else if (buttonId.startsWith("breakdown_matchmake_")) {
+            if (!hasMatchmakerRole(event.getMember())) {
+                event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
+                return;
+            }
+            event.deferReply().queue();
+            String rest = buttonId.substring("breakdown_matchmake_".length());
+            int sep = rest.indexOf('_');
+            if (sep < 0) {
+                event.getHook().sendMessage("❌ Malformed button ID.").queue();
+                return;
+            }
+            String uid1 = rest.substring(0, sep);
+            String uid2 = rest.substring(sep + 1);
+            sendMatchPreview(uid1, uid2, event.getHook());
 
         } else if (buttonId.startsWith("preclude_match_")) {
             if (!hasMatchmakerRole(event.getMember())) {
@@ -1907,5 +1852,88 @@ public class AgapeBot extends ListenerAdapter {
                     .build()
             ).queue();
         }
+    }
+
+    private static void sendMatchPreview(String uid1, String uid2, net.dv8tion.jda.api.interactions.InteractionHook hook) {
+        new Thread(() -> {
+            ApplicationHandler.AppState p1 = null, p2 = null;
+            try {
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                p1 = gson.fromJson(new FileReader("user_content/profiles/" + uid1 + ".json"), ApplicationHandler.AppState.class);
+                p2 = gson.fromJson(new FileReader("user_content/profiles/" + uid2 + ".json"), ApplicationHandler.AppState.class);
+            } catch (Exception e) {
+                System.err.println("Match: could not load profiles: " + e.getMessage());
+            }
+
+            if (p1 == null) { hook.sendMessage("❌ No profile found for <@" + uid1 + ">.").queue(); return; }
+            if (p2 == null) { hook.sendMessage("❌ No profile found for <@" + uid2 + ">.").queue(); return; }
+            if (!"ACCEPTED".equals(p1.status)) { hook.sendMessage("❌ <@" + uid1 + ">'s profile is not accepted (status: " + p1.status + ").").queue(); return; }
+            if (!"ACCEPTED".equals(p2.status)) { hook.sendMessage("❌ <@" + uid2 + ">'s profile is not accepted (status: " + p2.status + ").").queue(); return; }
+            if (p1.softDeleted) { hook.sendMessage("❌ <@" + uid1 + ">'s profile is soft-deleted and cannot be matched.").queue(); return; }
+            if (p2.softDeleted) { hook.sendMessage("❌ <@" + uid2 + ">'s profile is soft-deleted and cannot be matched.").queue(); return; }
+            if (!p1.manualMatchEnrolled) { hook.sendMessage("❌ <@" + uid1 + "> is not enrolled in manual matchmaking.").queue(); return; }
+            if (!p2.manualMatchEnrolled) { hook.sendMessage("❌ <@" + uid2 + "> is not enrolled in manual matchmaking.").queue(); return; }
+            if (p1.sex == p2.sex) { hook.sendMessage("❌ Both users are the same sex — this server only supports opposite-sex matches.").queue(); return; }
+
+            CompatibilityEngine.ScoreDetail denom  = CompatibilityEngine.scoreDenomination(p1, p2);
+            CompatibilityEngine.ScoreDetail age    = CompatibilityEngine.scoreAge(p1, p2);
+            CompatibilityEngine.ScoreDetail dist   = CompatibilityEngine.scoreDistance(p1, p2);
+            CompatibilityEngine.ScoreDetail values = CompatibilityEngine.scoreValues(p1, p2);
+            CompatibilityEngine.ScoreDetail db     = CompatibilityEngine.scoreDealBreakers(p1, p2);
+            int total = denom.score + age.score + dist.score + values.score + db.score;
+
+            String name1 = p1.name != null ? p1.name : uid1;
+            String name2 = p2.name != null ? p2.name : uid2;
+
+            java.util.List<String> warnings = new java.util.ArrayList<>();
+            if (dist.score <= -10) {
+                warnings.add("**Extreme Distance** — These users appear to be on opposite sides of the globe. "
+                    + "The time zone gap will likely make it very hard for them to find mutual availability.");
+            }
+            if (db.score < 0) {
+                warnings.add("**Flagged Deal Breakers** — The compatibility check detected one or more potential "
+                    + "deal breaker conflicts between these users' profiles. Review the details before proceeding.");
+            }
+            java.util.List<DenominationCompatibility.DoctrinalConflict> doctrinalConflicts =
+                DenominationCompatibility.getDoctrinalConflicts(p1.sect, p2.sect);
+            if (!doctrinalConflicts.isEmpty()) {
+                StringBuilder dcMsg = new StringBuilder(
+                    "**Doctrinal Conflicts** — Significant theological incompatibilities were found"
+                    + " between " + name1 + "'s and " + name2 + "'s denominations:\n");
+                for (DenominationCompatibility.DoctrinalConflict dc : doctrinalConflicts) {
+                    dcMsg.append("• **").append(dc.issue).append("** — ").append(dc.description).append("\n");
+                }
+                warnings.add(dcMsg.toString().trim());
+            }
+
+            String scoreLine = "🙏 " + denom.score + "   👶 " + age.score + "   🌍 " + dist.score
+                + "   💛 " + values.score + "   🚩 " + db.score;
+
+            net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                .setTitle("💘 Match Preview: " + name1 + " & " + name2)
+                .setDescription("<@" + uid1 + "> × <@" + uid2 + ">")
+                .setColor(warnings.isEmpty() ? 0xFF6699 : 0xFF8800)
+                .addField("Compatibility Score", "**" + total + " / " + CompatibilityEngine.MAX_TOTAL + "**\n" + scoreLine, false);
+
+            if (!warnings.isEmpty()) {
+                StringBuilder wb = new StringBuilder();
+                for (String w : warnings) wb.append("⚠️  ").append(w).append("\n\n");
+                embed.addField("━━━━━━━━━━━━━━━━━━\n⚠️  WARNINGS  ⚠️\n━━━━━━━━━━━━━━━━━━", wb.toString().trim(), false);
+            }
+            embed.setTimestamp(java.time.Instant.now());
+
+            String confirmLabel = warnings.isEmpty() ? "Continue" : "I understand, continue anyway";
+            net.dv8tion.jda.api.interactions.components.buttons.Button confirmBtn =
+                net.dv8tion.jda.api.interactions.components.buttons.Button.success(
+                    "match_confirm_" + uid1 + "_" + uid2, confirmLabel);
+            net.dv8tion.jda.api.interactions.components.buttons.Button cancelBtn =
+                net.dv8tion.jda.api.interactions.components.buttons.Button.danger(
+                    "match_cancel_" + uid1 + "_" + uid2, "Cancel");
+
+            hook.sendMessageEmbeds(embed.build())
+                .setComponents(net.dv8tion.jda.api.interactions.components.ActionRow.of(confirmBtn, cancelBtn))
+                .queue();
+
+        }, "match-preview").start();
     }
 }

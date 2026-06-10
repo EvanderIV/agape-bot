@@ -38,9 +38,15 @@ public class ThreadManager {
         String threadId;
     }
 
+    static class Pardon {
+        String timestamp; // ISO-8601 local datetime
+        String grantedBy; // matchmaker userId
+    }
+
     static class UserStrikes {
         String userId;
         List<Strike> strikes = new ArrayList<>();
+        List<Pardon> pardons = new ArrayList<>();
     }
 
     static class ThreadMessage {
@@ -328,6 +334,80 @@ public class ThreadManager {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    /** Returns the number of pardons {@code userId} has received in the past 6 months. */
+    public static int getRecentPardonCount(String userId) {
+        File strikeFile = new File(STRIKES_DIR + userId + ".json");
+        if (!strikeFile.exists()) return 0;
+        try (FileReader r = new FileReader(strikeFile)) {
+            UserStrikes us = GSON.fromJson(r, UserStrikes.class);
+            if (us == null || us.pardons == null) return 0;
+            LocalDateTime cutoff = LocalDateTime.now().minusMonths(6);
+            int count = 0;
+            for (Pardon p : us.pardons) {
+                if (p.timestamp != null && LocalDateTime.parse(p.timestamp, FMT).isAfter(cutoff)) count++;
+            }
+            return count;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /** Returns max(0, recent strikes − recent pardons) — the effective standing used for eligibility gates. */
+    public static int getNetStrikeCount(String userId) {
+        return Math.max(0, getRecentStrikeCount(userId) - getRecentPardonCount(userId));
+    }
+
+    /**
+     * Issues a pardon to {@code userId}, recorded under their strike file.
+     * Pardons offset strikes 1-for-1 and expire after 6 months, same as strikes.
+     * Sends a DM to the pardoned user summarising their updated standing.
+     */
+    public static void addPardon(String userId, String grantedBy, JDA jda) {
+        new File(STRIKES_DIR).mkdirs();
+        File strikeFile = new File(STRIKES_DIR + userId + ".json");
+        UserStrikes us;
+        if (strikeFile.exists()) {
+            try (FileReader r = new FileReader(strikeFile)) {
+                us = GSON.fromJson(r, UserStrikes.class);
+                if (us == null) us = new UserStrikes();
+            } catch (Exception e) {
+                us = new UserStrikes();
+            }
+        } else {
+            us = new UserStrikes();
+        }
+        if (us.strikes == null) us.strikes = new ArrayList<>();
+        if (us.pardons == null) us.pardons = new ArrayList<>();
+        us.userId = userId;
+        Pardon pardon = new Pardon();
+        pardon.timestamp = LocalDateTime.now().format(FMT);
+        pardon.grantedBy = grantedBy;
+        us.pardons.add(pardon);
+        try (FileWriter w = new FileWriter(strikeFile)) {
+            GSON.toJson(us, w);
+        } catch (Exception e) {
+            System.err.println("ThreadManager: Failed to save pardon for " + userId + ": " + e.getMessage());
+        }
+
+        int strikes = getRecentStrikeCount(userId);
+        int pardons = getRecentPardonCount(userId);
+        int net     = Math.max(0, strikes - pardons);
+        String standing = net < 3
+            ? "✅ Your account is in good standing (**" + net + "/3**). You may re-enroll in the quickmatch pool using `/toggle-qm`."
+            : "⛔ Your aggregate standing is still **" + net + "/3 strikes**. Additional pardons are needed before you can re-enroll.";
+
+        jda.openPrivateChannelById(userId).queue(
+            ch -> ch.sendMessage(
+                "✅ **Matchmaking Pardon**\n\n"
+                + "A matchmaker has issued a pardon on your matchmaking record.\n\n"
+                + "📊 You currently have **" + strikes + " active strike(s)** and **" + pardons + " active pardon(s)** in the past 6 months.\n"
+                + standing
+            ).queue(),
+            e -> System.err.println("ThreadManager: Could not DM pardon notice to " + userId + ": " + e.getMessage())
+        );
+        System.out.println("ThreadManager: Pardon issued to " + userId + " (net standing: " + net + "/3).");
     }
 
     /**
