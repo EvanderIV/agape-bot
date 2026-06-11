@@ -229,7 +229,7 @@ public class AgapeBot extends ListenerAdapter {
     /** /generate — render a user's profile card image (matchmakers only). */
     private void handleGenerate(SlashCommandInteractionEvent event) {
         // Only members with the matchmaker role may generate arbitrary cards
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ You do not have permission to use this command.")
                     .setEphemeral(true)
                     .queue();
@@ -421,7 +421,7 @@ public class AgapeBot extends ListenerAdapter {
 
     /** /admin-message — DM an applicant on behalf of the matchmaker team. */
     private void handleAdminMessage(SlashCommandInteractionEvent event) {
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ Only matchmakers can use this command.")
                     .setEphemeral(true)
                     .queue();
@@ -489,8 +489,13 @@ public class AgapeBot extends ListenerAdapter {
         }
     }
 
-    /** /app-status — show a user's application status (open to everyone). */
+    /** /app-status — show a user's application status (matchmakers only). */
     private void handleAppStatus(SlashCommandInteractionEvent event) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
+            event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
+            return;
+        }
+
         User targetUser = event.getOption("user").getAsUser();
         String userId = targetUser.getId();
 
@@ -537,7 +542,7 @@ public class AgapeBot extends ListenerAdapter {
 
     /** /message-history — show the saved matchmaker↔applicant conversation. */
     private void handleMessageHistory(SlashCommandInteractionEvent event) {
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ Only matchmakers can use this command.")
                     .setEphemeral(true)
                     .queue();
@@ -656,7 +661,7 @@ public class AgapeBot extends ListenerAdapter {
 
     /** /compat-algo — rank the top compatibility pairs across all profiles. */
     private void handleCompatAlgo(SlashCommandInteractionEvent event) {
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ Only matchmakers can use this command.")
                     .setEphemeral(true).queue();
             return;
@@ -728,7 +733,7 @@ public class AgapeBot extends ListenerAdapter {
 
     /** /match — manually propose a match between two users (shows preview first). */
     private void handleMatch(SlashCommandInteractionEvent event) {
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
             return;
         }
@@ -1023,7 +1028,7 @@ public class AgapeBot extends ListenerAdapter {
 
     /** /pardon — offset one of a user's active strikes. */
     private void handlePardon(SlashCommandInteractionEvent event) {
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ Only matchmakers can issue pardons.").setEphemeral(true).queue();
             return;
         }
@@ -1266,7 +1271,7 @@ public class AgapeBot extends ListenerAdapter {
 
     /** "Matchmake" button on a breakdown — open the standard match preview. */
     private void handleBreakdownMatchmakeButton(ButtonInteractionEvent event, String buttonId) {
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ Only matchmakers can use this command.").setEphemeral(true).queue();
             return;
         }
@@ -1281,7 +1286,7 @@ public class AgapeBot extends ListenerAdapter {
 
     /** "Preclude Match" button — permanently exclude a pair from future matching. */
     private void handlePrecludeMatchButton(ButtonInteractionEvent event, String buttonId) {
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ Only matchmakers can preclude a match.").setEphemeral(true).queue();
             return;
         }
@@ -1307,7 +1312,7 @@ public class AgapeBot extends ListenerAdapter {
 
     /** "Continue" button on a match preview — actually create the manual match thread. */
     private void handleMatchConfirmButton(ButtonInteractionEvent event, String buttonId) {
-        if (!Roles.isMatchmaker(event.getMember())) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
             event.reply("❌ Only matchmakers can confirm a match.").setEphemeral(true).queue();
             return;
         }
