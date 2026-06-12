@@ -11,7 +11,6 @@ com\agape\ThreadManager$QMThread.class
 com\agape\CompatibilityEngine$CompatPair.class
 com\agape\CompatibilityEngine$ScoringResult.class
 com\agape\FaceDetector$Cascade.class
-com\agape\FaceDetector$Stump.class
 com\agape\AgeUtils.class
 com\agape\FaceDetector$HaarRect.class
 com\agape\FeedbackReportService.class
@@ -33,6 +32,7 @@ com\agape\ImageGenerator$EmojiLoader.class
 com\agape\ApplicationReview.class
 com\agape\ConversationRelay.class
 com\agape\FaceDetector$Stage.class
+com\agape\FaceDetector$WeakClassifier.class
 com\agape\DenominationCompatibility.class
 com\agape\EnvironmentManager.class
 com\agape\ApplicationHandler$1.class
@@ -44,6 +44,7 @@ com\agape\CompatibilityEngine$ScoreDetail.class
 com\agape\ThreadManager.class
 com\agape\AutoModerator.class
 com\agape\Roles.class
+com\agape\FaceDetector$TreeNode.class
 com\agape\UserInsightsManager$DeclineEntry.class
 com\agape\LetsChatManager$1.class
 com\agape\MatchmakingEngine$MatchEntry.class

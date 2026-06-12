@@ -20,29 +20,57 @@ import java.util.List;
  * upload time to find where a face sits in an applicant's picture so the
  * profile-card renderer can crop toward it instead of blindly center-cropping.
  *
- * <p>The detector loads the standard public-domain OpenCV cascade
- * ({@code assets/haarcascade_frontalface_default.xml}, a stump-based 24x24
- * detector) with the JDK's built-in XML parser — no native libraries or extra
- * Maven dependencies. The cascade is parsed once and cached.
+ * <p>It loads the standard public-domain OpenCV cascades with the JDK's built-in
+ * XML parser — no native libraries or extra Maven dependencies — and caches them:
+ * <ul>
+ *   <li>{@code haarcascade_frontalface_default.xml} (24x24, decision stumps) —
+ *       fast primary pass.</li>
+ *   <li>{@code haarcascade_frontalface_alt2.xml} (20x20, depth-2 CART trees) —
+ *       a complementary, more sensitive fallback run only when the primary
+ *       finds nothing. It catches many faces the default misses (glasses,
+ *       tilt, partial occlusion, low contrast).</li>
+ * </ul>
+ *
+ * <p>To squeeze recall out of hard photos (dim mirror selfies, darker skin,
+ * small faces in tall frames) the working image is histogram-equalized before
+ * detection, scanned at a fine scale/step, and grouped with a graduated
+ * neighbor threshold. As a last resort, a clearly portrait-oriented photo with
+ * no detected face is biased toward the upper third (where selfie faces sit)
+ * rather than dead center; landscape/square photos just center on a miss.
  *
  * <p>Entry point: {@link #computeFocus(String)} returns a normalized focal
  * point {@code {x, y}} in [0,1] (relative to the full image), or {@code null}
- * when no face is found or anything goes wrong. Callers treat {@code null} as
- * "keep the default centered crop" — detection is best-effort and never throws.
+ * when nothing usable is found. Callers treat {@code null} as "keep the default
+ * centered crop" — detection is best-effort and never throws.
  */
 public class FaceDetector {
 
-    private static final String CASCADE_PATH = "assets/haarcascade_frontalface_default.xml";
+    private static final String[] CASCADE_PATHS = {
+        "assets/haarcascade_frontalface_default.xml",
+        "assets/haarcascade_frontalface_alt2.xml"
+    };
 
-    /** Longest side the image is downscaled to before detection (speed vs. accuracy). */
+    /** Longest side the image is downscaled to before detection (higher = catches smaller faces, slower). */
     private static final int MAX_WORKING_DIM = 384;
-    /** Window grows by this factor each pyramid step. */
+    /** Window grows by this factor each pyramid step (smaller = finer = more sensitive). */
     private static final double SCALE_FACTOR = 1.2;
-    /** A grouped cluster needs at least this many raw hits to count as a face. */
-    private static final int MIN_NEIGHBORS = 3;
+    /** Window-shift factor per scale (smaller = denser scan = more sensitive). */
+    private static final double STEP_FACTOR = 1.5;
+    /**
+     * Minimum overlapping detections required to accept a face cluster. Kept
+     * strict (3) on purpose: relaxing to 2 lets textured backgrounds (grass,
+     * tile) form spurious 2-hit clusters, and a wrong crop is worse than a miss.
+     * Recall instead comes from equalization + the alt2 cascade getting real
+     * faces well above 3, and genuine misses fall back to the portrait
+     * upper-third. (Kept as an array so the threshold can be graduated later if
+     * a safe lower level is found.)
+     */
+    private static final int[] MIN_NEIGHBOR_LEVELS = { 3 };
+    /** Where a no-face PORTRAIT photo is focused (upper third, where selfie faces sit). */
+    private static final float PORTRAIT_FALLBACK_Y = 0.33f;
 
-    private static volatile Cascade cascade;   // lazily loaded, then cached
-    private static volatile boolean loadFailed; // don't retry a broken/missing cascade every call
+    private static volatile Cascade[] cascades;    // lazily loaded, then cached
+    private static volatile boolean loadFailed;    // don't retry broken/missing cascades every call
 
     // ------------------------------------------------------------------
     // Cascade model
@@ -61,24 +89,29 @@ public class FaceDetector {
         Feature(HaarRect[] rects) { this.rects = rects; }
     }
 
-    /** A depth-1 decision stump (the default cascade is entirely stumps). */
-    private static final class Stump {
-        final int featureIdx;
+    /**
+     * One node of a CART tree. {@code left}/{@code right} are the next node index
+     * when {@code > 0}, or a leaf index ({@code -value}) when {@code <= 0}.
+     */
+    private static final class TreeNode {
+        final int left, right, featureIdx;
         final double threshold;
-        final double leftVal;
-        final double rightVal;
-        Stump(int featureIdx, double threshold, double leftVal, double rightVal) {
-            this.featureIdx = featureIdx;
-            this.threshold = threshold;
-            this.leftVal = leftVal;
-            this.rightVal = rightVal;
+        TreeNode(int left, int right, int featureIdx, double threshold) {
+            this.left = left; this.right = right; this.featureIdx = featureIdx; this.threshold = threshold;
         }
+    }
+
+    /** A weak classifier: a small CART tree (depth 1 for stumps, deeper for alt2). */
+    private static final class WeakClassifier {
+        final TreeNode[] nodes;
+        final double[] leaves;
+        WeakClassifier(TreeNode[] nodes, double[] leaves) { this.nodes = nodes; this.leaves = leaves; }
     }
 
     private static final class Stage {
         final double threshold;
-        final Stump[] stumps;
-        Stage(double threshold, Stump[] stumps) { this.threshold = threshold; this.stumps = stumps; }
+        final WeakClassifier[] weaks;
+        Stage(double threshold, WeakClassifier[] weaks) { this.threshold = threshold; this.weaks = weaks; }
     }
 
     private static final class Cascade {
@@ -101,7 +134,7 @@ public class FaceDetector {
      * @param photoPath a local image file path (http URLs and the bundled
      *                  placeholder avatars are ignored)
      * @return {@code {focusX, focusY}} in [0,1] relative to the full image, or
-     *         {@code null} if no face was found or the photo can't be analyzed
+     *         {@code null} if nothing usable was found
      */
     public static float[] computeFocus(String photoPath) {
         if (photoPath == null || photoPath.isEmpty()) return null;
@@ -110,34 +143,49 @@ public class FaceDetector {
         if (!file.isFile()) return null;
 
         try {
-            Cascade c = getCascade();
-            if (c == null) return null;
+            Cascade[] cs = getCascades();
+            if (cs == null || cs.length == 0) return null;
 
             BufferedImage src = ImageIO.read(file);
             if (src == null) return null;
 
-            // Downscale for speed; the focal point is normalized so scale doesn't matter.
             int srcW = src.getWidth();
             int srcH = src.getHeight();
-            if (srcW < c.width || srcH < c.height) return null;
+            int minCascade = 24;
+            if (srcW < minCascade || srcH < minCascade) return null;
 
+            // Downscale for speed; the focal point is normalized so scale doesn't matter.
             double downscale = Math.min(1.0, (double) MAX_WORKING_DIM / Math.max(srcW, srcH));
-            int workW = Math.max(c.width, (int) Math.round(srcW * downscale));
-            int workH = Math.max(c.height, (int) Math.round(srcH * downscale));
+            int workW = Math.max(minCascade, (int) Math.round(srcW * downscale));
+            int workH = Math.max(minCascade, (int) Math.round(srcH * downscale));
 
             int[][] gray = toGrayscale(src, workW, workH);
+            equalizeHistogram(gray); // boost contrast — big help for dim / low-contrast / darker-skin faces
             long[][] ii = integral(gray, false);
             long[][] ii2 = integral(gray, true);
 
-            List<int[]> hits = detect(c, ii, ii2, workW, workH);
-            int[] face = pickBestFace(hits);
-            if (face == null) return null;
+            // Try each cascade in order; the first to find a face wins (default is
+            // fast, alt2 is the sensitive fallback).
+            int[] face = null;
+            for (Cascade c : cs) {
+                List<int[]> hits = detect(c, ii, ii2, workW, workH);
+                face = pickBestFace(hits);
+                if (face != null) break;
+            }
+
+            if (face == null) {
+                // No detection. Only PORTRAIT photos (taller than wide) get the
+                // upper-third bias, where selfie faces sit instead of the torso.
+                // Landscape/square photos just center (return null).
+                if (workH > workW) {
+                    return new float[] { 0.5f, PORTRAIT_FALLBACK_Y };
+                }
+                return null;
+            }
 
             // face = {x, y, size}; use its center, normalized to [0,1].
-            float fx = (float) ((face[0] + face[2] / 2.0) / workW);
-            float fy = (float) ((face[1] + face[2] / 2.0) / workH);
-            fx = clamp01(fx);
-            fy = clamp01(fy);
+            float fx = clamp01((float) ((face[0] + face[2] / 2.0) / workW));
+            float fy = clamp01((float) ((face[1] + face[2] / 2.0) / workH));
             return new float[] { fx, fy };
         } catch (Throwable t) {
             // Best-effort only: a detector hiccup must never break the application flow.
@@ -158,7 +206,7 @@ public class FaceDetector {
         for (double scale = 1.0; scale <= maxScale; scale *= SCALE_FACTOR) {
             int win = (int) Math.round(c.width * scale);
             if (win < c.width) win = c.width;
-            int step = Math.max(1, (int) Math.round(scale * 1.5));
+            int step = Math.max(1, (int) Math.round(scale * STEP_FACTOR));
 
             for (int y = 0; y + win < h; y += step) {
                 for (int x = 0; x + win < w; x += step) {
@@ -182,14 +230,29 @@ public class FaceDetector {
 
         for (Stage stage : c.stages) {
             double stageSum = 0.0;
-            for (Stump stump : stage.stumps) {
-                Feature f = c.features[stump.featureIdx];
-                double featVal = featureSum(ii, f, x, y, scale) * invArea;
-                stageSum += (featVal < stump.threshold * stddev) ? stump.leftVal : stump.rightVal;
+            for (WeakClassifier wc : stage.weaks) {
+                stageSum += evalTree(wc, c, ii, x, y, scale, invArea, stddev);
             }
             if (stageSum < stage.threshold) return false;
         }
         return true;
+    }
+
+    /**
+     * Walks a weak classifier's CART tree, branching on variance-normalized Haar
+     * feature responses, and returns the reached leaf value. Handles both stumps
+     * (default cascade) and deeper trees (alt2).
+     */
+    private static double evalTree(WeakClassifier wc, Cascade c, long[][] ii,
+            int x, int y, double scale, double invArea, double stddev) {
+        int nodeIdx = 0;
+        while (true) {
+            TreeNode node = wc.nodes[nodeIdx];
+            double featVal = featureSum(ii, c.features[node.featureIdx], x, y, scale) * invArea;
+            int branch = (featVal < node.threshold * stddev) ? node.left : node.right;
+            if (branch <= 0) return wc.leaves[-branch]; // <= 0 encodes a leaf index
+            nodeIdx = branch;
+        }
     }
 
     /**
@@ -201,7 +264,6 @@ public class FaceDetector {
     private static double featureSum(long[][] ii, Feature f, int winX, int winY, double scale) {
         HaarRect[] rects = f.rects;
 
-        // Scaled geometry of each rectangle within the window.
         int n = rects.length;
         long[] rectSums = new long[n];
         long[] areas = new long[n];
@@ -237,9 +299,10 @@ public class FaceDetector {
     // ------------------------------------------------------------------
 
     /**
-     * Clusters overlapping raw detections, keeps clusters with enough members
-     * (rejecting one-off false positives), and returns the largest surviving
-     * face as {x, y, size}, or null if none qualify.
+     * Clusters overlapping raw detections and returns the largest cluster as
+     * {x, y, size}. Uses a graduated neighbor threshold: prefers clusters with 3+
+     * members (robust), but relaxes to 2 then 1 so a weak-but-real detection on a
+     * hard photo still wins rather than being discarded.
      */
     private static int[] pickBestFace(List<int[]> hits) {
         if (hits.isEmpty()) return null;
@@ -277,21 +340,25 @@ public class FaceDetector {
             members[g]++;
         }
 
-        int[] best = null;
-        int bestSize = -1;
-        for (int g = 0; g < groupCount; g++) {
-            if (members[g] < MIN_NEIGHBORS) continue;
-            int avgSize = (int) Math.round(ss[g] / members[g]);
-            if (avgSize > bestSize) { // prefer the largest (most prominent) face
-                bestSize = avgSize;
-                best = new int[] {
-                    (int) Math.round(sx[g] / members[g]),
-                    (int) Math.round(sy[g] / members[g]),
-                    avgSize
-                };
+        // Prefer well-supported clusters; relax the threshold only if nothing qualifies.
+        for (int minNeighbors : MIN_NEIGHBOR_LEVELS) {
+            int[] best = null;
+            int bestSize = -1;
+            for (int g = 0; g < groupCount; g++) {
+                if (members[g] < minNeighbors) continue;
+                int avgSize = (int) Math.round(ss[g] / members[g]);
+                if (avgSize > bestSize) { // prefer the largest (most prominent) face
+                    bestSize = avgSize;
+                    best = new int[] {
+                        (int) Math.round(sx[g] / members[g]),
+                        (int) Math.round(sy[g] / members[g]),
+                        avgSize
+                    };
+                }
             }
+            if (best != null) return best;
         }
-        return best;
+        return null;
     }
 
     /** Two detections belong together if their positions and sizes are close. */
@@ -327,6 +394,40 @@ public class FaceDetector {
         return gray;
     }
 
+    /**
+     * Global histogram equalization (in place). Spreads the intensity range so
+     * faces in dim, flat, or low-contrast photos expose enough edge structure for
+     * the Haar features to fire.
+     */
+    private static void equalizeHistogram(int[][] gray) {
+        int h = gray.length;
+        int w = gray[0].length;
+        int total = w * h;
+        if (total == 0) return;
+
+        int[] hist = new int[256];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                hist[gray[y][x] & 0xFF]++;
+
+        int[] lut = new int[256];
+        long cum = 0;
+        long cdfMin = -1;
+        for (int i = 0; i < 256; i++) {
+            cum += hist[i];
+            if (cum == 0) continue;
+            if (cdfMin < 0) cdfMin = cum; // first non-empty bin
+            long denom = total - cdfMin;
+            lut[i] = denom <= 0 ? i : (int) Math.round((double) (cum - cdfMin) / denom * 255.0);
+            if (lut[i] < 0) lut[i] = 0;
+            if (lut[i] > 255) lut[i] = 255;
+        }
+
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                gray[y][x] = lut[gray[y][x] & 0xFF];
+    }
+
     /** Builds a padded (h+1 x w+1) integral image; squared pixels when {@code squared}. */
     private static long[][] integral(int[][] gray, boolean squared) {
         int h = gray.length;
@@ -354,21 +455,33 @@ public class FaceDetector {
     // Cascade loading
     // ------------------------------------------------------------------
 
-    private static Cascade getCascade() {
-        Cascade local = cascade;
+    private static Cascade[] getCascades() {
+        Cascade[] local = cascades;
         if (local != null) return local;
         if (loadFailed) return null;
         synchronized (FaceDetector.class) {
-            if (cascade != null) return cascade;
+            if (cascades != null) return cascades;
             if (loadFailed) return null;
-            try {
-                cascade = parseCascade(new File(CASCADE_PATH));
-            } catch (Throwable t) {
-                loadFailed = true;
-                System.err.println("FaceDetector: could not load cascade at " + CASCADE_PATH
-                        + " — face-centered cropping disabled (" + t.getMessage() + ")");
+            List<Cascade> loaded = new ArrayList<>();
+            for (String path : CASCADE_PATHS) {
+                File f = new File(path);
+                if (!f.isFile()) {
+                    System.err.println("FaceDetector: cascade not found at " + path + " — skipping it");
+                    continue;
+                }
+                try {
+                    loaded.add(parseCascade(f));
+                } catch (Throwable t) {
+                    System.err.println("FaceDetector: failed to parse cascade " + path + " — " + t.getMessage());
+                }
             }
-            return cascade;
+            if (loaded.isEmpty()) {
+                loadFailed = true;
+                System.err.println("FaceDetector: no usable cascades — face-centered cropping disabled");
+                return null;
+            }
+            cascades = loaded.toArray(new Cascade[0]);
+            return cascades;
         }
     }
 
@@ -391,15 +504,24 @@ public class FaceDetector {
             double stageThreshold = Double.parseDouble(text(firstChild(stageEl, "stageThreshold")).trim());
             Element weakEl = firstChild(stageEl, "weakClassifiers");
             List<Element> weaks = childrenByTag(weakEl, "_");
-            Stump[] stumps = new Stump[weaks.size()];
+            WeakClassifier[] classifiers = new WeakClassifier[weaks.size()];
             for (int wci = 0; wci < weaks.size(); wci++) {
                 double[] inodes = parseDoubles(text(firstChild(weaks.get(wci), "internalNodes")));
                 double[] leaves = parseDoubles(text(firstChild(weaks.get(wci), "leafValues")));
-                int featureIdx = (int) inodes[2];
-                double threshold = inodes[3];
-                stumps[wci] = new Stump(featureIdx, threshold, leaves[0], leaves[1]);
+                // internalNodes is a flat list of [left, right, featureIdx, threshold] per node.
+                int nodeCount = inodes.length / 4;
+                TreeNode[] nodes = new TreeNode[nodeCount];
+                for (int ni = 0; ni < nodeCount; ni++) {
+                    int base = ni * 4;
+                    nodes[ni] = new TreeNode(
+                        (int) inodes[base],       // left
+                        (int) inodes[base + 1],   // right
+                        (int) inodes[base + 2],   // feature index
+                        inodes[base + 3]);        // threshold
+                }
+                classifiers[wci] = new WeakClassifier(nodes, leaves);
             }
-            stages[s] = new Stage(stageThreshold, stumps);
+            stages[s] = new Stage(stageThreshold, classifiers);
         }
 
         // Features
