@@ -40,6 +40,15 @@
       <artifactId>gson</artifactId>
       <version>2.10.1</version>
     </dependency>
+    <!-- Pure-Java WebP ImageIO reader. Many profile photos arrive as WebP (often
+         saved with a .png/.jpg name by the external app); without this, ImageIO
+         silently returns null and the card renders with no photo. Registered via
+         SPI, so it is auto-discovered by both ImageGenerator and FaceDetector. -->
+    <dependency>
+      <groupId>com.twelvemonkeys.imageio</groupId>
+      <artifactId>imageio-webp</artifactId>
+      <version>3.12.0</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -56,25 +65,30 @@
           </archive>
         </configuration>
       </plugin>
+      <!-- Shade (not assembly) so that META-INF/services SPI files from multiple
+           jars are MERGED via ServicesResourceTransformer. ImageIO discovers the
+           WebP reader through SPI; assembly's fat jar would overwrite the service
+           file and silently drop the reader. shadedClassifierName keeps the same
+           output name (agape-bot-<ver>-jar-with-dependencies.jar) the deploy uses. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.3.0</version>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
         <executions>
           <execution>
             <phase>package</phase>
             <goals>
-              <goal>single</goal>
+              <goal>shade</goal>
             </goals>
             <configuration>
-              <archive>
-                <manifest>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>jar-with-dependencies</shadedClassifierName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.agape.AgapeBot</mainClass>
-                </manifest>
-              </archive>
-              <descriptorRefs>
-                <descriptorRef>jar-with-dependencies</descriptorRef>
-              </descriptorRefs>
+                </transformer>
+              </transformers>
             </configuration>
           </execution>
         </executions>

@@ -250,9 +250,17 @@ public class ImageGenerator {
                     System.err.println("Failed to crop/draw profile picture (skipping photo): " + ex.getMessage());
                 }
             } else {
-                // null with no exception (ImageIO couldn't decode it) — log it so this
-                // isn't a silent blank slot.
-                System.err.println("Profile picture did not decode (null image) for URL: " + pfpUrl);
+                // ImageIO returned null with no exception — it had no reader for the bytes.
+                // Sniff the true format (the extension often lies) so the cause is obvious.
+                String detected = "n/a";
+                try {
+                    URL url = java.net.URI.create(pfpUrl).toURL();
+                    if ("file".equalsIgnoreCase(url.getProtocol())) detected = sniffImageFormat(new File(url.toURI()));
+                } catch (Exception ignored) {
+                    // diagnostics only — never let this mask the real problem
+                }
+                System.err.println("Profile picture did not decode (null image) for URL: " + pfpUrl
+                        + " | detected format: " + detected);
             }
 
             // 3. Draw the custom frame over the PFP slot — independent of the photo,
@@ -904,6 +912,38 @@ public class ImageGenerator {
                 currentX += fm.stringWidth(runString);
             }
         }
+    }
+
+    /**
+     * Identifies an image's true container format from its leading magic bytes,
+     * independent of the file extension. Used for diagnostics when ImageIO fails
+     * to decode a file — a mismatch (e.g. extension {@code .png} but format
+     * {@code WEBP}) explains a silent null decode, since stock ImageIO has no
+     * WebP/AVIF/HEIC reader.
+     */
+    private static String sniffImageFormat(File f) {
+        if (f == null || !f.isFile()) return "n/a";
+        byte[] b = new byte[16];
+        try (java.io.InputStream in = new java.io.FileInputStream(f)) {
+            int read = in.read(b);
+            if (read < 12) return "too-short(" + read + " bytes)";
+        } catch (Exception e) {
+            return "unreadable(" + e.getMessage() + ")";
+        }
+        if ((b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G') return "PNG";
+        if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8) return "JPEG";
+        if (b[0] == 'G' && b[1] == 'I' && b[2] == 'F') return "GIF";
+        if (b[0] == 'B' && b[1] == 'M') return "BMP";
+        if (b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F'
+                && b[8] == 'W' && b[9] == 'E' && b[10] == 'B' && b[11] == 'P') return "WEBP (unsupported by ImageIO)";
+        if (b[4] == 'f' && b[5] == 't' && b[6] == 'y' && b[7] == 'p') {
+            String brand = "" + (char) b[8] + (char) b[9] + (char) b[10] + (char) b[11];
+            return "ISO-BMFF/ftyp:" + brand + " (likely AVIF/HEIC, unsupported by ImageIO)";
+        }
+        if ((b[0] == 'I' && b[1] == 'I') || (b[0] == 'M' && b[1] == 'M')) return "TIFF";
+        StringBuilder hex = new StringBuilder("unknown[");
+        for (int i = 0; i < 4; i++) hex.append(String.format("%02X ", b[i] & 0xFF));
+        return hex.append("]").toString();
     }
 
     private static float clampFraction(float v) {
