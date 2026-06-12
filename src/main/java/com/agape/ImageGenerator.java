@@ -211,16 +211,25 @@ public class ImageGenerator {
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            // 2. Fetch and draw the user's profile picture
+            // PFP slot (top-right), shared by the photo and the frame so the frame
+            // is positioned independently of whatever happens to the photo.
+            int pfpX = backgroundImage.getWidth() - pfpSize - pfpMarginRight;
+            int pfpY = pfpMarginTop;
+
+            // 2. Fetch and draw the user's profile picture.
+            // The face focal-point transform is applied ONLY here — to the photo's
+            // square crop — and never to the frame below. A failure to load or crop
+            // the photo is isolated so it can't take the frame (step 3) down with it.
+            BufferedImage pfpImage = null;
             try {
                 URL url = java.net.URI.create(pfpUrl).toURL();
-                BufferedImage pfpImage = ImageIO.read(url);
+                pfpImage = ImageIO.read(url);
+            } catch (IOException e) {
+                System.err.println("Failed to load profile picture from URL: " + pfpUrl + " — " + e.getMessage());
+            }
 
-                if (pfpImage != null) {
-                    // Calculate Top-Right position relative to background bounds
-                    int pfpX = backgroundImage.getWidth() - pfpSize - pfpMarginRight;
-                    int pfpY = pfpMarginTop;
-
+            if (pfpImage != null) {
+                try {
                     // Crop the PFP to a perfect square (prevents squishing). The square is
                     // centered on the face focal point when one is known, then clamped to the
                     // image bounds so we never crop past the edge and leave blank space.
@@ -234,61 +243,68 @@ public class ImageGenerator {
                     int cropY = clamp(focusPxY - minDim / 2, 0, imgH - minDim);
                     BufferedImage croppedPfp = pfpImage.getSubimage(cropX, cropY, minDim, minDim);
 
-                    // Draw the perfectly cropped PFP
+                    // Draw the focus-cropped PFP, scaled into the square slot
                     g2d.drawImage(croppedPfp, pfpX, pfpY, pfpSize, pfpSize, null);
-
-                    // Draw the custom frame image over the PFP
-                    if (framePath != null && !framePath.isEmpty()) {
-                        try {
-                            File frameFile = new File(framePath);
-                            if (frameFile.exists()) {
-                                BufferedImage frameImage = ImageIO.read(frameFile);
-                                
-                                // Default config (matching the old 116% scale logic)
-                                double configScale = 1.16;
-                                double configOffsetX = 0.0;
-                                double configOffsetY = 0.0;
-
-                                // Try reading from frames_config.json
-                                File configFile = new File("assets/frames_config.json");
-                                if (configFile.exists()) {
-                                    try (FileReader reader = new FileReader(configFile)) {
-                                        java.lang.reflect.Type type = new TypeToken<Map<String, Map<String, Double>>>(){}.getType();
-                                        Map<String, Map<String, Double>> configs = new Gson().fromJson(reader, type);
-                                        if (configs != null && configs.containsKey(frameFile.getName())) {
-                                            Map<String, Double> config = configs.get(frameFile.getName());
-                                            if (config.containsKey("scale")) configScale = config.get("scale");
-                                            if (config.containsKey("offsetX")) configOffsetX = config.get("offsetX");
-                                            if (config.containsKey("offsetY")) configOffsetY = config.get("offsetY");
-                                        }
-                                    } catch (Exception ex) {
-                                        System.err.println("Failed to read frame configs: " + ex.getMessage());
-                                    }
-                                }
-
-                                // Use configScaleX as the master uniform scale, and mathematically derive the height
-                                // to perfectly preserve the frame's native aspect ratio without warping!
-                                int drawW = (int) (pfpSize * configScale);
-                                int drawH = (int) (drawW / ((double) frameImage.getWidth() / frameImage.getHeight()));
-                                
-                                // Center the properly scaled frame over the PFP, then apply the custom X/Y translation offset
-                                int drawX = pfpX + (pfpSize - drawW) / 2 + (int) (pfpSize * configOffsetX);
-                                int drawY = pfpY + (pfpSize - drawH) / 2 + (int) (pfpSize * configOffsetY);
-
-                                g2d.drawImage(frameImage, drawX, drawY, drawW, drawH, null);
-                            } else {
-                                System.err.println("Frame image not found at: " + framePath);
-                            }
-                        } catch (IOException ex) {
-                            System.err.println("Failed to load frame image: " + framePath);
-                        }
-                    }
+                } catch (RuntimeException ex) {
+                    // A malformed image shouldn't abort the whole card (or the frame).
+                    System.err.println("Failed to crop/draw profile picture (skipping photo): " + ex.getMessage());
                 }
-            } catch (IOException e) {
-                System.err.println("Failed to load profile picture from URL: " + pfpUrl);
+            } else {
+                // null with no exception (ImageIO couldn't decode it) — log it so this
+                // isn't a silent blank slot.
+                System.err.println("Profile picture did not decode (null image) for URL: " + pfpUrl);
             }
 
-            // 3. Draw the rich text
+            // 3. Draw the custom frame over the PFP slot — independent of the photo,
+            // so it renders even when the photo is missing and is never moved or
+            // scaled by the photo's focal-point transform.
+            if (framePath != null && !framePath.isEmpty()) {
+                try {
+                    File frameFile = new File(framePath);
+                    if (frameFile.exists()) {
+                        BufferedImage frameImage = ImageIO.read(frameFile);
+
+                        // Default config (matching the old 116% scale logic)
+                        double configScale = 1.16;
+                        double configOffsetX = 0.0;
+                        double configOffsetY = 0.0;
+
+                        // Try reading from frames_config.json
+                        File configFile = new File("assets/frames_config.json");
+                        if (configFile.exists()) {
+                            try (FileReader reader = new FileReader(configFile)) {
+                                java.lang.reflect.Type type = new TypeToken<Map<String, Map<String, Double>>>(){}.getType();
+                                Map<String, Map<String, Double>> configs = new Gson().fromJson(reader, type);
+                                if (configs != null && configs.containsKey(frameFile.getName())) {
+                                    Map<String, Double> config = configs.get(frameFile.getName());
+                                    if (config.containsKey("scale")) configScale = config.get("scale");
+                                    if (config.containsKey("offsetX")) configOffsetX = config.get("offsetX");
+                                    if (config.containsKey("offsetY")) configOffsetY = config.get("offsetY");
+                                }
+                            } catch (Exception ex) {
+                                System.err.println("Failed to read frame configs: " + ex.getMessage());
+                            }
+                        }
+
+                        // Use configScaleX as the master uniform scale, and mathematically derive the height
+                        // to perfectly preserve the frame's native aspect ratio without warping!
+                        int drawW = (int) (pfpSize * configScale);
+                        int drawH = (int) (drawW / ((double) frameImage.getWidth() / frameImage.getHeight()));
+
+                        // Center the properly scaled frame over the PFP slot, then apply the custom X/Y translation offset
+                        int drawX = pfpX + (pfpSize - drawW) / 2 + (int) (pfpSize * configOffsetX);
+                        int drawY = pfpY + (pfpSize - drawH) / 2 + (int) (pfpSize * configOffsetY);
+
+                        g2d.drawImage(frameImage, drawX, drawY, drawW, drawH, null);
+                    } else {
+                        System.err.println("Frame image not found at: " + framePath);
+                    }
+                } catch (IOException ex) {
+                    System.err.println("Failed to load frame image: " + framePath);
+                }
+            }
+
+            // 4. Draw the rich text
             if (mainText != null && !mainText.isEmpty()) {
                 Font baseFont = FontLoader.getFont(fontPath, 40f); // Dynamically loads or fetches cached font
 
@@ -385,10 +401,10 @@ public class ImageGenerator {
                 }
             }
 
-            // 4. Clean up graphics resources
+            // 5. Clean up graphics resources
             g2d.dispose();
 
-            // 5. Save the final image
+            // 6. Save the final image
             File outputFile = new File(outputPath);
             ImageIO.write(backgroundImage, "png", outputFile);
 
