@@ -26,6 +26,15 @@ public class AppState {
     public String strengths;
     public String weaknesses;
     public String photoPath; // Local file path OR avatar URL
+
+    // Normalized focal point of the applicant's face within their photo, in
+    // [0,1] (x = left→right, y = top→bottom). Computed by FaceDetector at upload
+    // time so the profile-card renderer can crop toward the face instead of
+    // center-cropping. Defaults to dead center (0.5, 0.5) for placeholders,
+    // Discord avatars, and any older profile whose JSON predates this field.
+    public float photoFocusX = 0.5f;
+    public float photoFocusY = 0.5f;
+
     public String targetAge;  // e.g. "25" or "18-25"
     public String targetSect;
     public String lookFor;

@@ -174,7 +174,7 @@ public final class MatchThreadService {
             }
             String text = ApplicationHandler.buildCardText(profile);
             String[] designPaths = ImageGenerator.decodeDesignCode(profile.designCode);
-            return ImageGenerator.generateForUser(designPaths[0], pfpUri, designPaths[1], FONT_PATH, text, userId + "_qm_card");
+            return ImageGenerator.generateForUser(designPaths[0], pfpUri, designPaths[1], FONT_PATH, text, userId + "_qm_card", profile.photoFocusX, profile.photoFocusY);
         } catch (Exception e) {
             System.err.println("Quickmatch: Failed to generate profile card for " + userId + ": " + e.getMessage());
             return null;

@@ -248,6 +248,8 @@ public class AgapeBot extends ListenerAdapter {
         String avatarUrl = targetUser.getEffectiveAvatarUrl(); // Default to Discord PFP
         String backgroundPath = "assets/backgrounds/default.png";
         String framePath = "assets/frames/default.png";
+        float focusX = 0.5f; // face focal point; stays centered for placeholders/avatars
+        float focusY = 0.5f;
 
         if (ProfileRepository.exists(userId)) {
             AppState state = ProfileRepository.load(userId);
@@ -279,6 +281,10 @@ public class AgapeBot extends ListenerAdapter {
                         }
                     }
                 }
+
+                // Crop the card photo toward the applicant's detected face
+                focusX = state.photoFocusX;
+                focusY = state.photoFocusY;
 
                 // Load their custom Design Code if it exists
                 if (state.designCode != null && !state.designCode.isEmpty()) {
@@ -313,11 +319,13 @@ public class AgapeBot extends ListenerAdapter {
         final String fmPath = framePath;
         final String profileCardText = cardText;
         final String photoUrl = avatarUrl;
+        final float pfpFocusX = focusX;
+        final float pfpFocusY = focusY;
 
         // Run the generation in a new thread so it doesn't block JDA's main event loop
         new Thread(() -> {
             File generatedImage = ImageGenerator.generateForUser(bgPath, photoUrl, fmPath, FONT_PATH,
-                    profileCardText, userId);
+                    profileCardText, userId, pfpFocusX, pfpFocusY);
 
             if (generatedImage != null && generatedImage.exists()) {
                 event.getHook().sendFiles(FileUpload.fromData(generatedImage)).queue(

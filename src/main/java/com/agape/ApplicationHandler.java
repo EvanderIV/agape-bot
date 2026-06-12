@@ -70,6 +70,25 @@ public class ApplicationHandler extends ListenerAdapter {
     }
 
     /**
+     * Runs face detection on a freshly uploaded photo and records the resulting
+     * focal point on the profile so the card renderer crops toward the face.
+     * Best-effort: if no face is found (or detection fails) the focus is left at
+     * its centered default. Detection is CPU-bound, so callers should invoke
+     * this off the JDA event loop.
+     */
+    private static void applyFaceFocus(AppState state) {
+        float[] focus = FaceDetector.computeFocus(state.photoPath);
+        if (focus != null) {
+            state.photoFocusX = focus[0];
+            state.photoFocusY = focus[1];
+        } else {
+            // No detectable face (or a placeholder/URL): fall back to a centered crop.
+            state.photoFocusX = 0.5f;
+            state.photoFocusY = 0.5f;
+        }
+    }
+
+    /**
      * On bot startup, restores any applications that were mid-flight when the bot last shut down.
      * Loads each in-progress state back into activeApplications and sends a DM notifying the user.
      */
@@ -312,7 +331,7 @@ public class ApplicationHandler extends ListenerAdapter {
                     DesignPaths designPaths = resolveDesignCode(state.designCode);
                     String fontPath = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
     
-                    File generatedImage = ImageGenerator.generateForUser(designPaths.backgroundPath, pfpUri, designPaths.framePath, fontPath, text, user.getId());
+                    File generatedImage = ImageGenerator.generateForUser(designPaths.backgroundPath, pfpUri, designPaths.framePath, fontPath, text, user.getId(), state.photoFocusX, state.photoFocusY);
     
                     if (generatedImage != null && generatedImage.exists()) {
                         event.getChannel().sendFiles(net.dv8tion.jda.api.utils.FileUpload.fromData(generatedImage)).queue(success -> {
@@ -800,6 +819,7 @@ public class ApplicationHandler extends ListenerAdapter {
                         // Download the file from Discord's servers
                         attachment.getProxy().downloadToFile(destFile).thenAccept(file -> {
                             state.photoPath = file.getAbsolutePath();
+                            applyFaceFocus(state); // center the card crop on the applicant's face
                             advanceToTargetAge(state, event);
                             saveInProgress(userId, state);
                         }).exceptionally(ex -> {
@@ -987,6 +1007,7 @@ public class ApplicationHandler extends ListenerAdapter {
                                 File destFile = new File(directory, userId + "." + extension);
                                 attachment.getProxy().downloadToFile(destFile).thenAccept(file -> {
                                     state.photoPath = file.getAbsolutePath();
+                                    applyFaceFocus(state); // re-detect the face for the new photo
                                     state.currentStep = AppStep.CUSTOMIZE_PROMPT;
                                     generateProfileCard(state, event);
                                     saveInProgress(userId, state);

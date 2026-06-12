@@ -179,6 +179,22 @@ public class ImageGenerator {
     public static boolean generateMatchmakingImage(String backgroundPath, String pfpUrl, String framePath,
             String fontPath, String mainText,
             String outputPath, int pfpMarginRight, int pfpMarginTop, int pfpSize) {
+        // Default to a centered crop when no face focal point is supplied.
+        return generateMatchmakingImage(backgroundPath, pfpUrl, framePath, fontPath, mainText, outputPath,
+                pfpMarginRight, pfpMarginTop, pfpSize, 0.5f, 0.5f);
+    }
+
+    /**
+     * Overload that accepts a normalized face focal point ({@code focusX},
+     * {@code focusY} in [0,1]) so the square PFP crop is positioned over the
+     * applicant's face instead of the image center. The crop is always clamped
+     * to the image bounds, so an off-center focus can never introduce blank
+     * space — it simply slides the crop window as far as the photo allows.
+     */
+    public static boolean generateMatchmakingImage(String backgroundPath, String pfpUrl, String framePath,
+            String fontPath, String mainText,
+            String outputPath, int pfpMarginRight, int pfpMarginTop, int pfpSize,
+            float focusX, float focusY) {
 
         try {
             // 1. Load the background image
@@ -205,10 +221,17 @@ public class ImageGenerator {
                     int pfpX = backgroundImage.getWidth() - pfpSize - pfpMarginRight;
                     int pfpY = pfpMarginTop;
 
-                    // Crop PFP to a perfect square from the center to prevent squishing
-                    int minDim = Math.min(pfpImage.getWidth(), pfpImage.getHeight());
-                    int cropX = (pfpImage.getWidth() - minDim) / 2;
-                    int cropY = (pfpImage.getHeight() - minDim) / 2;
+                    // Crop the PFP to a perfect square (prevents squishing). The square is
+                    // centered on the face focal point when one is known, then clamped to the
+                    // image bounds so we never crop past the edge and leave blank space.
+                    int imgW = pfpImage.getWidth();
+                    int imgH = pfpImage.getHeight();
+                    int minDim = Math.min(imgW, imgH);
+
+                    int focusPxX = Math.round(clampFraction(focusX) * imgW);
+                    int focusPxY = Math.round(clampFraction(focusY) * imgH);
+                    int cropX = clamp(focusPxX - minDim / 2, 0, imgW - minDim);
+                    int cropY = clamp(focusPxY - minDim / 2, 0, imgH - minDim);
                     BufferedImage croppedPfp = pfpImage.getSubimage(cropX, cropY, minDim, minDim);
 
                     // Draw the perfectly cropped PFP
@@ -867,6 +890,19 @@ public class ImageGenerator {
         }
     }
 
+    private static float clampFraction(float v) {
+        if (Float.isNaN(v) || v < 0f) return 0f;
+        if (v > 1f) return 1f;
+        return v;
+    }
+
+    private static int clamp(int v, int min, int max) {
+        if (max < min) return min; // square equals the whole image on that axis
+        if (v < min) return min;
+        if (v > max) return max;
+        return v;
+    }
+
     private static Color getAverageColor(BufferedImage img) {
         long r = 0, g = 0, b = 0;
         int width = img.getWidth();
@@ -1042,6 +1078,19 @@ public class ImageGenerator {
     public static File generateForUser(String backgroundPath, String pfpUrl, String framePath, String fontPath,
             String mainText,
             String userId) {
+        // Default to a centered crop when no face focal point is supplied.
+        return generateForUser(backgroundPath, pfpUrl, framePath, fontPath, mainText, userId, 0.5f, 0.5f);
+    }
+
+    /**
+     * Overload that forwards a normalized face focal point ({@code focusX},
+     * {@code focusY} in [0,1], typically {@code AppState.photoFocusX/Y}) so the
+     * PFP is cropped toward the applicant's face. See
+     * {@link #generateMatchmakingImage(String, String, String, String, String, String, int, int, int, float, float)}.
+     */
+    public static File generateForUser(String backgroundPath, String pfpUrl, String framePath, String fontPath,
+            String mainText,
+            String userId, float focusX, float focusY) {
         // Create a unique filename for this specific user's generated image
         String outputPath = "matchmaking_" + userId + ".png";
 
@@ -1052,7 +1101,7 @@ public class ImageGenerator {
         int defaultPfpSize = 350;
 
         boolean success = generateMatchmakingImage(backgroundPath, pfpUrl, framePath, fontPath, mainText, outputPath,
-                defaultMarginRight, defaultMarginTop, defaultPfpSize);
+                defaultMarginRight, defaultMarginTop, defaultPfpSize, focusX, focusY);
 
         if (success) {
             return new File(outputPath);
