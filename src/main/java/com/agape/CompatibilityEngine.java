@@ -478,7 +478,7 @@ public class CompatibilityEngine {
     }
 
     /** Strips a leading city/state prefix so "Texas, USA" → "USA" and "Lagos, Nigeria" → "Nigeria". */
-    private static String normalizeCountry(String raw) {
+    static String normalizeCountry(String raw) {
         if (raw == null || raw.trim().isEmpty()) return "";
         String trimmed = raw.trim();
         int lastComma = trimmed.lastIndexOf(',');

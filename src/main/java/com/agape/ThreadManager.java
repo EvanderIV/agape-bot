@@ -83,6 +83,7 @@ public class ThreadManager {
         List<String> declinedBy     = new ArrayList<>();
         List<String> notificationsSent = new ArrayList<>();
         List<ThreadMessage> messages = new ArrayList<>();
+        boolean goodNewsDMSent = false; // true once the "your match replied" DM has been sent
     }
 
     // ─── Shutdown management ──────────────────────────────────────────────────
@@ -458,6 +459,7 @@ public class ThreadManager {
                         jda.getThreadChannelById(record.threadId);
                     if (thread != null) {
                         final QMThread rec = record;
+                        final int messagedByBefore = rec.messagedBy != null ? rec.messagedBy.size() : 0;
                         thread.getHistoryFromBeginning(50).queue(history -> {
                             List<Message> msgs = new ArrayList<>(history.getRetrievedHistory());
                             msgs.sort(Comparator.comparing(Message::getTimeCreated));
@@ -474,6 +476,18 @@ public class ThreadManager {
                                         && !rec.messagedBy.contains(authorId)) {
                                     rec.messagedBy.add(authorId);
                                 }
+                            }
+                            // Both parties have now posted and the first poster hasn't been notified yet
+                            if (messagedByBefore < 2 && rec.messagedBy.size() >= 2 && !rec.goodNewsDMSent) {
+                                rec.goodNewsDMSent = true;
+                                String firstPosterId = rec.messagedBy.get(0);
+                                String goodNewsMsg = "🎉 **Good news!** Your match in Agape has replied in your thread — go check it out! "
+                                    + "Once you've both had a chance to connect and share your deal-breakers, "
+                                    + "use **/confirm** if you'd like to continue, or **/decline** if not.";
+                                jda.retrieveUserById(firstPosterId).queue(
+                                    u -> u.openPrivateChannel().queue(ch -> ch.sendMessage(goodNewsMsg).queue()),
+                                    err -> System.err.println("ThreadManager: Could not send good-news DM to " + firstPosterId + ": " + err.getMessage())
+                                );
                             }
                             save(rec.maleId, rec.femaleId, rec);
                         }, err -> {});
@@ -640,26 +654,54 @@ public class ThreadManager {
         switch (level) {
             case 1:
                 if (record.firstMessageAt == null) {
-                    message = "👋 " + mention + " — hey there! Just wanted to check in and see if you've had a chance to connect yet. "
-                        + "Take a moment to introduce yourself, then each list 3-5 major relationship deal-breakers. "
-                        + "Once you've had a chance to connect, use **/confirm** if you'd like to pursue this match, "
-                        + "or **/decline** if you'd strongly prefer to pass.";
+                    message = "👋 " + mention + " — welcome to your match thread! Introduce yourselves and each share 3–5 of your biggest relationship deal-breakers right here. "
+                        + "Once you've had a chance to connect, use **/confirm** if you'd like to continue, or **/decline** if not.";
                 } else {
-                    message = "👋 " + mention + " — now that you've had a chance to get to know each other, "
-                        + "please let us know what you think! Use **/confirm** if you'd like to pursue this match, "
-                        + "or **/decline** if you'd strongly prefer to pass.";
+                    message = "👋 " + mention + " — your match has introduced themselves in this thread above! "
+                        + "Take a moment to scroll up, reply, and share your own 3–5 biggest relationship deal-breakers. "
+                        + "Once you've both had a chance to connect, use **/confirm** if you'd like to continue, or **/decline** if not.";
+
+                    // DM the person who already posted — ask them to be patient
+                    if (record.messagedBy != null && !record.messagedBy.isEmpty()) {
+                        final String firstPosterId  = record.messagedBy.get(0);
+                        final String silentPartnerId = firstPosterId.equals(record.maleId) ? record.femaleId : record.maleId;
+
+                        AppState posterProfile = ProfileRepository.load(firstPosterId);
+                        AppState silentProfile = ProfileRepository.load(silentPartnerId);
+
+                        String countryPoster = posterProfile != null && posterProfile.country != null
+                            ? CompatibilityEngine.normalizeCountry(posterProfile.country) : "";
+                        String countrySilent = silentProfile != null && silentProfile.country != null
+                            ? CompatibilityEngine.normalizeCountry(silentProfile.country) : "";
+
+                        boolean differentCountries = !countryPoster.isEmpty() && !countrySilent.isEmpty()
+                            && !countryPoster.equalsIgnoreCase(countrySilent);
+
+                        String dmMsg = "💌 **Heads up!** Your match in Agape hasn't replied yet — no worries, these things take time!"
+                            + (differentCountries
+                                ? " Keep in mind that your match may be in a different time zone, so it might take a little longer for them to see your message."
+                                : "")
+                            + " Sit tight and we'll let you know when they respond! 😊\n\n"
+                            + "-# Just so you know — if your match doesn't respond, **you won't be penalized in any way**. "
+                            + "You'll have plenty of opportunities to be matched again!";
+
+                        jda.retrieveUserById(firstPosterId).queue(
+                            u -> u.openPrivateChannel().queue(ch -> ch.sendMessage(dmMsg).queue()),
+                            err -> System.err.println("ThreadManager: Could not DM first-poster " + firstPosterId + ": " + err.getMessage())
+                        );
+                    }
                 }
                 break;
             case 2:
                 if (silentUserId != null) {
-                    message = "👋 " + mention + " — your match has already reached out! "
-                        + "Take a moment to say hi, then each list 3-5 major relationship deal-breakers. "
-                        + "Use **/confirm** if you'd like to pursue this match, or **/decline** if not.\n\n"
+                    message = "👋 " + mention + " — your match is waiting for you in this thread! "
+                        + "Take a moment to scroll up, say hi, and share your 3–5 biggest deal-breakers. "
+                        + "Then use **/confirm** or **/decline** to let us know your decision.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 } else {
-                    message = "👋 " + mention + " — just a reminder to respond to your match! "
-                        + "Please take a moment to connect, then each list 3-5 major relationship deal-breakers. "
-                        + "Use **/confirm** if you'd like to continue, or **/decline** if not.\n\n"
+                    message = "👋 " + mention + " — a friendly nudge! Neither of you has connected yet. "
+                        + "Take a moment to introduce yourselves and share 3–5 deal-breakers in this thread, "
+                        + "then use **/confirm** or **/decline**.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 }
                 break;
