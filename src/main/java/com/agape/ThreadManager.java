@@ -955,8 +955,6 @@ public class ThreadManager {
                 if (state == null || state.softDeleted) continue;
                 state.softDeleted = true;
                 ProfileRepository.save(uid, state);
-                net.dv8tion.jda.api.entities.Guild guild = record.guildId != null ? jda.getGuildById(record.guildId) : null;
-                if (guild != null) Roles.addNotEnrolledRole(guild, uid);
                 UserStrikes us = writeStrikeRecord(uid, record.threadId);
                 int recentStrikes = getRecentStrikeCount(uid);
                 String expiryNote = buildExpiryNote(getNextStrikeExpiry(us));
