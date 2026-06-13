@@ -95,6 +95,28 @@ public class AgapeBot extends ListenerAdapter {
         // Sync preference insights from all accepted profiles
         UserInsightsManager.syncAllProfiles();
 
+        // Remove "not enrolled" role from all users who already have an accepted profile
+        new Thread(() -> {
+            java.io.File dir = new java.io.File("user_content/profiles/");
+            java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files == null) return;
+            int removed = 0;
+            for (java.io.File f : files) {
+                try {
+                    AppState state = ProfileRepository.load(f.getName().replace(".json", ""));
+                    if (state == null || !"ACCEPTED".equals(state.status) || state.softDeleted) continue;
+                    String uid = f.getName().replace(".json", "");
+                    net.dv8tion.jda.api.entities.Guild guild = state.guildId != null ? event.getJDA().getGuildById(state.guildId) : null;
+                    if (guild == null) continue;
+                    Roles.removeNotEnrolledRole(guild, uid);
+                    removed++;
+                } catch (Exception e) {
+                    System.err.println("AgapeBot: Error in not-enrolled role sweep for " + f.getName() + ": " + e.getMessage());
+                }
+            }
+            System.out.println("AgapeBot: Not-enrolled role sweep complete — processed " + removed + " accepted profile(s).");
+        }, "not-enrolled-sweep").start();
+
         // Restore any applications that were in-flight when the bot last shut down
         ApplicationHandler.recoverInProgressApplications(event.getJDA());
 

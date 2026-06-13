@@ -72,6 +72,32 @@ public final class Roles {
         return false;
     }
 
+    /** Removes the "Matchmaking|Not enrolled" role from a guild member. */
+    public static void removeNotEnrolledRole(Guild guild, String userId) {
+        Role role = findRoleContaining(guild, "not enrolled");
+        if (role == null) return;
+        guild.retrieveMemberById(userId).queue(
+            m -> guild.removeRoleFromMember(m, role).queue(
+                v -> System.out.println("Roles: Removed 'not enrolled' role from " + userId),
+                e -> System.err.println("Roles: Could not remove 'not enrolled' role from " + userId + ": " + e.getMessage())
+            ),
+            e -> System.err.println("Roles: Could not retrieve member " + userId + " to remove role: " + e.getMessage())
+        );
+    }
+
+    /** Adds the "Matchmaking|Not enrolled" role back to a guild member. */
+    public static void addNotEnrolledRole(Guild guild, String userId) {
+        Role role = findRoleContaining(guild, "not enrolled");
+        if (role == null) return;
+        guild.retrieveMemberById(userId).queue(
+            m -> guild.addRoleToMember(m, role).queue(
+                v -> System.out.println("Roles: Added 'not enrolled' role to " + userId),
+                e -> System.err.println("Roles: Could not add 'not enrolled' role to " + userId + ": " + e.getMessage())
+            ),
+            e -> System.err.println("Roles: Could not retrieve member " + userId + " to add role: " + e.getMessage())
+        );
+    }
+
     /** First guild role whose name contains the keyword (case-insensitive), or null. */
     public static Role findRoleContaining(Guild guild, String keyword) {
         String lower = keyword.toLowerCase();

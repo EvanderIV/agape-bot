@@ -196,6 +196,8 @@ public final class ApplicationReview {
                 System.out.println("✅ Profile status updated to " + newStatus + " for user " + targetUserId);
                 if ("ACCEPTED".equals(newStatus)) {
                     UserInsightsManager.processProfile(targetUserId);
+                    Guild guild = event.getGuild();
+                    if (guild != null) Roles.removeNotEnrolledRole(guild, targetUserId);
                 }
             }
 
