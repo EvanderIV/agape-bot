@@ -113,7 +113,7 @@ public class LetsChatManager {
                 MessagePollBuilder pollBuilder = MessagePollData.builder(q.question)
                     .setMultiAnswer(false)
                     .setDuration(Duration.ofHours(24));
-                for (String opt : q.options) pollBuilder.addAnswer(opt);
+                for (String opt : q.options) pollBuilder.addAnswer(opt.length() > 55 ? opt.substring(0, 55) : opt);
                 ch.sendMessagePoll(pollBuilder.build()).setContent(mention).queue(
                     s -> System.out.println("LetsChatManager: Posted daily poll to #" + ch.getName() + " in " + guild.getName()),
                     e -> System.err.println("LetsChatManager: Failed to post poll to " + guild.getName() + ": " + e.getMessage())

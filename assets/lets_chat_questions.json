@@ -1619,7 +1619,7 @@
     "options": [
       "Solitude — quiet and alone is how I recover",
       "Mostly quiet, maybe some light connection",
-      "Good company — people give me energy even after a long day",
+      "People — they restore me even after a long day",
       "Honestly it changes week to week"
     ]
   },
@@ -2245,7 +2245,7 @@
       "Yes — I experience this regularly",
       "Probably yes — though I hold it with some discernment",
       "Uncertain — I am still working through this",
-      "No — I think He primarily speaks through Scripture and wisdom"
+      "No — He speaks through Scripture and wisdom"
     ]
   },
   {
@@ -2347,7 +2347,7 @@
       "Yes — attraction can deepen significantly",
       "Mostly yes — but there is a baseline that matters",
       "Somewhat — I do not think it changes much",
-      "No — chemistry is mostly immediate and either there or not"
+      "No — chemistry is immediate or it simply is not"
     ]
   },
   {
@@ -2358,7 +2358,7 @@
       "Yes — I have seen or experienced this",
       "Probably yes — though with appropriate discernment",
       "Uncertain — I hold this question openly",
-      "No — I think miracles operated in a distinct biblical era"
+      "No — miracles belonged to a distinct biblical era"
     ]
   },
   {
@@ -2572,7 +2572,7 @@
       "Yes — He is that personal and specific",
       "Probably — though I hold it with some nuance",
       "Uncertain — I am still working this out",
-      "No — I think He gives wisdom and freedom more than a specific script"
+      "No — He gives wisdom and freedom, not a script"
     ]
   },
   {
@@ -2969,7 +2969,7 @@
       "Yes — growth never fully stops; do not wait forever",
       "Probably — it depends on what is being worked through",
       "Uncertain — it really depends on the type of growth",
-      "No — some stability should come before you bring someone else in"
+      "No — build stability before bringing someone else in"
     ]
   },
   {
@@ -3080,7 +3080,7 @@
     "options": [
       "Independent space is very important — I would want that",
       "Leaning toward space — though togetherness matters too",
-      "Leaning toward togetherness — I want to share most of life",
+      "Mostly together — I want to share most of life",
       "As much togetherness as possible — that is the goal"
     ]
   },
@@ -3091,7 +3091,7 @@
     "options": [
       "Rooted in who I am before God — genuinely",
       "Mostly in God — though performance still tugs at me",
-      "Honestly more in what I do — it is something I am working on",
+      "More in what I do — I am actively working on it",
       "Mostly in what I achieve — I know I need to change this"
     ]
   },
@@ -3295,7 +3295,7 @@
       "Yes — healthy couples benefit most from it",
       "Probably — I would be open to it",
       "Maybe — I would consider it depending on the situation",
-      "Probably not — if things are healthy, I would not feel the need"
+      "Probably not — healthy couples may not need it"
     ]
   },
   {
@@ -3506,10 +3506,10 @@
     "format": "Poll",
     "question": "Do you think it is wise to share your full romantic history with a future spouse, or is some level of privacy appropriate?",
     "options": [
-      "Full transparency — a future spouse deserves to know everything",
-      "Mostly open — what is relevant and shaping, I would share",
-      "Selective — the past is the past and some things are private",
-      "Privacy is appropriate — no one needs to know everything"
+      "Full transparency — a spouse deserves to know all",
+      "Mostly open — what is relevant, I would share",
+      "Selective — some things from the past are private",
+      "Private — no one needs to know everything"
     ]
   },
   {
@@ -3518,9 +3518,9 @@
     "question": "Is financial compatibility — similar values, habits, and goals around money — a dealbreaker for you?",
     "options": [
       "Yes — financial alignment is essential to me",
-      "Probably — significant misalignment would be a serious concern",
+      "Probably — major misalignment would concern me",
       "Maybe — it depends on how different we actually are",
-      "No — money is not something I would end a relationship over"
+      "No — money would not end a relationship for me"
     ]
   },
   {
@@ -3609,9 +3609,9 @@
     "question": "Is it important to you that your future spouse has a meaningful relationship with your close friends?",
     "options": [
       "Yes — their fitting into my community matters deeply",
-      "Probably — I would want my people to genuinely like them",
+      "Probably — I want my people to genuinely like them",
       "Somewhat — it would matter but not be a dealbreaker",
-      "Not really — friendships and a relationship can stay separate"
+      "Not really — friendships and romance can stay separate"
     ]
   },
   {
@@ -3621,8 +3621,8 @@
     "options": [
       "Yes — my life and values are largely aligned",
       "Mostly — with some areas I am actively working on",
-      "There is a noticeable gap — I am aware and working on it",
-      "There is a significant gap — this is something I need to address"
+      "Noticeable gap — I am aware and working on it",
+      "Significant gap — this is something I must address"
     ]
   },
   {
@@ -3712,7 +3712,7 @@
     "options": [
       "Yes — I think it is essential for a healthy marriage",
       "Probably — regular independent space is wise",
-      "Somewhat — some is healthy but I would not plan much of it",
+      "Somewhat — some time apart is healthy enough",
       "No — I want to share almost all of life with my spouse"
     ]
   },
@@ -3824,8 +3824,8 @@
     "options": [
       "Yes — shared daily life reveals things dating cannot",
       "Probably — proximity over time matters a lot",
-      "Maybe — it depends on the relationship and circumstances",
-      "No — the length of engagement can compensate for distance"
+      "Maybe — it depends on the relationship itself",
+      "No — engagement time can make up for distance"
     ]
   },
   {
