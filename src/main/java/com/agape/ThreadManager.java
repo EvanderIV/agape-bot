@@ -1118,9 +1118,9 @@ public class ThreadManager {
         if (m1Confirmed && m2Confirmed) {
             if (r.endedReason != null && r.endedReason.startsWith("GHOSTED:")) {
                 String ghosterId = r.endedReason.substring("GHOSTED:".length());
-                return "Confirmed | Ghosted by <@" + ghosterId + ">";
+                return "Confirmed (Ghosted by <@" + ghosterId + ">)";
             }
-            if ("ENDED".equals(r.endedReason)) return "Confirmed | Ended";
+            if ("ENDED".equals(r.endedReason)) return "Confirmed (Ended)";
             return "Confirmed";
         }
         if (m1Declined  || m2Declined)  return "Declined";

@@ -1014,9 +1014,9 @@ public class AgapeBot extends ListenerAdapter {
             return;
         }
         if (ghostedBy != null) {
-            event.reply("✅ Match between <@" + id1 + "> and <@" + id2 + "> marked as **Confirmed | Ghosted by <@" + ghostedBy + ">**.").setEphemeral(true).queue();
+            event.reply("✅ Match between <@" + id1 + "> and <@" + id2 + "> marked as **Confirmed (Ghosted by <@" + ghostedBy + ">**)").setEphemeral(true).queue();
         } else {
-            event.reply("✅ Match between <@" + id1 + "> and <@" + id2 + "> marked as **Confirmed | Ended**.").setEphemeral(true).queue();
+            event.reply("✅ Match between <@" + id1 + "> and <@" + id2 + "> marked as **Confirmed (Ended)**.").setEphemeral(true).queue();
         }
     }
 
