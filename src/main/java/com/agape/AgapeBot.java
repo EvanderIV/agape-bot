@@ -1183,9 +1183,6 @@ public class AgapeBot extends ListenerAdapter {
 
         FeedbackReportService.saveReportFile(userId, matchedId, reason, details, timestamp, epochMs);
         FeedbackReportService.postReportToMatchmakers(event.getJDA(), userId, matchedId, reason, details, timestamp);
-        if (reason.toLowerCase().contains("ghost")) {
-            ThreadManager.markMatchEnded(userId, matchedId, matchedId);
-        }
         event.reply("✅ Your report has been submitted. Our matchmakers will review it shortly.").setEphemeral(true).queue();
     }
 
