@@ -202,10 +202,15 @@ public class AgapeBot extends ListenerAdapter {
         SlashCommandData pardonCmd = Commands.slash("pardon", "Issue a pardon to a user, offsetting one active strike (Matchmakers only)")
                 .addOption(OptionType.USER, "user", "The user to pardon", true);
 
+        SlashCommandData endMatchCmd = Commands.slash("end-match", "Mark a confirmed match as Ended in the match log (Matchmakers only)")
+                .addOption(OptionType.USER, "user1", "One member of the match", true)
+                .addOption(OptionType.USER, "user2", "The other member of the match", true)
+                .addOption(OptionType.USER, "ghosted-by", "If ended due to ghosting, the user who ghosted", false);
+
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         jda.getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -244,6 +249,7 @@ public class AgapeBot extends ListenerAdapter {
             case "user-insights":   handleUserInsights(event); break;
             case "tag-user":        handleTagUser(event); break;
             case "pardon":          handlePardon(event); break;
+            case "end-match":       handleEndMatch(event); break;
             default: break;
         }
     }
@@ -991,6 +997,29 @@ public class AgapeBot extends ListenerAdapter {
         sendChunks(event, ThreadManager.buildMatchesReport());
     }
 
+    /** /end-match — mark a confirmed match as Ended (or Ghosted) in the match log. */
+    private void handleEndMatch(SlashCommandInteractionEvent event) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
+            event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+            return;
+        }
+        String id1 = event.getOption("user1").getAsUser().getId();
+        String id2 = event.getOption("user2").getAsUser().getId();
+        net.dv8tion.jda.api.interactions.commands.OptionMapping ghostOpt = event.getOption("ghosted-by");
+        String ghostedBy = ghostOpt != null ? ghostOpt.getAsUser().getId() : null;
+
+        boolean found = ThreadManager.markMatchEnded(id1, id2, ghostedBy);
+        if (!found) {
+            event.reply("❌ No match record found for <@" + id1 + "> and <@" + id2 + ">.").setEphemeral(true).queue();
+            return;
+        }
+        if (ghostedBy != null) {
+            event.reply("✅ Match between <@" + id1 + "> and <@" + id2 + "> marked as **Confirmed | Ghosted by <@" + ghostedBy + ">**.").setEphemeral(true).queue();
+        } else {
+            event.reply("✅ Match between <@" + id1 + "> and <@" + id2 + "> marked as **Confirmed | Ended**.").setEphemeral(true).queue();
+        }
+    }
+
     /** /user-insights — show collected preference tags and decline history. */
     private void handleUserInsights(SlashCommandInteractionEvent event) {
         if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
@@ -1154,6 +1183,9 @@ public class AgapeBot extends ListenerAdapter {
 
         FeedbackReportService.saveReportFile(userId, matchedId, reason, details, timestamp, epochMs);
         FeedbackReportService.postReportToMatchmakers(event.getJDA(), userId, matchedId, reason, details, timestamp);
+        if (reason.toLowerCase().contains("ghost")) {
+            ThreadManager.markMatchEnded(userId, matchedId, matchedId);
+        }
         event.reply("✅ Your report has been submitted. Our matchmakers will review it shortly.").setEphemeral(true).queue();
     }
 

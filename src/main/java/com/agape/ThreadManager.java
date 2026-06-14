@@ -84,6 +84,7 @@ public class ThreadManager {
         List<String> notificationsSent = new ArrayList<>();
         List<ThreadMessage> messages = new ArrayList<>();
         boolean goodNewsDMSent = false; // true once the "your match replied" DM has been sent
+        String endedReason;   // null = not ended; "ENDED" = manually ended; "GHOSTED:{userId}" = ghosted
     }
 
     // ─── Shutdown management ──────────────────────────────────────────────────
@@ -1114,7 +1115,14 @@ public class ThreadManager {
         boolean m1Declined  = r.declinedBy  != null && r.declinedBy.contains(r.maleId);
         boolean m2Declined  = r.declinedBy  != null && r.declinedBy.contains(r.femaleId);
 
-        if (m1Confirmed && m2Confirmed) return "Confirmed";
+        if (m1Confirmed && m2Confirmed) {
+            if (r.endedReason != null && r.endedReason.startsWith("GHOSTED:")) {
+                String ghosterId = r.endedReason.substring("GHOSTED:".length());
+                return "Confirmed | Ghosted by <@" + ghosterId + ">";
+            }
+            if ("ENDED".equals(r.endedReason)) return "Confirmed | Ended";
+            return "Confirmed";
+        }
         if (m1Declined  || m2Declined)  return "Declined";
         if ("FORCE_CLOSED".equals(r.closeReason)) return "Force-Closed";
 
@@ -1157,6 +1165,22 @@ public class ThreadManager {
         if (record.messages == null) record.messages = new ArrayList<>();
         record.messages.add(tm);
         save(record.maleId, record.femaleId, record);
+    }
+
+    /**
+     * Marks a confirmed match as ended, optionally attributing ghosting to a specific user.
+     * @param userId1 either member of the pair (order-independent)
+     * @param userId2 the other member of the pair
+     * @param ghostedByUserId the user who ghosted, or null for a plain "Ended" marker
+     * @return true if the record was found and updated, false if no matching thread exists
+     */
+    public static boolean markMatchEnded(String userId1, String userId2, String ghostedByUserId) {
+        QMThread record = findThread(userId1, userId2);
+        if (record == null) record = findMMThread(userId1, userId2);
+        if (record == null) return false;
+        record.endedReason = ghostedByUserId != null ? "GHOSTED:" + ghostedByUserId : "ENDED";
+        save(record.maleId, record.femaleId, record);
+        return true;
     }
 
     private static void save(String maleId, String femaleId, QMThread record) {
