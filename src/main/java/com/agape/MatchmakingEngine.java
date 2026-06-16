@@ -152,6 +152,7 @@ public class MatchmakingEngine {
             if (!"ACCEPTED".equals(candidate.status)) continue;
             if (candidate.softDeleted) continue;
             if (!candidate.quickmatchEnrolled) continue;
+            if (candidate.sex == user.sex) continue; // must be opposite sex
             if (!MembershipVerifier.verifyMembership(candidateId, candidate.guildId, jda)) continue;
 
             int candidateAge = AgeUtils.calculateAge(candidate.birthday);
