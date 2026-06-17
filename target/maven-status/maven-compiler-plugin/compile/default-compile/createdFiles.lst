@@ -56,6 +56,7 @@ com\agape\UserInsightsManager$UserInsightsRecord.class
 com\agape\ImageGenerator$FontLoader.class
 com\agape\DenominationCompatibility$DoctrinalConflict.class
 com\agape\CompatibilityEngine.class
+com\agape\ServerProtectionManager.class
 com\agape\UserInsightsManager$TagRule.class
 com\agape\AutoModerator$AutoModResult.class
 com\agape\Channels.class

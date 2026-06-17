@@ -192,6 +192,82 @@ public class ThreadManager {
     }
 
     /**
+     * Returns the most recent time the user was matched — the newest {@code createdAt}
+     * across every quickmatch and manual thread record that includes them — or
+     * {@code null} if they have never been matched. Used by /compat-algo to
+     * invisibly de-prioritize users who matched in the last 72 hours.
+     */
+    public static LocalDateTime lastMatchTime(String userId) {
+        LocalDateTime latest = null;
+        for (String dirPath : new String[]{THREADS_DIR, MM_THREADS_DIR}) {
+            File dir = new File(dirPath);
+            if (!dir.exists()) continue;
+            File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files == null) continue;
+            for (File file : files) {
+                try (FileReader reader = new FileReader(file)) {
+                    QMThread record = GSON.fromJson(reader, QMThread.class);
+                    if (record == null || record.createdAt == null) continue;
+                    if (!userId.equals(record.maleId) && !userId.equals(record.femaleId)) continue;
+                    LocalDateTime created = LocalDateTime.parse(record.createdAt, FMT);
+                    if (latest == null || created.isAfter(latest)) latest = created;
+                } catch (Exception ignored) {}
+            }
+        }
+        return latest;
+    }
+
+    /**
+     * Returns {@code true} if the user is currently in an active (non-archived)
+     * Manual Match thread. Used by /compat-algo to heavily de-prioritize users
+     * who already occupy a matchmaking room, steering matchmakers away from
+     * creating a second Manual Match thread for the same person.
+     */
+    public static boolean hasActiveManualMatch(String userId) {
+        File dir = new File(MM_THREADS_DIR);
+        if (!dir.exists()) return false;
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        if (files == null) return false;
+        for (File file : files) {
+            try (FileReader reader = new FileReader(file)) {
+                QMThread record = GSON.fromJson(reader, QMThread.class);
+                if (record == null || !"OPEN".equals(record.status)) continue;
+                if (userId.equals(record.maleId) || userId.equals(record.femaleId)) return true;
+            } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
+    /**
+     * Returns {@code true} if the user has a confirmed match (both parties confirmed)
+     * whose thread has since been closed (archived) without being marked as Ended —
+     * i.e. a relationship that quietly fell apart (ghosting or breakup) but was never
+     * recorded via /end-match. Used by /compat-algo for a small de-prioritization nudge.
+     */
+    public static boolean hasUnendedClosedMatch(String userId) {
+        for (String dirPath : new String[]{THREADS_DIR, MM_THREADS_DIR}) {
+            File dir = new File(dirPath);
+            if (!dir.exists()) continue;
+            File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files == null) continue;
+            for (File file : files) {
+                try (FileReader reader = new FileReader(file)) {
+                    QMThread record = GSON.fromJson(reader, QMThread.class);
+                    if (record == null || !"ARCHIVED".equals(record.status)) continue;
+                    if (record.endedReason != null) continue;
+                    if (!userId.equals(record.maleId) && !userId.equals(record.femaleId)) continue;
+                    if (record.confirmedBy != null
+                            && record.confirmedBy.contains(record.maleId)
+                            && record.confirmedBy.contains(record.femaleId)) {
+                        return true;
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+        return false;
+    }
+
+    /**
      * Scans all thread records for one whose Discord thread ID matches the given channel ID.
      * Returns {@code null} if not found.
      */

@@ -3,9 +3,13 @@ package com.agape;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import net.dv8tion.jda.api.JDA;
@@ -179,6 +183,27 @@ public class CompatibilityEngine {
             if (member == null || !Roles.isMatched(member)) unmatchedIds.add(uid);
         }
 
+        // Invisible per-user penalties applied only to sort order, never surfaced
+        // in the matchmaker response:
+        //   • Recency: matched (QM or MM) <24h ago −30, <48h −20, <72h −10, else 0.
+        //   • Active room: currently in an un-closed Manual Match thread −50, to
+        //     steer matchmakers away from double-booking the same person.
+        //   • Unresolved: a confirmed match closed without being marked Ended
+        //     (ghosting/breakup never recorded) −5.
+        Map<String, Integer> recencyPenalty = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        for (String uid : ids) {
+            int penalty = 0;
+            LocalDateTime last = ThreadManager.lastMatchTime(uid);
+            if (last != null) {
+                long hours = ChronoUnit.HOURS.between(last, now);
+                penalty += hours < 24 ? 30 : hours < 48 ? 20 : hours < 72 ? 10 : 0;
+            }
+            if (ThreadManager.hasActiveManualMatch(uid)) penalty += 50;
+            if (ThreadManager.hasUnendedClosedMatch(uid)) penalty += 5;
+            if (penalty != 0) recencyPenalty.put(uid, penalty);
+        }
+
         List<CompatPair> pairs = new ArrayList<>();
         for (int i = 0; i < ids.size(); i++) {
             for (int j = i + 1; j < ids.size(); j++) {
@@ -198,7 +223,9 @@ public class CompatibilityEngine {
         pairs.sort((x, y) -> {
             int boostX = (unmatchedIds.contains(x.userId1) ? 5 : 0) + (unmatchedIds.contains(x.userId2) ? 5 : 0);
             int boostY = (unmatchedIds.contains(y.userId1) ? 5 : 0) + (unmatchedIds.contains(y.userId2) ? 5 : 0);
-            return (y.totalScore + boostY) - (x.totalScore + boostX);
+            int penX = recencyPenalty.getOrDefault(x.userId1, 0) + recencyPenalty.getOrDefault(x.userId2, 0);
+            int penY = recencyPenalty.getOrDefault(y.userId1, 0) + recencyPenalty.getOrDefault(y.userId2, 0);
+            return (y.totalScore + boostY - penY) - (x.totalScore + boostX - penX);
         });
         List<CompatPair> top = pairs.subList(0, Math.min(limit, pairs.size()));
         return new ScoringResult(top, profiles.size(), pairs.size());

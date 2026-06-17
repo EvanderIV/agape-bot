@@ -123,6 +123,9 @@ public class AgapeBot extends ListenerAdapter {
         // Post today's Let's Chat question if the window has passed and it hasn't been posted yet
         LetsChatManager.checkAndPost(event.getJDA());
 
+        // Scan recent channel history for controversial content (report-only for now)
+        ServerProtectionManager.scanRecentMessages(event.getJDA());
+
         // Schedule ongoing expiry and notification checks every 5 minutes
         final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor(r -> {
@@ -138,6 +141,12 @@ public class AgapeBot extends ListenerAdapter {
                 LetsChatManager.checkAndPost(event.getJDA());
             },
             5, 5, TimeUnit.MINUTES
+        );
+
+        // Scan channel history for controversial content on a slower cadence (every 6 hours)
+        scheduler.scheduleAtFixedRate(
+            () -> ServerProtectionManager.scanRecentMessages(event.getJDA()),
+            6, 6, TimeUnit.HOURS
         );
 
         // Register a JVM shutdown hook so SIGTERM (e.g. systemctl restart/stop) waits
