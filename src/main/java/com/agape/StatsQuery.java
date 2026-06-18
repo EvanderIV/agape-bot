@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
  *
  * <pre>
  *   role{'Sister'}:%              members whose role == "Sister" (case-sensitive), as a percentage
- *   role{'brother'!c}             members whose role == "brother" (case-insensitive), as a count
- *   role{'lvl'(#)!c}:percent      role == "lvl" + an integer (case-insensitive), as a percentage
+ *   role{'brother'c}              members whose role == "brother" (case-insensitive), as a count
+ *   role{'lvl'(#)c}:percent       role == "lvl" + an integer (case-insensitive), as a percentage
  *   role{'lvl'(#>=10)}:percentage role == "lvl" + an integer >= 10 (case-sensitive), as a percentage
  * </pre>
  *
@@ -26,8 +26,9 @@ import java.util.regex.Pattern;
  *       followed by an integer</i>. An optional comparison constrains that
  *       integer: {@code (#>=10)}, {@code (#<5)}, {@code (#=3)}, {@code (#!=0)},
  *       using {@code > < >= <= = == !=}.</li>
- *   <li><b>!c</b> — case-insensitive name matching (default is case-sensitive).
- *       May appear before or after the {@code (#…)} clause.</li>
+ *   <li><b>c</b> — case-insensitive name matching (default is case-sensitive);
+ *       legacy {@code !c} is also accepted. May appear before or after the
+ *       {@code (#…)} clause.</li>
  *   <li><b>:type</b> — optional output type after the closing brace.
  *       {@code %}/{@code percent}/{@code percentage} → percentage of all
  *       members; omitted (or {@code n}/{@code number}/{@code count}) → a raw
@@ -147,10 +148,11 @@ public final class StatsQuery {
             mods = (mods.substring(0, m.start()) + mods.substring(m.end())).trim();
         }
 
+        // Case-insensitive flag: `c` (preferred) or legacy `!c`.
         boolean caseInsensitive = false;
-        if (mods.contains("!c")) {
+        if (mods.equals("c") || mods.equals("!c")) {
             caseInsensitive = true;
-            mods = mods.replace("!c", "").trim();
+            mods = "";
         }
 
         if (!mods.isEmpty())

@@ -20,10 +20,10 @@ public class StatsQueryTest {
         assertFalse(q.matchesRole("Sisters"));  // exact, no suffix allowed
     }
 
-    // role{'brother'!c}  — exact, case-insensitive, count (default)
+    // role{'brother'c}  — exact, case-insensitive, count (default)
     @Test
     public void exactCaseInsensitiveNumberDefault() {
-        StatsQuery q = StatsQuery.parse("role{'brother'!c}");
+        StatsQuery q = StatsQuery.parse("role{'brother'c}");
         assertEquals(StatsQuery.OutputType.NUMBER, q.outputType());
         assertTrue(q.matchesRole("brother"));
         assertTrue(q.matchesRole("Brother"));
@@ -31,10 +31,17 @@ public class StatsQueryTest {
         assertFalse(q.matchesRole("brotherly"));
     }
 
-    // role{'lvl'(#)!c}:percent  — prefix + any integer, case-insensitive, percentage
+    // legacy `!c` still means case-insensitive
+    @Test
+    public void legacyBangCFlagStillWorks() {
+        StatsQuery q = StatsQuery.parse("role{'brother'!c}");
+        assertTrue(q.matchesRole("BROTHER"));
+    }
+
+    // role{'lvl'(#)c}:percent  — prefix + any integer, case-insensitive, percentage
     @Test
     public void prefixAnyIntegerCaseInsensitive() {
-        StatsQuery q = StatsQuery.parse("role{'lvl'(#)!c}:percent");
+        StatsQuery q = StatsQuery.parse("role{'lvl'(#)c}:percent");
         assertEquals(StatsQuery.OutputType.PERCENT, q.outputType());
         assertTrue(q.matchesRole("lvl5"));
         assertTrue(q.matchesRole("LVL42"));     // case-insensitive prefix
@@ -67,8 +74,8 @@ public class StatsQueryTest {
 
     @Test
     public void modifierOrderIsFlexible() {
-        // !c before the (#…) clause should parse identically
-        StatsQuery q = StatsQuery.parse("role{'lvl'!c(#>=10)}");
+        // c before the (#…) clause should parse identically
+        StatsQuery q = StatsQuery.parse("role{'lvl'c(#>=10)}");
         assertTrue(q.matchesRole("LVL10"));
         assertFalse(q.matchesRole("lvl9"));
     }
