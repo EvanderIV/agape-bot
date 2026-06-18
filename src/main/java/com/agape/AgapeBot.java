@@ -115,7 +115,9 @@ public class AgapeBot extends ListenerAdapter {
                 if (!EnvironmentManager.isGuildAllowed(guild.getId())) continue;
                 ranAny = true;
 
-                java.util.List<net.dv8tion.jda.api.entities.Member> members = guild.loadMembers().get();
+                java.util.List<net.dv8tion.jda.api.entities.Member> members = guild.loadMembers().get().stream()
+                        .filter(m -> !m.getUser().isBot()) // analytics never counts bots
+                        .collect(java.util.stream.Collectors.toList());
                 long total = members.size();
                 long matched = members.stream()
                         .filter(m -> m.getRoles().stream().anyMatch(r -> query.matchesRole(r.getName())))
