@@ -711,6 +711,13 @@ public class ThreadManager {
         return null;
     }
 
+    /** True if both matched users have each sent at least one message in the thread. */
+    private static boolean bothMessaged(QMThread record) {
+        return record.messagedBy != null
+            && record.messagedBy.contains(record.maleId)
+            && record.messagedBy.contains(record.femaleId);
+    }
+
     private static void sendMatchNotification(JDA jda, QMThread record, int level) {
         net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel thread =
             jda.getThreadChannelById(record.threadId);
@@ -774,6 +781,10 @@ public class ThreadManager {
                     message = "👋 " + mention + " — your match is waiting for you in this thread! "
                         + "Take a moment to scroll up, say hi, and share your 3–5 biggest deal-breakers. "
                         + "Then use **/confirm** or **/decline** to let us know your decision.\n\n"
+                        + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
+                } else if (bothMessaged(record)) {
+                    message = "👋 " + mention + " — you've both introduced yourselves, great! "
+                        + "When you're ready, use **/confirm** to keep going or **/decline** if it's not a fit.\n\n"
                         + "⚠️ **Note:** If you fail to respond, you may be removed from all matchmaking pools.";
                 } else {
                     message = "👋 " + mention + " — a friendly nudge! Neither of you has connected yet. "

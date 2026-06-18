@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.EnvironmentManagerTest" time="0.002" tests="6" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.StatsQueryTest" time="0.002" tests="8" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="25"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -60,10 +60,12 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="69.0"/>
   </properties>
-  <testcase name="unknownGuildIdIsNeverAllowed" classname="com.agape.EnvironmentManagerTest" time="0.001"/>
-  <testcase name="nullGuildIdIsNeverAllowed" classname="com.agape.EnvironmentManagerTest" time="0"/>
-  <testcase name="windowsIsDevelopment" classname="com.agape.EnvironmentManagerTest" time="0.001"/>
-  <testcase name="productionGuildRejectedInDevelopment" classname="com.agape.EnvironmentManagerTest" time="0"/>
-  <testcase name="linuxIsProduction" classname="com.agape.EnvironmentManagerTest" time="0"/>
-  <testcase name="devGuildRejectedInProduction" classname="com.agape.EnvironmentManagerTest" time="0"/>
+  <testcase name="exactCaseSensitivePercent" classname="com.agape.StatsQueryTest" time="0"/>
+  <testcase name="prefixIntegerGreaterEqualCaseSensitive" classname="com.agape.StatsQueryTest" time="0.001"/>
+  <testcase name="exactCaseInsensitiveNumberDefault" classname="com.agape.StatsQueryTest" time="0"/>
+  <testcase name="prefixAnyIntegerCaseInsensitive" classname="com.agape.StatsQueryTest" time="0"/>
+  <testcase name="formatting" classname="com.agape.StatsQueryTest" time="0"/>
+  <testcase name="comparisonOperators" classname="com.agape.StatsQueryTest" time="0"/>
+  <testcase name="modifierOrderIsFlexible" classname="com.agape.StatsQueryTest" time="0"/>
+  <testcase name="malformedQueriesThrow" classname="com.agape.StatsQueryTest" time="0.001"/>
 </testsuite>

@@ -3,6 +3,7 @@ com\agape\ImageGenerator$2.class
 com\agape\MatchmakingEngine$MatchResult.class
 com\agape\UserInsightsManager.class
 com\agape\LetsChatManager$Question.class
+com\agape\StatsQuery.class
 com\agape\AgapeBot.class
 com\agape\FaceDetector.class
 com\agape\AppStep.class
@@ -44,6 +45,7 @@ com\agape\CompatibilityEngine$ScoreDetail.class
 com\agape\ThreadManager.class
 com\agape\AutoModerator.class
 com\agape\Roles.class
+com\agape\StatsQuery$Op.class
 com\agape\FaceDetector$TreeNode.class
 com\agape\UserInsightsManager$DeclineEntry.class
 com\agape\LetsChatManager$1.class
@@ -57,8 +59,10 @@ com\agape\ImageGenerator$FontLoader.class
 com\agape\DenominationCompatibility$DoctrinalConflict.class
 com\agape\CompatibilityEngine.class
 com\agape\ServerProtectionManager.class
+com\agape\StatsQuery$IntMatcher.class
 com\agape\UserInsightsManager$TagRule.class
 com\agape\AutoModerator$AutoModResult.class
+com\agape\StatsQuery$OutputType.class
 com\agape\Channels.class
 com\agape\CompatibilityEngine$Continent.class
 com\agape\ImageGenerator$1.class

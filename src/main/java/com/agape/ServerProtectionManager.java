@@ -2,10 +2,13 @@ package com.agape;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import net.dv8tion.jda.api.JDA;
@@ -59,16 +62,26 @@ public final class ServerProtectionManager {
     private static final int DEFAULT_MIN_AGE_HOURS = 72;
 
     /**
+     * Categories that are actually reported to the console. Every category's
+     * keyword list below is still defined and compiled (kept for future use),
+     * but only matches in these categories surface — all others are ignored.
+     */
+    private static final Set<String> ACTIVE_CATEGORIES = new HashSet<>(Arrays.asList(
+        "hate/extremism", "sexuality/gender"
+    ));
+
+    /**
      * Per-category report lifespans (hours). A message is only reported for a
-     * category once it is older than that category's threshold, so higher-risk /
-     * lower-false-positive buckets surface faster. Categories absent here fall
-     * back to {@link #DEFAULT_MIN_AGE_HOURS} (72h): self-harm, violence, drugs.
+     * category once it is older than that category's threshold. Only the
+     * {@link #ACTIVE_CATEGORIES} thresholds are consulted today; the rest remain
+     * for when more categories are re-enabled. Categories absent here fall back
+     * to {@link #DEFAULT_MIN_AGE_HOURS}.
      */
     private static final Map<String, Integer> CATEGORY_MIN_AGE_HOURS = new HashMap<>();
     static {
-        CATEGORY_MIN_AGE_HOURS.put("slur", 2);              // shortest — low false-positive risk
-        CATEGORY_MIN_AGE_HOURS.put("hate/extremism", 24);
-        CATEGORY_MIN_AGE_HOURS.put("sexuality/gender", 24);
+        CATEGORY_MIN_AGE_HOURS.put("slur", 2);
+        CATEGORY_MIN_AGE_HOURS.put("hate/extremism", 48);
+        CATEGORY_MIN_AGE_HOURS.put("sexuality/gender", 48);
         CATEGORY_MIN_AGE_HOURS.put("minor-safety", 48);
         CATEGORY_MIN_AGE_HOURS.put("sexual/nsfw", 48);
     }
@@ -121,7 +134,7 @@ public final class ServerProtectionManager {
             "retard", "retarded", "retards", "tard",
         });
 
-        // ── Hate / extremism ── Nazi, supremacist, terror, and atrocity references.
+        // ── "Extremism" ── Nazi, supremacist, terror, and atrocity references.
         CATEGORIES.put("hate/extremism", new String[]{
             "nazi", "nazis", "neo-nazi", "neonazi", "hitler", "heil", "heil hitler",
             "holocaust", "swastika", "kkk", "ku klux klan", "white power",
@@ -262,14 +275,16 @@ public final class ServerProtectionManager {
     }
 
     /**
-     * Returns the categories the message should be reported for: every category
-     * whose terms appear (as whole words) AND whose per-category lifespan
-     * ({@link #CATEGORY_MIN_AGE_HOURS}, default {@link #DEFAULT_MIN_AGE_HOURS})
-     * has elapsed since {@code createdAt}. Empty if none. Package-private for testing.
+     * Returns the categories the message should be reported for: every
+     * {@link #ACTIVE_CATEGORIES} category whose terms appear (as whole words)
+     * AND whose per-category lifespan ({@link #CATEGORY_MIN_AGE_HOURS}, default
+     * {@link #DEFAULT_MIN_AGE_HOURS}) has elapsed since {@code createdAt}.
+     * Empty if none. Package-private for testing.
      */
     static List<String> reportableCategories(String content, OffsetDateTime createdAt, OffsetDateTime now) {
         List<String> hits = new ArrayList<>();
         for (String category : matchedCategories(content)) {
+            if (!ACTIVE_CATEGORIES.contains(category)) continue;
             int minAge = CATEGORY_MIN_AGE_HOURS.getOrDefault(category, DEFAULT_MIN_AGE_HOURS);
             if (createdAt.isBefore(now.minusHours(minAge))) hits.add(category);
         }

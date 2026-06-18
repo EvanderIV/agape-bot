@@ -61,6 +61,18 @@ public class AgapeBot extends ListenerAdapter {
             return;
         }
 
+        // Analytics mode: `-s`/`--stats <query>` runs one membership stat and exits.
+        for (int i = 0; i < args.length; i++) {
+            if ("-s".equals(args[i]) || "--stats".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.err.println("Usage: -s|--stats <query>   e.g. -s \"role{'Sister'}:%\"");
+                    return;
+                }
+                runStats(token, args[i + 1]);
+                return;
+            }
+        }
+
         try {
             // Build the JDA instance. Add the DIRECT_MESSAGES intent so it can hear users in DMs!
             JDABuilder.createLight(token, EnumSet.of(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS))
@@ -69,6 +81,53 @@ public class AgapeBot extends ListenerAdapter {
         } catch (Exception e) {
             System.err.println("Failed to start the bot.");
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Runs a single {@link StatsQuery} against every allowed guild's full member
+     * list, prints the result to the console, and shuts down. Used by the
+     * {@code -s}/{@code --stats} boot argument; never starts the normal bot.
+     */
+    private static void runStats(String token, String queryStr) {
+        StatsQuery query;
+        try {
+            query = StatsQuery.parse(queryStr);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Invalid --stats query: " + e.getMessage());
+            return;
+        }
+
+        JDA jda;
+        try {
+            jda = JDABuilder.createLight(token, EnumSet.of(GatewayIntent.GUILD_MEMBERS))
+                    .setMemberCachePolicy(net.dv8tion.jda.api.utils.MemberCachePolicy.ALL)
+                    .build()
+                    .awaitReady();
+        } catch (Exception e) {
+            System.err.println("Stats: could not connect to Discord: " + e.getMessage());
+            return;
+        }
+
+        try {
+            boolean ranAny = false;
+            for (Guild guild : jda.getGuilds()) {
+                if (!EnvironmentManager.isGuildAllowed(guild.getId())) continue;
+                ranAny = true;
+
+                java.util.List<net.dv8tion.jda.api.entities.Member> members = guild.loadMembers().get();
+                long total = members.size();
+                long matched = members.stream()
+                        .filter(m -> m.getRoles().stream().anyMatch(r -> query.matchesRole(r.getName())))
+                        .count();
+
+                System.out.println("Stats [" + guild.getName() + "] " + query + "  →  " + query.format(matched, total));
+            }
+            if (!ranAny) System.err.println("Stats: no allowed guild found for this environment.");
+        } catch (Exception e) {
+            System.err.println("Stats: failed to evaluate query: " + e.getMessage());
+        } finally {
+            jda.shutdownNow();
         }
     }
 

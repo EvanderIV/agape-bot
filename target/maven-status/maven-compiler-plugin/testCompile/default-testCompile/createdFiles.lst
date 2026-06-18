@@ -9,3 +9,4 @@ com\agape\UserInsightsManagerTest.class
 com\agape\LanguageManagerTest.class
 com\agape\ApplicationHandlerTest.class
 com\agape\AppTest.class
+com\agape\StatsQueryTest.class
