@@ -800,6 +800,11 @@ public class ThreadManager {
                         + "Use **/confirm** or **/decline** when you're ready.\n\n"
                         + "⚠️ **Warning:** Failure to respond before this thread closes will result "
                         + "in removal from all matchmaking pools.";
+                } else if (bothMessaged(record)) {
+                    message = "⏰ **Urgent — " + mention + ":** You've both connected, but haven't made a decision yet. "
+                        + "Please use **/confirm** or **/decline** as soon as possible — this thread closes in about 11 hours.\n\n"
+                        + "⚠️ **Warning:** Failure to respond before this thread closes will result "
+                        + "in removal from all matchmaking pools.";
                 } else {
                     message = "⏰ **Urgent — " + mention + ":** You have not yet responded to this match. "
                         + "Please use **/confirm** or **/decline** as soon as possible.\n\n"
@@ -811,6 +816,10 @@ public class ThreadManager {
                 if (silentUserId != null) {
                     message = "🚨 **Final Warning — " + mention + ":** This thread closes in less than 1 hour "
                         + "and you have not replied to your match. This is your last chance — please respond and use **/confirm** or **/decline** before it closes.\n\n"
+                        + "⛔ Non-response will result in immediate removal from all matchmaking pools.";
+                } else if (bothMessaged(record)) {
+                    message = "🚨 **Final Warning — " + mention + ":** This match thread closes in less than 1 hour. "
+                        + "You've both connected, but haven't confirmed or declined yet. This is your last chance — please use **/confirm** or **/decline** before it closes.\n\n"
                         + "⛔ Non-response will result in immediate removal from all matchmaking pools.";
                 } else {
                     message = "🚨 **Final Warning — " + mention + ":** This match thread closes in less than 1 hour "

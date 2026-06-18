@@ -296,10 +296,14 @@ public class AgapeBot extends ListenerAdapter {
                 .addOption(OptionType.USER, "user2", "The other member of the match", true)
                 .addOption(OptionType.USER, "ghosted-by", "If ended due to ghosting, the user who ghosted", false);
 
+        SlashCommandData setOptCmd = Commands.slash("set-opt", "Opt a user's profile in or out of matchmaking (Matchmakers only)")
+                .addOption(OptionType.USER, "user", "The user whose profile to opt in or out", true)
+                .addOption(OptionType.BOOLEAN, "opted-in", "true to opt in (restore), false to opt out (soft-delete)", true);
+
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         jda.getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd, setOptCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -339,6 +343,7 @@ public class AgapeBot extends ListenerAdapter {
             case "tag-user":        handleTagUser(event); break;
             case "pardon":          handlePardon(event); break;
             case "end-match":       handleEndMatch(event); break;
+            case "set-opt":         handleSetOpt(event); break;
             default: break;
         }
     }
@@ -1107,6 +1112,47 @@ public class AgapeBot extends ListenerAdapter {
         } else {
             event.reply("✅ Match between <@" + id1 + "> and <@" + id2 + "> marked as **Confirmed (Ended)**.").setEphemeral(true).queue();
         }
+    }
+
+    /**
+     * /set-opt — opt a user's profile in or out of matchmaking.
+     *
+     * <p>{@code opted-in = true} restores a soft-deleted profile (clears the flag);
+     * {@code opted-in = false} soft-deletes it, hiding the user from all matchmaking
+     * systems. This is the manual counterpart to {@link MembershipVerifier}, which
+     * soft-deletes profiles of members who leave the guild.
+     */
+    private void handleSetOpt(SlashCommandInteractionEvent event) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
+            event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+            return;
+        }
+
+        User targetUser = event.getOption("user").getAsUser();
+        String targetId = targetUser.getId();
+        boolean optedIn = event.getOption("opted-in").getAsBoolean();
+
+        AppState state = ProfileRepository.load(targetId);
+        if (state == null) {
+            event.reply("❌ No profile found for <@" + targetId + ">.").setEphemeral(true).queue();
+            return;
+        }
+
+        boolean shouldSoftDelete = !optedIn; // opted in → active; opted out → soft-deleted
+        if (state.softDeleted == shouldSoftDelete) {
+            event.reply("ℹ️ <@" + targetId + "> is already opted **" + (optedIn ? "in" : "out") + "**. No change made.")
+                    .setEphemeral(true).queue();
+            return;
+        }
+
+        state.softDeleted = shouldSoftDelete;
+        ProfileRepository.save(targetId, state);
+        System.out.println("set-opt: " + event.getUser().getId() + " opted " + (optedIn ? "in" : "out")
+                + " profile " + targetId + " (softDeleted=" + shouldSoftDelete + ")");
+
+        event.reply("✅ <@" + targetId + ">'s profile is now opted **" + (optedIn ? "in" : "out") + "**"
+                + (optedIn ? " — visible to matchmaking again." : " — soft-deleted and hidden from all matchmaking."))
+                .setEphemeral(true).queue();
     }
 
     /** /user-insights — show collected preference tags and decline history. */
