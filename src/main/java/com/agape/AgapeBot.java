@@ -154,34 +154,27 @@ public class AgapeBot extends ListenerAdapter {
         // Sync preference insights from all accepted profiles
         UserInsightsManager.syncAllProfiles();
 
-        // Remove "not enrolled" role from all users who already have an accepted profile
+        // Role backfill sweep. Loads each allowed guild's members ONCE via gateway
+        // chunking (not per-user REST, which previously caused 429s), then fixes
+        // roles only where actually needed:
+        //   • removes "not enrolled" from accepted members who still have it
+        //   • adds the Brother/Sister role to members missing a gender role
         new Thread(() -> {
             java.io.File dir = new java.io.File("user_content/profiles/");
             java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
             if (files == null) return;
-            int removed = 0;
-            for (java.io.File f : files) {
+
+            java.util.Map<String, net.dv8tion.jda.api.entities.Member> membersById = new java.util.HashMap<>();
+            for (net.dv8tion.jda.api.entities.Guild guild : event.getJDA().getGuilds()) {
+                if (!EnvironmentManager.isGuildAllowed(guild.getId())) continue;
                 try {
-                    AppState state = ProfileRepository.load(f.getName().replace(".json", ""));
-                    if (state == null || !"ACCEPTED".equals(state.status) || state.softDeleted) continue;
-                    String uid = f.getName().replace(".json", "");
-                    net.dv8tion.jda.api.entities.Guild guild = state.guildId != null ? event.getJDA().getGuildById(state.guildId) : null;
-                    if (guild == null) continue;
-                    Roles.removeNotEnrolledRole(guild, uid);
-                    removed++;
+                    for (net.dv8tion.jda.api.entities.Member m : guild.loadMembers().get()) membersById.put(m.getId(), m);
                 } catch (Exception e) {
-                    System.err.println("AgapeBot: Error in not-enrolled role sweep for " + f.getName() + ": " + e.getMessage());
+                    System.err.println("AgapeBot: Could not load members for role sweep: " + e.getMessage());
                 }
             }
-            System.out.println("AgapeBot: Not-enrolled role sweep complete — processed " + removed + " accepted profile(s).");
-        }, "not-enrolled-sweep").start();
 
-        // Backfill Brother/Sister roles from each profile's registered sex (only adds when missing)
-        new Thread(() -> {
-            java.io.File dir = new java.io.File("user_content/profiles/");
-            java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
-            if (files == null) return;
-            int processed = 0;
+            int unenrolled = 0, gendered = 0;
             for (java.io.File f : files) {
                 try {
                     String uid = f.getName().replace(".json", "");
@@ -189,14 +182,18 @@ public class AgapeBot extends ListenerAdapter {
                     if (state == null || state.softDeleted) continue;
                     net.dv8tion.jda.api.entities.Guild guild = state.guildId != null ? event.getJDA().getGuildById(state.guildId) : null;
                     if (guild == null) continue;
-                    Roles.ensureGenderRole(guild, uid, state.sex);
-                    processed++;
+                    net.dv8tion.jda.api.entities.Member member = membersById.get(uid);
+                    if (member == null) continue; // not in the guild (left / never joined)
+
+                    if (Roles.ensureGenderRole(guild, member, state.sex)) gendered++;
+                    if ("ACCEPTED".equals(state.status) && Roles.removeNotEnrolledRole(guild, member)) unenrolled++;
                 } catch (Exception e) {
-                    System.err.println("AgapeBot: Error in gender-role sweep for " + f.getName() + ": " + e.getMessage());
+                    System.err.println("AgapeBot: Error in role sweep for " + f.getName() + ": " + e.getMessage());
                 }
             }
-            System.out.println("AgapeBot: Gender-role sweep complete — processed " + processed + " profile(s).");
-        }, "gender-role-sweep").start();
+            System.out.println("AgapeBot: Role sweep complete — removed 'not enrolled' from " + unenrolled
+                + " member(s), added gender role to " + gendered + " member(s).");
+        }, "role-sweep").start();
 
         // Restore any applications that were in-flight when the bot last shut down
         ApplicationHandler.recoverInProgressApplications(event.getJDA());

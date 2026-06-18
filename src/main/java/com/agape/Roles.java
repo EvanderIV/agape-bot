@@ -72,17 +72,27 @@ public final class Roles {
         return false;
     }
 
-    /** Removes the "Matchmaking|Not enrolled" role from a guild member. */
+    /** Removes the "Matchmaking|Not enrolled" role from a guild member (retrieves them first). */
     public static void removeNotEnrolledRole(Guild guild, String userId) {
-        Role role = findRoleContaining(guild, "not enrolled");
-        if (role == null) return;
         guild.retrieveMemberById(userId).queue(
-            m -> guild.removeRoleFromMember(m, role).queue(
-                v -> System.out.println("Roles: Removed 'not enrolled' role from " + userId),
-                e -> System.err.println("Roles: Could not remove 'not enrolled' role from " + userId + ": " + e.getMessage())
-            ),
+            m -> removeNotEnrolledRole(guild, m),
             e -> System.err.println("Roles: Could not retrieve member " + userId + " to remove role: " + e.getMessage())
         );
+    }
+
+    /**
+     * Removes the "not enrolled" role from an already-resolved member, but only
+     * if they actually have it — avoiding a pointless REST write per user.
+     * Returns true if a removal was issued.
+     */
+    public static boolean removeNotEnrolledRole(Guild guild, Member member) {
+        Role role = findRoleContaining(guild, "not enrolled");
+        if (role == null || !member.getRoles().contains(role)) return false;
+        guild.removeRoleFromMember(member, role).queue(
+            v -> System.out.println("Roles: Removed 'not enrolled' role from " + member.getId()),
+            e -> System.err.println("Roles: Could not remove 'not enrolled' role from " + member.getId() + ": " + e.getMessage())
+        );
+        return true;
     }
 
     /** Adds the "Matchmaking|Not enrolled" role back to a guild member. */
@@ -110,26 +120,34 @@ public final class Roles {
      * apply tags; this backfills it from {@code AppState.sex}.
      */
     public static void ensureGenderRole(Guild guild, String userId, boolean isFemale) {
+        guild.retrieveMemberById(userId).queue(
+            m -> ensureGenderRole(guild, m, isFemale),
+            e -> System.err.println("Roles: Could not retrieve member " + userId + " to assign gender role: " + e.getMessage())
+        );
+    }
+
+    /**
+     * Ensures an already-resolved member has the gender role matching their
+     * profile sex, only adding when they have neither "Brother" nor "Sister".
+     * Returns true if a role was added.
+     */
+    public static boolean ensureGenderRole(Guild guild, Member member, boolean isFemale) {
+        for (Role r : member.getRoles()) {
+            String n = r.getName().toLowerCase();
+            if (n.contains("brother") || n.contains("sister")) return false; // already has one
+        }
         String keyword = isFemale ? "sister" : "brother";
         Role target = findRoleContaining(guild, keyword);
         if (target == null) {
             System.err.println("Roles: No '" + keyword + "' role found in guild " + guild.getName()
-                + " — cannot assign gender role to " + userId);
-            return;
+                + " — cannot assign gender role to " + member.getId());
+            return false;
         }
-        guild.retrieveMemberById(userId).queue(
-            member -> {
-                for (Role r : member.getRoles()) {
-                    String n = r.getName().toLowerCase();
-                    if (n.contains("brother") || n.contains("sister")) return; // already has one
-                }
-                guild.addRoleToMember(member, target).queue(
-                    v -> System.out.println("Roles: Added '" + target.getName() + "' role to " + userId),
-                    e -> System.err.println("Roles: Could not add '" + target.getName() + "' role to " + userId + ": " + e.getMessage())
-                );
-            },
-            e -> System.err.println("Roles: Could not retrieve member " + userId + " to assign gender role: " + e.getMessage())
+        guild.addRoleToMember(member, target).queue(
+            v -> System.out.println("Roles: Added '" + target.getName() + "' role to " + member.getId()),
+            e -> System.err.println("Roles: Could not add '" + target.getName() + "' role to " + member.getId() + ": " + e.getMessage())
         );
+        return true;
     }
 
     /** First guild role whose name contains the keyword (case-insensitive), or null. */
