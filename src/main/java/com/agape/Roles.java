@@ -98,6 +98,40 @@ public final class Roles {
         );
     }
 
+    /**
+     * Ensures the member has a gender role matching their profile sex.
+     *
+     * <p>If the member already has a role containing "brother" or "sister",
+     * nothing changes (we never override a gender they may have set themselves).
+     * Otherwise the matching role — "Sister" for {@code isFemale}, else
+     * "Brother" — is added. No-op if that role does not exist in the guild.
+     *
+     * <p>Gender roles gate self-service tagging, so a member missing one can't
+     * apply tags; this backfills it from {@code AppState.sex}.
+     */
+    public static void ensureGenderRole(Guild guild, String userId, boolean isFemale) {
+        String keyword = isFemale ? "sister" : "brother";
+        Role target = findRoleContaining(guild, keyword);
+        if (target == null) {
+            System.err.println("Roles: No '" + keyword + "' role found in guild " + guild.getName()
+                + " — cannot assign gender role to " + userId);
+            return;
+        }
+        guild.retrieveMemberById(userId).queue(
+            member -> {
+                for (Role r : member.getRoles()) {
+                    String n = r.getName().toLowerCase();
+                    if (n.contains("brother") || n.contains("sister")) return; // already has one
+                }
+                guild.addRoleToMember(member, target).queue(
+                    v -> System.out.println("Roles: Added '" + target.getName() + "' role to " + userId),
+                    e -> System.err.println("Roles: Could not add '" + target.getName() + "' role to " + userId + ": " + e.getMessage())
+                );
+            },
+            e -> System.err.println("Roles: Could not retrieve member " + userId + " to assign gender role: " + e.getMessage())
+        );
+    }
+
     /** First guild role whose name contains the keyword (case-insensitive), or null. */
     public static Role findRoleContaining(Guild guild, String keyword) {
         String lower = keyword.toLowerCase();

@@ -176,6 +176,28 @@ public class AgapeBot extends ListenerAdapter {
             System.out.println("AgapeBot: Not-enrolled role sweep complete — processed " + removed + " accepted profile(s).");
         }, "not-enrolled-sweep").start();
 
+        // Backfill Brother/Sister roles from each profile's registered sex (only adds when missing)
+        new Thread(() -> {
+            java.io.File dir = new java.io.File("user_content/profiles/");
+            java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files == null) return;
+            int processed = 0;
+            for (java.io.File f : files) {
+                try {
+                    String uid = f.getName().replace(".json", "");
+                    AppState state = ProfileRepository.load(uid);
+                    if (state == null || state.softDeleted) continue;
+                    net.dv8tion.jda.api.entities.Guild guild = state.guildId != null ? event.getJDA().getGuildById(state.guildId) : null;
+                    if (guild == null) continue;
+                    Roles.ensureGenderRole(guild, uid, state.sex);
+                    processed++;
+                } catch (Exception e) {
+                    System.err.println("AgapeBot: Error in gender-role sweep for " + f.getName() + ": " + e.getMessage());
+                }
+            }
+            System.out.println("AgapeBot: Gender-role sweep complete — processed " + processed + " profile(s).");
+        }, "gender-role-sweep").start();
+
         // Restore any applications that were in-flight when the bot last shut down
         ApplicationHandler.recoverInProgressApplications(event.getJDA());
 

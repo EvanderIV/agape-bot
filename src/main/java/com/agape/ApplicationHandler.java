@@ -488,6 +488,12 @@ public class ApplicationHandler extends ListenerAdapter {
         if (state.designCode == null || state.designCode.isEmpty()) {
             state.designCode = suggestDesignCode(state);
         }
+
+        // Backfill the Brother/Sister role from the registered sex so the user can self-tag
+        if (state.guildId != null) {
+            net.dv8tion.jda.api.entities.Guild guild = jda.getGuildById(state.guildId);
+            if (guild != null) Roles.ensureGenderRole(guild, userId, state.sex);
+        }
         activeApplications.remove(userId);
         deleteInProgress(userId);
         
