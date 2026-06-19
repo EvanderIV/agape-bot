@@ -1,6 +1,7 @@
 package com.agape;
 
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.regex.Pattern;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
@@ -327,5 +329,82 @@ public final class ServerProtectionManager {
     /** Collapses newlines/tabs so a flagged message logs as a single console line. */
     private static String oneLine(String s) {
         return s.replaceAll("\\s+", " ").trim();
+    }
+
+    // ─── New-account join reporting ───────────────────────────────────────────
+    //
+    // A freshly-created Discord account joining the server is a classic raid /
+    // mass-reporter tell: throwaway accounts are spun up to brigade, screenshot,
+    // and report members. We log every join from an account younger than a month
+    // so staff can keep an eye on it, escalating the tag as the account gets
+    // newer (and therefore more suspicious).
+
+    /** Severity tier for a newly-joined account, by account age. */
+    enum JoinRisk { NONE, NOTICE, URGENT, SEVERE }
+
+    /**
+     * Classifies a joining account purely by age:
+     * <ul>
+     *   <li><b>SEVERE</b> — one day old or less</li>
+     *   <li><b>URGENT</b> — less than one week old</li>
+     *   <li><b>NOTICE</b> — less than one month old</li>
+     *   <li><b>NONE</b>   — a month or older (not reported)</li>
+     * </ul>
+     * Pure and package-private for testing. A {@code created} in the future
+     * (clock skew) yields {@link JoinRisk#NONE}.
+     */
+    static JoinRisk classifyAccountAge(OffsetDateTime created, OffsetDateTime now) {
+        long hours = ChronoUnit.HOURS.between(created, now);
+        if (hours < 0)        return JoinRisk.NONE;   // created in the future — ignore
+        if (hours <= 24)      return JoinRisk.SEVERE; // one day or less
+        if (hours < 7 * 24)   return JoinRisk.URGENT; // under a week
+        if (hours < 30 * 24)  return JoinRisk.NOTICE; // under a month
+        return JoinRisk.NONE;
+    }
+
+    /**
+     * Logs a console report if {@code member}'s account is younger than a month.
+     * Older accounts (and bots) are ignored. The report tag escalates with how
+     * new the account is — see {@link #classifyAccountAge}.
+     */
+    static void reportNewAccount(Member member) {
+        if (member == null || member.getUser().isBot()) return;
+        OffsetDateTime created = member.getUser().getTimeCreated();
+        OffsetDateTime now = OffsetDateTime.now();
+        JoinRisk risk = classifyAccountAge(created, now);
+        if (risk == JoinRisk.NONE) return;
+
+        System.out.println("ServerProtection: [NEW-ACCOUNT/" + risk + "] "
+                + member.getUser().getName() + " (" + member.getId() + ") joined "
+                + member.getGuild().getName()
+                + " | account age " + describeAge(created, now)
+                + " | created " + created);
+    }
+
+    /** True if the account is younger than a week (the SEVERE or URGENT tier). */
+    static boolean isUnderOneWeek(OffsetDateTime created, OffsetDateTime now) {
+        JoinRisk r = classifyAccountAge(created, now);
+        return r == JoinRisk.SEVERE || r == JoinRisk.URGENT;
+    }
+
+    /**
+     * Jails a joining account younger than a week with the "dungeon" role,
+     * quarantining it until staff can vet it. Bots and accounts a week or older
+     * are left alone. Delegates the actual role apply to
+     * {@link Roles#assignDungeonRole}.
+     */
+    static void jailIfTooNew(Member member) {
+        if (member == null || member.getUser().isBot()) return;
+        if (!isUnderOneWeek(member.getUser().getTimeCreated(), OffsetDateTime.now())) return;
+        Roles.assignDungeonRole(member.getGuild(), member);
+    }
+
+    /** Human-readable account age, e.g. "5 days, 3 hours" or "9 hours". */
+    private static String describeAge(OffsetDateTime created, OffsetDateTime now) {
+        long totalHours = Math.max(0, ChronoUnit.HOURS.between(created, now));
+        long days = totalHours / 24;
+        long hours = totalHours % 24;
+        if (days == 0) return hours + (hours == 1 ? " hour" : " hours");
+        return days + (days == 1 ? " day" : " days") + ", " + hours + (hours == 1 ? " hour" : " hours");
     }
 }

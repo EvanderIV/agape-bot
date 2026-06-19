@@ -1,12 +1,13 @@
+com\agape\InputValidationTest.class
+com\agape\EnvironmentManagerTest.class
+com\agape\UserInsightsManagerTest.class
+com\agape\ApplicationHandlerTest.class
 com\agape\CompatibilityEngineTest.class
 com\agape\DenominationCompatibilityTest.class
-com\agape\InputValidationTest.class
 com\agape\ImageGeneratorTest.class
 com\agape\ThreadManagerSafetyTest.class
-com\agape\EnvironmentManagerTest.class
 com\agape\DoctrinalConflictTest.class
-com\agape\UserInsightsManagerTest.class
 com\agape\LanguageManagerTest.class
-com\agape\ApplicationHandlerTest.class
 com\agape\AppTest.class
+com\agape\ServerProtectionManagerTest.class
 com\agape\StatsQueryTest.class

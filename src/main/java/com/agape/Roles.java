@@ -150,6 +150,31 @@ public final class Roles {
         return true;
     }
 
+    /**
+     * Adds the "dungeon" jail role to a member, quarantining a brand-new account
+     * so it can only see the dungeon channel (and cannot read or report messages
+     * elsewhere) until staff vet it.
+     *
+     * <p>No-op — returning false — if no "dungeon" role exists in the guild or the
+     * member already has it. The channel-permission side of the jail (hiding every
+     * other channel from this role) is configured on the Discord server itself;
+     * this method only applies the role. Returns true if a role add was issued.
+     */
+    public static boolean assignDungeonRole(Guild guild, Member member) {
+        Role role = findRoleContaining(guild, "/dungeon\\");
+        if (role == null) {
+            System.err.println("Roles: No '/dungeon\\' role found in guild " + guild.getName()
+                + " — cannot jail " + member.getId());
+            return false;
+        }
+        if (member.getRoles().contains(role)) return false;
+        guild.addRoleToMember(member, role).queue(
+            v -> System.out.println("Roles: Jailed " + member.getId() + " with '" + role.getName() + "' role"),
+            e -> System.err.println("Roles: Could not assign 'dungeon' role to " + member.getId() + ": " + e.getMessage())
+        );
+        return true;
+    }
+
     /** First guild role whose name contains the keyword (case-insensitive), or null. */
     public static Role findRoleContaining(Guild guild, String keyword) {
         String lower = keyword.toLowerCase();

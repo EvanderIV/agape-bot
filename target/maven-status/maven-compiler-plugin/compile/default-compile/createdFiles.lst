@@ -1,4 +1,5 @@
 com\agape\DenominationCompatibility$Issue.class
+com\agape\IntegrationDiagnostics.class
 com\agape\ImageGenerator$2.class
 com\agape\MatchmakingEngine$MatchResult.class
 com\agape\UserInsightsManager.class
@@ -36,6 +37,7 @@ com\agape\FaceDetector$Stage.class
 com\agape\FaceDetector$WeakClassifier.class
 com\agape\DenominationCompatibility.class
 com\agape\EnvironmentManager.class
+com\agape\ServerProtectionManager$JoinRisk.class
 com\agape\ApplicationHandler$1.class
 com\agape\ThreadManager$Pardon.class
 com\agape\MatchmakingEngine.class

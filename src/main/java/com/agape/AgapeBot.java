@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -147,6 +148,9 @@ public class AgapeBot extends ListenerAdapter {
             System.out.println("  " + marker + " " + guild.getName() + " (ID: " + guild.getId() + ")");
         });
         System.out.println("================================================================================");
+
+        // One-shot diagnostics: what can Agape actually see/do for the Arcane XP integration?
+        IntegrationDiagnostics.logArcaneXpContext(event.getJDA());
 
         // Archive any threads that expired while the bot was offline, and catch up on notifications
         ThreadManager.checkExpiredThreads(event.getJDA());
@@ -310,6 +314,16 @@ public class AgapeBot extends ListenerAdapter {
 
         // 2. Clear out the global commands cache to prevent duplicate entries
         jda.updateCommands().queue();
+    }
+
+    /** Report joins from very new accounts (raid / mass-reporter tell). */
+    @Override
+    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        if (!EnvironmentManager.isGuildAllowed(event.getGuild().getId())) return;
+        ServerProtectionManager.reportNewAccount(event.getMember());
+        // Jail accounts younger than a week in the "dungeon" role. Disabled for now —
+        // uncomment to enable quarantining of brand-new accounts on join:
+        // ServerProtectionManager.jailIfTooNew(event.getMember());
     }
 
     // ─── Slash command routing ────────────────────────────────────────────────
