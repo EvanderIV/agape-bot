@@ -149,9 +149,6 @@ public class AgapeBot extends ListenerAdapter {
         });
         System.out.println("================================================================================");
 
-        // One-shot diagnostics: what can Agape actually see/do for the Arcane XP integration?
-        IntegrationDiagnostics.logArcaneXpContext(event.getJDA());
-
         // Archive any threads that expired while the bot was offline, and catch up on notifications
         ThreadManager.checkExpiredThreads(event.getJDA());
         ThreadManager.checkManualMatchNotifications(event.getJDA());

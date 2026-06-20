@@ -1,5 +1,4 @@
 com\agape\DenominationCompatibility$Issue.class
-com\agape\IntegrationDiagnostics.class
 com\agape\ImageGenerator$2.class
 com\agape\MatchmakingEngine$MatchResult.class
 com\agape\UserInsightsManager.class
@@ -16,6 +15,7 @@ com\agape\FaceDetector$Cascade.class
 com\agape\AgeUtils.class
 com\agape\FaceDetector$HaarRect.class
 com\agape\FeedbackReportService.class
+com\agape\MassRoleManager.class
 com\agape\LanguageManager.class
 com\agape\MessagingHandler.class
 com\agape\ImageGenerator.class
@@ -68,4 +68,5 @@ com\agape\StatsQuery$OutputType.class
 com\agape\Channels.class
 com\agape\CompatibilityEngine$Continent.class
 com\agape\ImageGenerator$1.class
+com\agape\MassRoleManager$Action.class
 com\agape\LetsChatManager.class
