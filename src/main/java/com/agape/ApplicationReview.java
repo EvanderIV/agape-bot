@@ -205,7 +205,10 @@ public final class ApplicationReview {
             event.getJDA().retrieveUserById(targetUserId).queue(user -> {
                 user.openPrivateChannel().queue(channel -> {
                     if (buttonId.startsWith("app_accept_")) {
-                        channel.sendMessage("🎉 Good news! Your matchmaking application has been **ACCEPTED**!").queue();
+                        channel.sendMessage("🎉 Good news! Your matchmaking application has been **ACCEPTED**!\n\n"
+                            + "Now that your profile has been accepted and posted in our board, you can now participate "
+                            + "in the server chats. The more active you are, the more quickly you will get a match. "
+                            + "Open a Matchmaking ticket for any questions related to matchmaking.").queue();
                         event.getHook().sendMessage("✅ Accepted application for " + user.getName()).queue();
                     } else if (buttonId.startsWith("app_reject_")) {
                         channel.sendMessage("❌ We're sorry, but your matchmaking application has been **REJECTED**.").queue();
