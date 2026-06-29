@@ -268,6 +268,102 @@ public class ThreadManager {
     }
 
     /**
+     * True if a record represents a still-active match that ought to be ended
+     * when a participant leaves: not already ended, and either an OPEN thread
+     * (awaiting confirmation) or a confirmed pairing. Declined/timed-out closed
+     * threads are not active matches and are left untouched. Package-private for
+     * testing.
+     */
+    static boolean isActiveMatch(QMThread r) {
+        if (r == null || r.endedReason != null) return false;
+        if ("OPEN".equals(r.status)) return true;
+        return r.confirmedBy != null
+            && r.confirmedBy.contains(r.maleId)
+            && r.confirmedBy.contains(r.femaleId);
+    }
+
+    /**
+     * Forcibly ends every still-active match involving {@code userId}, used when
+     * that user has left the server (admins cannot run {@code /end-match} against
+     * someone who can no longer be @-mentioned). Each affected record is tagged
+     * {@code LEFT_SERVER:{userId}} and any still-open thread is force-closed.
+     * Returns the number of matches ended.
+     */
+    public static int endMatchesForDepartedMember(String userId, JDA jda) {
+        int ended = 0;
+        for (String dirPath : new String[]{THREADS_DIR, MM_THREADS_DIR}) {
+            File dir = new File(dirPath);
+            if (!dir.exists()) continue;
+            File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files == null) continue;
+            for (File file : files) {
+                QMThread record;
+                try (FileReader reader = new FileReader(file)) {
+                    record = GSON.fromJson(reader, QMThread.class);
+                } catch (Exception e) { continue; }
+                if (record == null) continue;
+                if (!userId.equals(record.maleId) && !userId.equals(record.femaleId)) continue;
+                if (!isActiveMatch(record)) continue;
+                forceEndForDeparture(record, userId, jda);
+                ended++;
+            }
+        }
+        if (ended > 0) {
+            System.out.println("ThreadManager: Force-ended " + ended + " match(es) — user "
+                + userId + " has left the server.");
+        }
+        return ended;
+    }
+
+    /**
+     * Scans every active match and force-ends any whose participant has left the
+     * guild. This catches departures that happened while the bot was offline (the
+     * live {@code GuildMemberRemove} event only fires while connected). Membership
+     * is checked via {@link MembershipVerifier#verifyMembership}, which also
+     * soft-deletes the absent member's profile. Returns the number ended.
+     */
+    public static int sweepDepartedMemberMatches(JDA jda) {
+        int ended = 0;
+        for (String dirPath : new String[]{THREADS_DIR, MM_THREADS_DIR}) {
+            File dir = new File(dirPath);
+            if (!dir.exists()) continue;
+            File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+            if (files == null) continue;
+            for (File file : files) {
+                QMThread record;
+                try (FileReader reader = new FileReader(file)) {
+                    record = GSON.fromJson(reader, QMThread.class);
+                } catch (Exception e) { continue; }
+                if (!isActiveMatch(record)) continue;
+                for (String pid : new String[]{record.maleId, record.femaleId}) {
+                    if (!MembershipVerifier.verifyMembership(pid, record.guildId, jda)) {
+                        forceEndForDeparture(record, pid, jda);
+                        ended++;
+                        break; // one departed participant is enough to end the match
+                    }
+                }
+            }
+        }
+        if (ended > 0) {
+            System.out.println("ThreadManager: Departed-member sweep force-ended " + ended + " match(es).");
+        }
+        return ended;
+    }
+
+    /**
+     * Marks a record as ended because {@code departedUserId} left the server, and
+     * force-closes the thread if it is still open. The {@code LEFT_SERVER} tag is
+     * saved before any close so it survives the archival write.
+     */
+    private static void forceEndForDeparture(QMThread record, String departedUserId, JDA jda) {
+        record.endedReason = "LEFT_SERVER:" + departedUserId;
+        save(record.maleId, record.femaleId, record);
+        if ("OPEN".equals(record.status) && jda != null) {
+            adminCloseThread(record.threadId, jda); // archives + preserves endedReason
+        }
+    }
+
+    /**
      * Scans all thread records for one whose Discord thread ID matches the given channel ID.
      * Returns {@code null} if not found.
      */
@@ -1203,8 +1299,16 @@ public class ThreadManager {
         return sb.toString();
     }
 
-    private static String matchOutcome(QMThread r) {
+    static String matchOutcome(QMThread r) {
         if ("OPEN".equals(r.status)) return "Active";
+
+        if (r.endedReason != null && r.endedReason.startsWith("LEFT_SERVER:")) {
+            String leftId = r.endedReason.substring("LEFT_SERVER:".length());
+            boolean bothConfirmed = r.confirmedBy != null
+                && r.confirmedBy.contains(r.maleId) && r.confirmedBy.contains(r.femaleId);
+            return (bothConfirmed ? "Confirmed (Ended — <@" : "Ended (<@")
+                + leftId + "> left server)";
+        }
 
         boolean m1Confirmed = r.confirmedBy != null && r.confirmedBy.contains(r.maleId);
         boolean m2Confirmed = r.confirmedBy != null && r.confirmedBy.contains(r.femaleId);

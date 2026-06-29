@@ -33,4 +33,40 @@ public class ThreadManagerSafetyTest {
         assertNull(ThreadManager.findThread(UNKNOWN_USER, UNKNOWN_USER + "_2"));
         assertNull(ThreadManager.findMMThread(UNKNOWN_USER, UNKNOWN_USER + "_2"));
     }
+
+    private static ThreadManager.QMThread record(String status, boolean bothConfirmed, String endedReason) {
+        ThreadManager.QMThread r = new ThreadManager.QMThread();
+        r.maleId = "M";
+        r.femaleId = "F";
+        r.status = status;
+        r.endedReason = endedReason;
+        if (bothConfirmed) {
+            r.confirmedBy.add("M");
+            r.confirmedBy.add("F");
+        }
+        return r;
+    }
+
+    @Test
+    public void openAndConfirmedAreActiveMatches() {
+        assertTrue(ThreadManager.isActiveMatch(record("OPEN", false, null)));
+        assertTrue(ThreadManager.isActiveMatch(record("ARCHIVED", true, null)));
+    }
+
+    @Test
+    public void endedOrUnconfirmedClosedAreNotActiveMatches() {
+        assertFalse(ThreadManager.isActiveMatch(record("ARCHIVED", true, "ENDED")));
+        assertFalse(ThreadManager.isActiveMatch(record("ARCHIVED", true, "LEFT_SERVER:M")));
+        assertFalse(ThreadManager.isActiveMatch(record("ARCHIVED", false, null))); // declined/timed-out
+    }
+
+    @Test
+    public void leftServerOutcomeLabels() {
+        // Confirmed match ended by a departure
+        assertEquals("Confirmed (Ended — <@M> left server)",
+            ThreadManager.matchOutcome(record("ARCHIVED", true, "LEFT_SERVER:M")));
+        // Pending (force-closed) thread ended by a departure
+        assertEquals("Ended (<@F> left server)",
+            ThreadManager.matchOutcome(record("ARCHIVED", false, "LEFT_SERVER:F")));
+    }
 }

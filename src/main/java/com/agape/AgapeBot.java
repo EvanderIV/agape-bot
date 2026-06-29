@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -198,6 +199,11 @@ public class AgapeBot extends ListenerAdapter {
                 + " member(s), added gender role to " + gendered + " member(s).");
         }, "role-sweep").start();
 
+        // Force-end matches whose participant left while the bot was offline
+        // (the live GuildMemberRemove event only fires while connected).
+        new Thread(() -> ThreadManager.sweepDepartedMemberMatches(event.getJDA()),
+            "departed-member-sweep").start();
+
         // Restore any applications that were in-flight when the bot last shut down
         ApplicationHandler.recoverInProgressApplications(event.getJDA());
 
@@ -321,6 +327,20 @@ public class AgapeBot extends ListenerAdapter {
         // Jail accounts younger than a week in the "dungeon" role. Disabled for now —
         // uncomment to enable quarantining of brand-new accounts on join:
         // ServerProtectionManager.jailIfTooNew(event.getMember());
+    }
+
+    /**
+     * When a member leaves, forcibly end any still-active match they were in —
+     * admins can't run /end-match against someone who can no longer be @-mentioned.
+     * Runs off the event loop (file I/O + possible thread archival).
+     */
+    @Override
+    public void onGuildMemberRemove(GuildMemberRemoveEvent event) {
+        if (!EnvironmentManager.isGuildAllowed(event.getGuild().getId())) return;
+        final String userId = event.getUser().getId();
+        final JDA jda = event.getJDA();
+        new Thread(() -> ThreadManager.endMatchesForDepartedMember(userId, jda),
+            "departed-member-end-match").start();
     }
 
     // ─── Slash command routing ────────────────────────────────────────────────

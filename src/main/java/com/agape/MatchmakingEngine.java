@@ -53,6 +53,24 @@ public class MatchmakingEngine {
         String result;      // "FOUND_MATCH" or "NO_MATCH" (null for RECEIVED_MATCH)
         String matchedWith; // userId of the other person (null when result is NO_MATCH)
         String timestamp;   // ISO-8601 local datetime
+        MatchDiagnostics diagnostics; // demographics + candidate-pool breakdown (null for blocked/received entries)
+    }
+
+    /**
+     * Per-attempt detail attached to RAN_QUICKMATCH entries: who the requester
+     * is (demographics, for analytics) and how the candidate pool shook out
+     * (for debugging "why didn't I match?"). All fields are nullable so old
+     * records deserialize cleanly.
+     */
+    static class MatchDiagnostics {
+        Integer userAge;
+        String  ageBracket;          // e.g. "23-27" or "56+"
+        String  sex;                 // requester's sex label ("Male"/"Female")
+        String  seekingSex;          // the opposite sex the pool is filtered to
+        String  country;             // requester's country, for demographic analytics
+        Integer candidatesEvaluated; // profiles examined (excluding self)
+        Integer candidatesEligible;  // profiles that passed every filter
+        java.util.Map<String, Integer> rejectionBreakdown; // reason → count of rejected candidates
     }
 
     static class MatchLog {
@@ -134,42 +152,58 @@ public class MatchmakingEngine {
             return null;
         }
 
-        // 4. Scan all profiles for eligible candidates
+        // Capture requester demographics once; the pool stats below are layered on.
+        MatchDiagnostics diag = baseDiagnostics(user, userAge, bracket);
+
+        // 4. Scan all profiles for eligible candidates, tallying why each is rejected
         File[] files = ProfileRepository.listProfileFiles();
-        if (files.length == 0) {
-            logQuickmatch(userId, userLog, "NO_MATCH", null);
-            return null;
-        }
+        java.util.Map<String, Integer> rejections = new java.util.LinkedHashMap<>();
+        int evaluated = 0;
 
         List<AppState> candidates = new ArrayList<>();
         List<String> candidateIds = new ArrayList<>();
         for (File file : files) {
             String candidateId = ProfileRepository.userIdFromFile(file);
             if (candidateId.equals(userId)) continue;
+            evaluated++;
 
             AppState candidate = ProfileRepository.load(candidateId);
-            if (candidate == null) continue;
-            if (!"ACCEPTED".equals(candidate.status)) continue;
-            if (candidate.softDeleted) continue;
-            if (!candidate.quickmatchEnrolled) continue;
-            if (candidate.sex == user.sex) continue; // must be opposite sex
-            if (!MembershipVerifier.verifyMembership(candidateId, candidate.guildId, jda)) continue;
+            if (candidate == null)                      { bump(rejections, "no_profile_data"); continue; }
+            if (!"ACCEPTED".equals(candidate.status))   { bump(rejections, "not_accepted"); continue; }
+            if (candidate.softDeleted)                  { bump(rejections, "soft_deleted"); continue; }
+            if (!candidate.quickmatchEnrolled)          { bump(rejections, "not_enrolled"); continue; }
+            if (candidate.sex == user.sex)              { bump(rejections, "same_sex"); continue; }
+            if (!MembershipVerifier.verifyMembership(candidateId, candidate.guildId, jda)) {
+                bump(rejections, "left_server"); continue;
+            }
 
             int candidateAge = AgeUtils.calculateAge(candidate.birthday);
-            if (candidateAge < bracket[0] || candidateAge > bracket[1]) continue;
+            if (candidateAge < bracket[0] || candidateAge > bracket[1]) {
+                bump(rejections, "out_of_age_bracket"); continue;
+            }
 
             MatchLog candidateLog = loadMatchLog(candidateId);
-            if (wasMatchedWithin(candidateLog, MATCH_COOLDOWN_DAYS)) continue;
-            if (CompatibilityEngine.isPrecluded(userId, candidateId)) continue;
+            if (wasMatchedWithin(candidateLog, MATCH_COOLDOWN_DAYS)) {
+                bump(rejections, "candidate_on_cooldown"); continue;
+            }
+            if (CompatibilityEngine.isPrecluded(userId, candidateId)) {
+                bump(rejections, "precluded_pair"); continue;
+            }
 
             candidates.add(candidate);
             candidateIds.add(candidateId);
         }
 
+        diag.candidatesEvaluated = evaluated;
+        diag.candidatesEligible  = candidates.size();
+        diag.rejectionBreakdown  = rejections;
+
         if (candidates.isEmpty()) {
             System.out.println("Quickmatch: No eligible candidates for user " + userId
-                    + " (age bracket " + bracket[0] + "-" + (bracket[1] == Integer.MAX_VALUE ? "∞" : bracket[1]) + ").");
-            logQuickmatch(userId, userLog, "NO_MATCH", null);
+                    + " | age " + userAge + " (bracket " + diag.ageBracket + "), seeking " + diag.seekingSex
+                    + " | evaluated " + evaluated + " profile(s), 0 eligible"
+                    + " | rejections " + (rejections.isEmpty() ? "{none}" : rejections.toString()));
+            logQuickmatch(userId, userLog, "NO_MATCH", null, diag);
             return null;
         }
 
@@ -178,14 +212,37 @@ public class MatchmakingEngine {
         AppState match = candidates.get(idx);
         String matchId = candidateIds.get(idx);
 
-        System.out.println("Quickmatch: Matched user " + userId + " with " + matchId + ".");
+        System.out.println("Quickmatch: Matched user " + userId + " with " + matchId
+                + " | age " + userAge + " (bracket " + diag.ageBracket + ")"
+                + " | chosen from " + candidates.size() + " eligible of " + evaluated + " evaluated.");
 
         // 6. Log for both parties
-        logQuickmatch(userId, userLog, "FOUND_MATCH", matchId);
+        logQuickmatch(userId, userLog, "FOUND_MATCH", matchId, diag);
         MatchLog matchLog = loadMatchLog(matchId);
         logReceivedMatch(matchId, matchLog, userId);
 
         return new MatchResult(matchId, match);
+    }
+
+    /** Builds the requester-demographics portion of an attempt's diagnostics. */
+    private static MatchDiagnostics baseDiagnostics(AppState user, int userAge, int[] bracket) {
+        MatchDiagnostics d = new MatchDiagnostics();
+        d.userAge    = userAge;
+        d.ageBracket = formatBracket(bracket);
+        d.sex        = user.sex ? "Female" : "Male";
+        d.seekingSex = user.sex ? "Male" : "Female";
+        d.country    = user.country;
+        return d;
+    }
+
+    /** "56+" for an open-ended bracket, else "lo-hi". */
+    private static String formatBracket(int[] bracket) {
+        return bracket[1] == Integer.MAX_VALUE ? bracket[0] + "+" : bracket[0] + "-" + bracket[1];
+    }
+
+    /** Increments a reason's count in the rejection-breakdown map. */
+    private static void bump(java.util.Map<String, Integer> map, String reason) {
+        map.merge(reason, 1, Integer::sum);
     }
 
     // ─── Logging helpers ──────────────────────────────────────────────────────
@@ -199,12 +256,13 @@ public class MatchmakingEngine {
         saveMatchLog(userId, log);
     }
 
-    private static void logQuickmatch(String userId, MatchLog log, String result, String matchedWith) {
+    private static void logQuickmatch(String userId, MatchLog log, String result, String matchedWith, MatchDiagnostics diagnostics) {
         MatchEntry entry = new MatchEntry();
         entry.type = "RAN_QUICKMATCH";
         entry.result = result;
         entry.matchedWith = matchedWith;
         entry.timestamp = LocalDateTime.now().format(TIMESTAMP_FMT);
+        entry.diagnostics = diagnostics;
         log.entries.add(entry);
         saveMatchLog(userId, log);
     }

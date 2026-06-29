@@ -17,6 +17,7 @@ com\agape\FaceDetector$HaarRect.class
 com\agape\FeedbackReportService.class
 com\agape\MassRoleManager.class
 com\agape\LanguageManager.class
+com\agape\MatchmakingEngine$MatchDiagnostics.class
 com\agape\MessagingHandler.class
 com\agape\ImageGenerator.class
 com\agape\CompatibilityEngine$PrecludedPairs.class
