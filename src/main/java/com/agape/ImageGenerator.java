@@ -36,6 +36,9 @@ import com.vdurmont.emoji.EmojiParser;
  */
 public class ImageGenerator {
 
+    /** Default profile-card font, shared by every card-rendering entry point. */
+    public static final String DEFAULT_FONT_PATH = "assets/fonts/VAG Rounded Next Shine Regular.ttf";
+
     static class FontLoader {
         private static final Map<String, Font> cache = new HashMap<>();
 
@@ -1163,6 +1166,68 @@ public class ImageGenerator {
             return new File(outputPath);
         }
         return null;
+    }
+
+    /**
+     * Renders a profile card straight from an {@link AppState}, resolving the
+     * applicant's photo, design code, and face focal point exactly the way
+     * {@code /generate} does. Returns the generated image File, or {@code null}
+     * if the background asset is missing or rendering fails.
+     *
+     * <p>{@code fallbackAvatarUrl} (e.g. the user's Discord avatar) is used only
+     * when the profile has no usable {@code photoPath}. Callers should run this
+     * off the JDA event loop — generation can exceed Discord's 3-second window.
+     *
+     * @param state             the applicant's profile (must be non-null)
+     * @param userId            the applicant's Discord ID (used for the temp filename)
+     * @param fallbackAvatarUrl avatar URL to fall back on when no photo is set
+     * @param fontPath          font to render with (e.g. {@link #DEFAULT_FONT_PATH})
+     */
+    public static File generateProfileCard(AppState state, String userId, String fallbackAvatarUrl, String fontPath) {
+        if (state == null) return null;
+
+        String cardText = ApplicationHandler.buildCardText(state);
+        String avatarUrl = fallbackAvatarUrl;
+        String backgroundPath = "assets/backgrounds/default.png";
+        String framePath = "assets/frames/default.png";
+        float focusX = state.photoFocusX;
+        float focusY = state.photoFocusY;
+
+        // Resolve the profile photo into a usable image URL.
+        if (state.photoPath != null && !state.photoPath.isEmpty()) {
+            if (state.photoPath.equalsIgnoreCase("assets/male.png") || state.photoPath.equalsIgnoreCase("assets/female.png")) {
+                // Sex-based placeholder (female if sex=true, male if sex=false)
+                String placeholderPath = state.sex ? "assets/female.png" : "assets/male.png";
+                try {
+                    avatarUrl = new File(placeholderPath).toURI().toURL().toString();
+                } catch (Exception e) {
+                    System.err.println("⚠️ Failed to convert placeholder path to URL: " + placeholderPath);
+                }
+            } else if (state.photoPath.startsWith("http")) {
+                avatarUrl = state.photoPath;
+            } else {
+                try {
+                    avatarUrl = new File(state.photoPath).toURI().toURL().toString();
+                } catch (Exception e) {
+                    System.err.println("⚠️ Failed to convert photo path to URL: " + state.photoPath);
+                }
+            }
+        }
+
+        // Apply the applicant's custom design code (background + frame), if any.
+        if (state.designCode != null && !state.designCode.isEmpty()) {
+            String[] decodedPaths = decodeDesignCode(state.designCode);
+            backgroundPath = decodedPaths[0];
+            framePath = decodedPaths[1];
+        }
+
+        if (!new File(backgroundPath).exists()) {
+            System.err.println("ImageGenerator: Background not found at " + backgroundPath
+                + " — cannot render card for " + userId);
+            return null;
+        }
+
+        return generateForUser(backgroundPath, avatarUrl, framePath, fontPath, cardText, userId, focusX, focusY);
     }
 
     /**

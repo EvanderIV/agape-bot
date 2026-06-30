@@ -217,10 +217,62 @@ public final class ApplicationReview {
                 }, error -> {
                     event.getHook().sendMessage("⚠️ Processed, but could not send a DM to user ID " + targetUserId + " (DMs closed).").queue();
                 });
+
+                // On acceptance, auto-post the rendered profile card to the display board
+                // (independent of DM delivery). No-op + console log if the channel is absent.
+                if (buttonId.startsWith("app_accept_")) {
+                    postToDisplayBoard(event.getGuild(), targetUserId, user.getEffectiveAvatarUrl());
+                }
             }, error -> {
                 event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
             });
         }
+    }
+
+    /**
+     * On acceptance, render the applicant's profile card and post it to the
+     * "display-board" channel. If no such channel exists, the event is simply
+     * logged to the console. Image generation runs on a background thread (it can
+     * exceed Discord's 3-second interaction window), per the bot's convention of
+     * keeping long work off the JDA event loop.
+     *
+     * @param guild             the guild the application was accepted in
+     * @param userId            the accepted applicant's Discord ID
+     * @param fallbackAvatarUrl avatar URL used only if the profile has no photo
+     */
+    private static void postToDisplayBoard(Guild guild, String userId, String fallbackAvatarUrl) {
+        if (guild == null) return;
+
+        TextChannel board = Channels.findByNormalizedName(guild, "displayboard");
+        if (board == null) {
+            System.out.println("ApplicationReview: No 'display-board' channel found in " + guild.getName()
+                + " — skipping auto-post of accepted profile " + userId + ".");
+            return;
+        }
+
+        AppState state = ProfileRepository.load(userId);
+        if (state == null) {
+            System.err.println("ApplicationReview: Cannot post profile " + userId
+                + " to display-board — profile not found on disk.");
+            return;
+        }
+
+        new Thread(() -> {
+            File card = ImageGenerator.generateProfileCard(state, userId, fallbackAvatarUrl, ImageGenerator.DEFAULT_FONT_PATH);
+            if (card == null || !card.exists()) {
+                System.err.println("ApplicationReview: Failed to render display-board image for " + userId + ".");
+                return;
+            }
+            board.sendMessage("𝒩𝑒𝓌 𝓅𝓇𝑜𝒻𝒾𝓁𝑒 𝓅𝑜𝓈𝓉𝑒𝒹~")
+                .addFiles(FileUpload.fromData(card))
+                .queue(
+                    ok -> card.delete(),
+                    err -> {
+                        System.err.println("ApplicationReview: Could not post profile " + userId
+                            + " to display-board: " + err.getMessage());
+                        card.delete();
+                    });
+        }, "displayboard-post-" + userId).start();
     }
 
     /** Handles the "Request Application Change" modal (modal_request_change_{userId}). */
