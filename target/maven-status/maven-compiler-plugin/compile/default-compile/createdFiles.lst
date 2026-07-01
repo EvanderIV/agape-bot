@@ -71,3 +71,4 @@ com\agape\CompatibilityEngine$Continent.class
 com\agape\ImageGenerator$1.class
 com\agape\MassRoleManager$Action.class
 com\agape\LetsChatManager.class
+com\agape\ThreadManager$TopicSignal.class

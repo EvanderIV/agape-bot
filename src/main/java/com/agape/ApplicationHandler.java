@@ -680,8 +680,12 @@ public class ApplicationHandler extends ListenerAdapter {
         // 1. Ignore messages from bots (including ourselves)
         if (event.getAuthor().isBot()) return;
 
-        // 2. We only care about Direct Messages for the application
-        if (event.isFromGuild()) return;
+        // 2. Guild messages aren't part of the DM questionnaire, but match threads
+        //    are watched for off-topic drift (deal-breakers-only nudge) before we bail.
+        if (event.isFromGuild()) {
+            ThreadManager.handleThreadMessage(event);
+            return;
+        }
 
         User user = event.getAuthor();
         String userId = user.getId();

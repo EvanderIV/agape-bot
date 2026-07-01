@@ -17,6 +17,7 @@ import com.google.gson.GsonBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 /**
  * Owns the 24-hour lifecycle of match threads and the strike/pardon system.
@@ -85,6 +86,8 @@ public class ThreadManager {
         List<ThreadMessage> messages = new ArrayList<>();
         boolean goodNewsDMSent = false; // true once the "your match replied" DM has been sent
         String endedReason;   // null = not ended; "ENDED" = manually ended; "GHOSTED:{userId}" = ghosted
+        int offTopicStreak = 0;             // consecutive substantive participant messages with no deal-breaker cue
+        boolean dealbreakerReminderSent = false; // true once the one-time off-topic nudge has fired
     }
 
     // ─── Shutdown management ──────────────────────────────────────────────────
@@ -1351,6 +1354,123 @@ public class ThreadManager {
         if (!m1Responded) return "Timed Out (<@" + r.maleId + "> failed to respond)";
         if (!m2Responded) return "Timed Out (<@" + r.femaleId + "> failed to respond)";
         return "Closed";
+    }
+
+    // ─── Off-topic (deal-breakers only) nudge ─────────────────────────────────
+    //
+    // Manual-match threads exist ONLY for the pair to exchange deal-breakers, but
+    // people forget and drift into general chit-chat. We watch each participant
+    // message and, once the recent conversation has clearly drifted (a run of
+    // substantive messages with no deal-breaker vocabulary), post exactly ONE
+    // gentle reminder. Any deal-breaker cue resets the drift counter, so the nudge
+    // never fires while they're actually discussing deal-breakers.
+
+    /** Consecutive substantive off-topic messages that trip the one-time nudge. */
+    private static final int OFF_TOPIC_STREAK_THRESHOLD = 4;
+
+    /** Minimum cleaned length for a message to count as "substantive" (not a reaction/emoji). */
+    private static final int SUBSTANTIVE_MIN_CHARS = 25;
+
+    /**
+     * Deal-breaker / relationship-criteria vocabulary. A message containing any of
+     * these (as a lowercase substring) counts as on-topic and resets the drift
+     * counter. Kept deliberately focused on deal-breaker language so ordinary
+     * Christian-server small talk ("church", "God") doesn't perpetually suppress
+     * the nudge. Tune freely — broader = fewer nudges.
+     */
+    private static final String[] DEALBREAKER_CUES = {
+        "deal breaker", "dealbreaker", "deal-breaker", "red flag", "green flag",
+        "boundary", "boundaries", "non-negotiable", "nonnegotiable", "non negotiable",
+        "standard", "commitment", "commit", "manipulat", "loyal", "faithful",
+        "unfaithful", "cheat", "long distance", "long-distance", "denomination",
+        "communicat", "marriage", "married", "marry", "divorce"
+    };
+
+    private static final String DEALBREAKER_NUDGE =
+        "💬 *Friendly reminder:* this thread is just for sharing your **deal-breakers** "
+        + "with each other. Once you've both shared them, use **/confirm** to let us know "
+        + "you intend to keep in touch over DMs, or **/decline** if it's not a fit. 💛";
+
+    /**
+     * Live handler for a message posted in a match thread. On an OPEN <b>manual</b>
+     * match, tracks conversational drift and fires the one-time deal-breakers-only
+     * nudge when the recent chat has wandered off topic. No-op for quickmatch
+     * threads, closed threads, non-participants, or once the nudge has already fired.
+     */
+    public static void handleThreadMessage(MessageReceivedEvent event) {
+        if (!event.getChannelType().isThread()) return;
+
+        QMThread record = findThreadByChannelId(event.getChannel().getId());
+        if (record == null) return;
+        if (!"MANUAL".equals(record.matchType)) return;   // deal-breakers rule is manual-match only
+        if (!"OPEN".equals(record.status)) return;
+        if (record.dealbreakerReminderSent) return;       // only ever nudge once
+
+        // Only the two matched participants count toward drift (ignore matchmakers/admins).
+        String authorId = event.getAuthor().getId();
+        if (!authorId.equals(record.maleId) && !authorId.equals(record.femaleId)) return;
+
+        switch (classifyMessage(event.getMessage().getContentRaw())) {
+            case ON_TOPIC:
+                if (record.offTopicStreak != 0) {
+                    record.offTopicStreak = 0;            // back on topic — reset
+                    save(record.maleId, record.femaleId, record);
+                }
+                return;
+            case TRIVIAL:
+                return;                                   // short reaction/emoji — ignore
+            default:
+                break;                                    // OFF_TOPIC_SUBSTANTIVE — falls through to counting
+        }
+
+        record.offTopicStreak++;
+        if (record.offTopicStreak >= OFF_TOPIC_STREAK_THRESHOLD) {
+            record.dealbreakerReminderSent = true;
+            save(record.maleId, record.femaleId, record);
+            event.getChannel().asThreadChannel().sendMessage(DEALBREAKER_NUDGE).queue(
+                ok  -> System.out.println("ThreadManager: Sent deal-breakers-only nudge in thread " + record.threadId + "."),
+                err -> System.err.println("ThreadManager: Could not send deal-breaker nudge in thread " + record.threadId + ": " + err.getMessage())
+            );
+        } else {
+            save(record.maleId, record.femaleId, record);
+        }
+    }
+
+    /** How a single message reads for drift tracking. Package-private for testing. */
+    enum TopicSignal {
+        ON_TOPIC,              // mentions deal-breaker vocabulary — resets the counter
+        OFF_TOPIC_SUBSTANTIVE, // a real message with no deal-breaker cue — counts toward drift
+        TRIVIAL                // too short to matter (reaction/emoji) — ignored
+    }
+
+    /**
+     * Classifies a raw message for the deal-breakers-only nudge. Pure and
+     * package-private so the drift heuristic can be unit-tested against real logs.
+     */
+    static TopicSignal classifyMessage(String rawContent) {
+        String cleaned = cleanForTopicCheck(rawContent);
+        if (containsDealbreakerCue(cleaned)) return TopicSignal.ON_TOPIC;
+        if (cleaned.length() < SUBSTANTIVE_MIN_CHARS) return TopicSignal.TRIVIAL;
+        return TopicSignal.OFF_TOPIC_SUBSTANTIVE;
+    }
+
+    /** True if the cleaned, lowercased text contains any deal-breaker cue word. */
+    private static boolean containsDealbreakerCue(String cleaned) {
+        String lower = cleaned.toLowerCase();
+        for (String cue : DEALBREAKER_CUES) {
+            if (lower.contains(cue)) return true;
+        }
+        return false;
+    }
+
+    /** Strips mentions, custom emoji, URLs, and extra whitespace for topic analysis. */
+    private static String cleanForTopicCheck(String raw) {
+        if (raw == null) return "";
+        return raw.replaceAll("<a?:\\w+:\\d+>", " ")  // custom emoji tokens
+                  .replaceAll("<@[!&]?\\d+>", " ")       // user/role mentions
+                  .replaceAll("https?://\\S+", " ")       // links
+                  .replaceAll("\\s+", " ")
+                  .trim();
     }
 
     /** Appends a command event entry to the thread's message log and saves the record. */
