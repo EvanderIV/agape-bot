@@ -34,7 +34,7 @@ public final class MembershipVerifier {
         } catch (ErrorResponseException e) {
             // 10007 = Unknown Member  |  10013 = Unknown User
             if (e.getErrorCode() == 10007 || e.getErrorCode() == 10013) {
-                softDeleteAbsentMember(userId);
+                softDeleteAbsentMember(userId, guild);
                 return false;
             }
             // Any other code is an API or permissions issue — do not soft-delete
@@ -47,11 +47,14 @@ public final class MembershipVerifier {
         }
     }
 
-    private static void softDeleteAbsentMember(String userId) {
+    private static void softDeleteAbsentMember(String userId, Guild guild) {
         AppState state = ProfileRepository.load(userId);
         if (state == null || state.softDeleted) return;
         state.softDeleted = true;
         ProfileRepository.save(userId, state);
         System.out.println("Membership check: User " + userId + " has left the server — profile soft-deleted.");
+
+        // A departed member's card should not linger on the public display board.
+        DisplayBoardService.remove(guild, userId);
     }
 }

@@ -56,6 +56,10 @@ public class AppState {
     // Soft-delete: when true, the profile is invisible to all matchmaking systems
     public boolean softDeleted = false;
 
+    // ID of this profile's message on the "display-board" channel (null if none is
+    // currently posted). Set when the card is posted, cleared when it is removed.
+    public String displayBoardMessageId;
+
     // Manual matchmaking opt-in; false blocks /match and compat-algo but not quickmatch
     public boolean manualMatchEnrolled = true;
 

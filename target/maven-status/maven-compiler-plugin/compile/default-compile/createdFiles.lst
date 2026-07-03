@@ -55,6 +55,7 @@ com\agape\LetsChatManager$1.class
 com\agape\MatchmakingEngine$MatchEntry.class
 com\agape\ThreadManager$UserStrikes.class
 com\agape\MatchmakingEngine$MatchLog.class
+com\agape\DisplayBoardService.class
 com\agape\AppState.class
 com\agape\ApplicationHandler$DesignPaths.class
 com\agape\UserInsightsManager$UserInsightsRecord.class

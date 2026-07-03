@@ -1181,8 +1181,16 @@ public class AgapeBot extends ListenerAdapter {
         System.out.println("set-opt: " + event.getUser().getId() + " opted " + (optedIn ? "in" : "out")
                 + " profile " + targetId + " (softDeleted=" + shouldSoftDelete + ")");
 
+        // Keep the display board in sync: opting out removes the user's card, opting
+        // back in reposts it (no "new profile" caption) and stores the fresh message ID.
+        if (optedIn) {
+            DisplayBoardService.post(event.getGuild(), targetId, targetUser.getEffectiveAvatarUrl(), null);
+        } else {
+            DisplayBoardService.remove(event.getGuild(), targetId);
+        }
+
         event.reply("✅ <@" + targetId + ">'s profile is now opted **" + (optedIn ? "in" : "out") + "**"
-                + (optedIn ? " — visible to matchmaking again." : " — soft-deleted and hidden from all matchmaking."))
+                + (optedIn ? " — visible to matchmaking and reposted to the display board." : " — soft-deleted, hidden from matchmaking, and removed from the display board."))
                 .setEphemeral(true).queue();
     }
 
