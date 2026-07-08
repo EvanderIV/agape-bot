@@ -289,6 +289,8 @@ public class AgapeBot extends ListenerAdapter {
         SlashCommandData declineCmd = Commands.slash("decline", "Decline this match (use inside a match thread)");
         SlashCommandData closeThreadCmd = Commands.slash("close-thread", "Immediately close and archive this match thread without issuing penalties (Matchmakers only)");
         SlashCommandData viewMatchesCmd = Commands.slash("view-matches", "View all matches logged in the system (Matchmakers only)");
+        SlashCommandData userMatchesCmd = Commands.slash("user-matches", "View only the matches a specific user has been part of (Matchmakers only)")
+                .addOption(OptionType.USER, "user", "The user whose matches to show", true);
         SlashCommandData userInsightsCmd = Commands.slash("user-insights", "View collected preference insights for a user (Matchmakers only)")
                 .addOption(OptionType.USER, "user", "The user to look up", true);
         SlashCommandData tagUserCmd = Commands.slash("tag-user", "Add or remove preference tags for a user (Matchmakers only)")
@@ -310,7 +312,7 @@ public class AgapeBot extends ListenerAdapter {
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         jda.getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd, setOptCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd, setOptCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -370,6 +372,7 @@ public class AgapeBot extends ListenerAdapter {
             case "decline":         handleDecline(event); break;
             case "close-thread":    handleCloseThread(event); break;
             case "view-matches":    handleViewMatches(event); break;
+            case "user-matches":    handleUserMatches(event); break;
             case "user-insights":   handleUserInsights(event); break;
             case "tag-user":        handleTagUser(event); break;
             case "pardon":          handlePardon(event); break;
@@ -1120,6 +1123,19 @@ public class AgapeBot extends ListenerAdapter {
         event.deferReply().queue();
 
         sendChunks(event, ThreadManager.buildMatchesReport());
+    }
+
+    /** /user-matches — list only the matches a specific user has been part of. */
+    private void handleUserMatches(SlashCommandInteractionEvent event) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
+            event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+            return;
+        }
+        User targetUser = event.getOption("user").getAsUser();
+        event.deferReply().queue();
+
+        event.getHook().sendMessage("📋 **Matches for " + targetUser.getAsMention() + ":**").queue(sent ->
+            sendChunks(event, ThreadManager.buildMatchesReport(targetUser.getId())));
     }
 
     /** /end-match — mark a confirmed match as Ended (or Ghosted) in the match log. */

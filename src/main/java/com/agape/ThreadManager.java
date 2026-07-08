@@ -1251,8 +1251,22 @@ public class ThreadManager {
      * chunks (≤1990 chars each).
      */
     public static List<String> buildMatchesReport() {
+        return buildMatchesReport(null);
+    }
+
+    /**
+     * Builds the match report, split into Discord-safe chunks. When {@code userId}
+     * is non-null, only matches that user is part of are included (both types);
+     * otherwise every match is shown (the {@code /view-matches} behavior).
+     */
+    public static List<String> buildMatchesReport(String userId) {
         List<QMThread> manual = loadAllFromDir(MM_THREADS_DIR);
         List<QMThread> quick  = loadAllFromDir(THREADS_DIR);
+
+        if (userId != null) {
+            manual = filterByUser(manual, userId);
+            quick  = filterByUser(quick, userId);
+        }
 
         Comparator<QMThread> byDate = (a, b) -> {
             if (a.createdAt == null && b.createdAt == null) return 0;
@@ -1279,6 +1293,15 @@ public class ThreadManager {
         }
         if (block.length() > 0) chunks.add(block.toString().trim());
         return chunks.isEmpty() ? java.util.Collections.singletonList("No matches on record.") : chunks;
+    }
+
+    /** Keeps only the records where {@code userId} is one of the two matched users. */
+    private static List<QMThread> filterByUser(List<QMThread> records, String userId) {
+        List<QMThread> out = new ArrayList<>();
+        for (QMThread r : records) {
+            if (userId.equals(r.maleId) || userId.equals(r.femaleId)) out.add(r);
+        }
+        return out;
     }
 
     private static List<QMThread> loadAllFromDir(String dirPath) {
