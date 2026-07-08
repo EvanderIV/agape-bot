@@ -7,8 +7,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -160,6 +162,9 @@ public class MatchmakingEngine {
         java.util.Map<String, Integer> rejections = new java.util.LinkedHashMap<>();
         int evaluated = 0;
 
+        // Everyone this user has ever been quickmatched with — they are never re-paired.
+        Set<String> priorPartners = pastPartners(userLog);
+
         List<AppState> candidates = new ArrayList<>();
         List<String> candidateIds = new ArrayList<>();
         for (File file : files) {
@@ -185,6 +190,11 @@ public class MatchmakingEngine {
             MatchLog candidateLog = loadMatchLog(candidateId);
             if (wasMatchedWithin(candidateLog, MATCH_COOLDOWN_DAYS)) {
                 bump(rejections, "candidate_on_cooldown"); continue;
+            }
+            // Never re-pair two people who have already been quickmatched together.
+            // Checked from both logs in case only one side recorded the pairing.
+            if (priorPartners.contains(candidateId) || hasMatchedWith(candidateLog, userId)) {
+                bump(rejections, "previously_matched"); continue;
             }
             if (CompatibilityEngine.isPrecluded(userId, candidateId)) {
                 bump(rejections, "precluded_pair"); continue;
@@ -298,6 +308,25 @@ public class MatchmakingEngine {
     }
 
     /** Returns true if the user was part of any successful match (as runner or recipient) within the last {@code days} days. */
+    /** Every distinct user this log's owner has ever been matched with. */
+    private static Set<String> pastPartners(MatchLog log) {
+        Set<String> partners = new HashSet<>();
+        if (log == null || log.entries == null) return partners;
+        for (MatchEntry entry : log.entries) {
+            if (entry.matchedWith != null) partners.add(entry.matchedWith);
+        }
+        return partners;
+    }
+
+    /** True if this log records a match with {@code otherId} at any point. */
+    private static boolean hasMatchedWith(MatchLog log, String otherId) {
+        if (log == null || log.entries == null) return false;
+        for (MatchEntry entry : log.entries) {
+            if (otherId.equals(entry.matchedWith)) return true;
+        }
+        return false;
+    }
+
     private static boolean wasMatchedWithin(MatchLog log, int days) {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(days);
         for (MatchEntry entry : log.entries) {

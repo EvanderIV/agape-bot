@@ -112,17 +112,19 @@ public final class MatchThreadService {
                 long closeTimestamp = java.time.Instant.now().getEpochSecond() + 86400L;
                 final String message;
                 if (isManualMatch) {
-                    message = "## Match Found!\n\n"
+                    message = "## Match Found! (Main Match)\n\n"
                         + "In evaluating the match, you both should briefly discuss your top 3-5 dealbreakers in a partner *here in this thread*. Be realistic and only include the **dealbreakers/non-negotiables**.\n\n"
                         + "When you have finished discussing (should take <15 minutes), you must confirm or decline the match:\n\n"
                         + "`/confirm` - You think this match is a viable fit, and you're interested in pursuing it further. *(both parties must* /confirm *to match)*\n"
                         + "`/decline` - You think this match is strictly incompatible, and you are uninterested in pursuing this further. *(you will be required to explain your decision)*\n\n"
+                        + "**Reminder that a match is NOT dating/courting/an exclusive relationship!**\n\n"
                         + guidelinesRef
                         + "-# This thread will automatically lock <t:" + closeTimestamp + ":R>.\n"
                         + "||<@" + maleId + "> <@" + femaleId + ">||";
                 } else {
-                    message = "## Match Found!\n\n"
-                        + "**We require you both to reach out via direct message (DM) to each other. Once you have attempted to do so, type the `/confirm` command in here to let us know.**\n\n"
+                    message = "## Quickmatch Found! Found! ⚡\n\n"
+                        + "First, you both need to reach out to each other via direct message (DM). Once you have messaged each other, return here and type the `/confirm` command to make your match official.\n\n"
+                        + "**Reminder that a match is NOT dating/courting/an exclusive relationship!**\n\n"
                         + quickmatchRules
                         + "-# This thread will automatically lock <t:" + closeTimestamp + ":R>.\n"
                         + "||<@" + maleId + "> <@" + femaleId + ">||";

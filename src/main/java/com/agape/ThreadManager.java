@@ -839,6 +839,10 @@ public class ThreadManager {
                 if (record.firstMessageAt == null) {
                     message = "👋 " + mention + " — welcome to your match thread! Introduce yourselves and each share 3–5 of your biggest relationship deal-breakers right here. "
                         + "Once you've had a chance to connect, use **/confirm** if you'd like to continue, or **/decline** if not.";
+                } else if (bothMessaged(record)) {
+                    message = "👋 " + mention + " — you've both introduced yourselves, wonderful! "
+                        + "Be sure you each share your 3–5 biggest relationship deal-breakers here, "
+                        + "then use **/confirm** if you'd like to continue, or **/decline** if not.";
                 } else {
                     message = "👋 " + mention + " — your match has introduced themselves in this thread above! "
                         + "Take a moment to scroll up, reply, and share your own 3–5 biggest relationship deal-breakers. "

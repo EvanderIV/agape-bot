@@ -1,12 +1,16 @@
 package com.agape;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
+import net.dv8tion.jda.api.utils.FileUpload;
 
 /**
  * Builds the manual-match preview embed a matchmaker sees before confirming
@@ -88,9 +92,26 @@ public final class MatchPreviewService {
             Button confirmBtn = Button.success("match_confirm_" + uid1 + "_" + uid2, confirmLabel);
             Button cancelBtn  = Button.danger("match_cancel_" + uid1 + "_" + uid2, "Cancel");
 
-            hook.sendMessageEmbeds(embed.build())
-                .setComponents(ActionRow.of(confirmBtn, cancelBtn))
-                .queue();
+            // Render both candidates' profile cards to attach alongside the breakdown.
+            File card1 = ImageGenerator.generateProfileCard(p1, uid1, null, ImageGenerator.DEFAULT_FONT_PATH);
+            File card2 = ImageGenerator.generateProfileCard(p2, uid2, null, ImageGenerator.DEFAULT_FONT_PATH);
+            final File c1 = card1, c2 = card2;
+
+            List<FileUpload> cards = new ArrayList<>();
+            if (card1 != null && card1.exists()) cards.add(FileUpload.fromData(card1, uid1 + "_card.png"));
+            if (card2 != null && card2.exists()) cards.add(FileUpload.fromData(card2, uid2 + "_card.png"));
+
+            WebhookMessageCreateAction<Message> action = hook.sendMessageEmbeds(embed.build())
+                .setComponents(ActionRow.of(confirmBtn, cancelBtn));
+            if (!cards.isEmpty()) action = action.addFiles(cards);
+
+            action.queue(
+                ok  -> { if (c1 != null) c1.delete(); if (c2 != null) c2.delete(); },
+                err -> {
+                    System.err.println("MatchPreviewService: Failed to send preview for " + uid1 + " & " + uid2 + ": " + err.getMessage());
+                    if (c1 != null) c1.delete();
+                    if (c2 != null) c2.delete();
+                });
 
         }, "match-preview").start();
     }
