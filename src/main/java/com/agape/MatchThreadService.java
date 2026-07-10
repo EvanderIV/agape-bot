@@ -122,7 +122,7 @@ public final class MatchThreadService {
                         + "-# This thread will automatically lock <t:" + closeTimestamp + ":R>.\n"
                         + "||<@" + maleId + "> <@" + femaleId + ">||";
                 } else {
-                    message = "## Quickmatch Found! Found! ⚡\n\n"
+                    message = "## Quickmatch Found! ⚡\n\n"
                         + "First, you both need to reach out to each other via direct message (DM). Once you have messaged each other, return here and type the `/confirm` command to make your match official.\n\n"
                         + "**Reminder that a match is NOT dating/courting/an exclusive relationship!**\n\n"
                         + quickmatchRules
