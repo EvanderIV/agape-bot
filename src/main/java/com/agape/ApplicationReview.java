@@ -182,52 +182,107 @@ public final class ApplicationReview {
                 .build();
 
             event.replyModal(modal).queue();
+        } else if (buttonId.startsWith("app_reject_")) {
+            // Collect an OPTIONAL rejection reason first; the actual rejection is
+            // carried out in handleRejectModal so the reason can be relayed to the
+            // applicant and recorded in the matchmaker channel.
+            TextInput reason = TextInput.create("reject_reason", "Reason for Rejection (optional)", TextInputStyle.PARAGRAPH)
+                .setPlaceholder("Why is this profile being rejected? Leave blank to send no reason.")
+                .setRequired(false)
+                .setMaxLength(1000)
+                .build();
+
+            Modal modal = Modal.create("modal_reject_" + targetUserId, "Reject Profile")
+                .addActionRow(reason)
+                .build();
+
+            event.replyModal(modal).queue();
         } else {
-            // 2. For Accept / Reject: Defer the edit, then remove buttons (This acts as the ACK!)
+            // 2. For Accept: Defer the edit, then remove buttons (This acts as the ACK!)
             event.deferEdit().queue();
             event.getHook().editOriginalComponents(Collections.emptyList()).queue();
 
             // Update profile status before sending DM
-            String newStatus = buttonId.startsWith("app_accept_") ? "ACCEPTED" : "REJECTED";
             AppState state = ProfileRepository.load(targetUserId);
             if (state != null) {
-                state.status = newStatus;
+                state.status = "ACCEPTED";
+                // Persist the audit trail so /app-status can report who reviewed it and when.
+                state.reviewedBy = event.getUser().getId();
+                state.reviewedAt = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                 ProfileRepository.save(targetUserId, state);
-                System.out.println("✅ Profile status updated to " + newStatus + " for user " + targetUserId);
-                if ("ACCEPTED".equals(newStatus)) {
-                    UserInsightsManager.processProfile(targetUserId);
-                    Guild guild = event.getGuild();
-                    if (guild != null) Roles.removeNotEnrolledRole(guild, targetUserId);
-                }
+                System.out.println("✅ Profile status updated to ACCEPTED for user " + targetUserId);
+                UserInsightsManager.processProfile(targetUserId);
+                Guild guild = event.getGuild();
+                if (guild != null) Roles.removeNotEnrolledRole(guild, targetUserId);
             }
 
             // Now safely fetch user using the API (bypassing local cache) and send DM
             event.getJDA().retrieveUserById(targetUserId).queue(user -> {
                 user.openPrivateChannel().queue(channel -> {
-                    if (buttonId.startsWith("app_accept_")) {
-                        channel.sendMessage("🎉 Good news! Your matchmaking application has been **ACCEPTED**!\n\n"
-                            + "Now that your profile has been accepted and posted in our board, you can now participate "
-                            + "in the server chats. The more active you are, the more quickly you will get a match. "
-                            + "Open a Matchmaking ticket for any questions related to matchmaking.").queue();
-                        event.getHook().sendMessage("✅ Accepted application for " + user.getName()).queue();
-                    } else if (buttonId.startsWith("app_reject_")) {
-                        channel.sendMessage("❌ We're sorry, but your matchmaking application has been **REJECTED**.").queue();
-                        event.getHook().sendMessage("❌ Rejected application for " + user.getName()).queue();
-                    }
+                    channel.sendMessage("🎉 Good news! Your matchmaking application has been **ACCEPTED**!\n\n"
+                        + "Now that your profile has been accepted and posted in our board, you can now participate "
+                        + "in the server chats. The more active you are, the more quickly you will get a match. "
+                        + "Open a Matchmaking ticket for any questions related to matchmaking.").queue();
+                    event.getHook().sendMessage("✅ Profile for **" + user.getName() + "** approved by "
+                        + event.getUser().getAsMention()).queue();
                 }, error -> {
                     event.getHook().sendMessage("⚠️ Processed, but could not send a DM to user ID " + targetUserId + " (DMs closed).").queue();
                 });
 
-                // On acceptance, auto-post the rendered profile card to the display board
-                // (independent of DM delivery). No-op + console log if the channel is absent.
-                if (buttonId.startsWith("app_accept_")) {
-                    DisplayBoardService.post(event.getGuild(), targetUserId, user.getEffectiveAvatarUrl(),
-                        DisplayBoardService.NEW_PROFILE_CAPTION);
-                }
+                // Auto-post the rendered profile card to the display board (independent of
+                // DM delivery). No-op + console log if the channel is absent.
+                DisplayBoardService.post(event.getGuild(), targetUserId, user.getEffectiveAvatarUrl(),
+                    DisplayBoardService.NEW_PROFILE_CAPTION);
             }, error -> {
                 event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
             });
         }
+    }
+
+    /**
+     * Handles the "Reject Profile" modal (modal_reject_{userId}).
+     *
+     * <p>The reason is optional. When given it is stored on the profile
+     * ({@link AppState#rejectionReason}), included in the applicant's rejection DM,
+     * and appended to the matchmaker-channel confirmation for the audit trail.
+     */
+    public static void handleRejectModal(ModalInteractionEvent event) {
+        String targetUserId = event.getModalId().substring(event.getModalId().lastIndexOf("_") + 1);
+        net.dv8tion.jda.api.interactions.modals.ModalMapping reasonMapping = event.getValue("reject_reason");
+        final String reason = reasonMapping != null ? reasonMapping.getAsString().trim() : "";
+
+        // ACK and strip the review buttons from the original application post
+        event.deferEdit().queue();
+        event.getHook().editOriginalComponents(Collections.emptyList()).queue();
+
+        AppState state = ProfileRepository.load(targetUserId);
+        if (state != null) {
+            state.status = "REJECTED";
+            state.reviewedBy = event.getUser().getId();
+            state.reviewedAt = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            state.rejectionReason = reason.isEmpty() ? null : reason;
+            ProfileRepository.save(targetUserId, state);
+            System.out.println("❌ Profile status updated to REJECTED for user " + targetUserId
+                + (reason.isEmpty() ? " (no reason given)" : " — reason recorded"));
+        }
+
+        String reasonSuffix = reason.isEmpty() ? "" : "\n\n**Reason:** " + reason;
+
+        event.getJDA().retrieveUserById(targetUserId).queue(user -> {
+            user.openPrivateChannel().queue(channel -> {
+                channel.sendMessage("❌ We're sorry, but your matchmaking application has been **REJECTED**."
+                    + reasonSuffix).queue();
+                event.getHook().sendMessage("❌ Profile for **" + user.getName() + "** rejected by "
+                    + event.getUser().getAsMention() + reasonSuffix).queue();
+            }, error -> {
+                event.getHook().sendMessage("⚠️ Rejected, but could not send a DM to user ID " + targetUserId
+                    + " (DMs closed).\nRejected by " + event.getUser().getAsMention() + reasonSuffix).queue();
+            });
+        }, error -> {
+            event.getHook().sendMessage("❌ Error: Could not find user with ID " + targetUserId + " from Discord API.").queue();
+        });
     }
 
     /** Handles the "Request Application Change" modal (modal_request_change_{userId}). */

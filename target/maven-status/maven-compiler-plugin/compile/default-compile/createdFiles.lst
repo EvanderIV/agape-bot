@@ -36,6 +36,7 @@ com\agape\ApplicationReview.class
 com\agape\ConversationRelay.class
 com\agape\FaceDetector$Stage.class
 com\agape\FaceDetector$WeakClassifier.class
+com\agape\ProfileEditor$Field.class
 com\agape\DenominationCompatibility.class
 com\agape\EnvironmentManager.class
 com\agape\ServerProtectionManager$JoinRisk.class
@@ -58,6 +59,8 @@ com\agape\MatchmakingEngine$MatchLog.class
 com\agape\DisplayBoardService.class
 com\agape\AppState.class
 com\agape\ApplicationHandler$DesignPaths.class
+com\agape\ProfileEditor.class
+com\agape\ProfileEditor$Result.class
 com\agape\UserInsightsManager$UserInsightsRecord.class
 com\agape\ImageGenerator$FontLoader.class
 com\agape\DenominationCompatibility$DoctrinalConflict.class

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.InputValidationTest" time="0.011" tests="24" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" name="com.agape.ProfileEditorTest" time="0.001" tests="9" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="25"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -60,28 +60,13 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="69.0"/>
   </properties>
-  <testcase name="ageBrackets_matchDocumentedBoundaries" classname="com.agape.InputValidationTest" time="0.003"/>
-  <testcase name="targetAge_singleAgeWithinBoundsAccepted" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="autoMod_obsceneContentIsRejected" classname="com.agape.InputValidationTest" time="0.003"/>
-  <testcase name="birthday_plainAgeIsConvertedToBirthday" classname="com.agape.InputValidationTest" time="0.001"/>
-  <testcase name="autoMod_tooShortPhysicalDescriptionIsRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="ageBrackets_underageReturnsNull" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="targetAge_validRangesAccepted" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="mbti_normalTextIsNotFlagged" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="autoMod_mbtiInDescriptionIsRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="birthday_impossibleDateRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="targetAge_invalidRangesRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="birthday_futureYearRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="normalizeLineBreaks_singleLinePassesThrough" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="birthday_twoDigitYearGets1900Added" classname="com.agape.InputValidationTest" time="0.001"/>
-  <testcase name="mbti_nullTextIsNotFlagged" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="normalizeLineBreaks_nullPassesThrough" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="birthday_garbageRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="autoMod_cleanProfilePasses" classname="com.agape.InputValidationTest" time="0.001"/>
-  <testcase name="targetAge_underageAndOverageRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="mbti_typeCodesAreDetected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="normalizeLineBreaks_joinsLinesWithCommas" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="birthday_outOfRangeAgeRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="autoMod_tooShortDealBreakersAreRejected" classname="com.agape.InputValidationTest" time="0"/>
-  <testcase name="birthday_validDateIsNormalized" classname="com.agape.InputValidationTest" time="0"/>
+  <testcase name="requiredParagraphFieldsRejectEmpty" classname="com.agape.ProfileEditorTest" time="0"/>
+  <testcase name="targetAgeValidation" classname="com.agape.ProfileEditorTest" time="0"/>
+  <testcase name="fieldKeysRoundTrip" classname="com.agape.ProfileEditorTest" time="0"/>
+  <testcase name="optionalFieldsClearOnEmptyOrSkip" classname="com.agape.ProfileEditorTest" time="0"/>
+  <testcase name="nameRejectsEmptyAndAcceptsValue" classname="com.agape.ProfileEditorTest" time="0"/>
+  <testcase name="genderParsing" classname="com.agape.ProfileEditorTest" time="0"/>
+  <testcase name="currentValueReflectsGenderAsWords" classname="com.agape.ProfileEditorTest" time="0"/>
+  <testcase name="currentValueNeverNull" classname="com.agape.ProfileEditorTest" time="0"/>
+  <testcase name="birthdayValidatesFormatAndAge" classname="com.agape.ProfileEditorTest" time="0.001"/>
 </testsuite>

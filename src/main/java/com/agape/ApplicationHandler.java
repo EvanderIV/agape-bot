@@ -1177,7 +1177,9 @@ public class ApplicationHandler extends ListenerAdapter {
         
         String modalId = event.getModalId();
 
-        if (modalId.startsWith("modal_request_change_")) {
+        if (modalId.startsWith("modal_reject_")) {
+            ApplicationReview.handleRejectModal(event);
+        } else if (modalId.startsWith("modal_request_change_")) {
             ApplicationReview.handleRequestChangeModal(event);
         } else if (modalId.startsWith("modal_request_photo_change_")) {
             ApplicationReview.handlePhotoChangeModal(event);

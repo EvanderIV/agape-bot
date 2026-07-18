@@ -1,5 +1,6 @@
 com\agape\InputValidationTest.class
 com\agape\EnvironmentManagerTest.class
+com\agape\ProfileEditorTest.class
 com\agape\UserInsightsManagerTest.class
 com\agape\ThreadManagerDriftTest.class
 com\agape\ApplicationHandlerTest.class

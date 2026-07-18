@@ -22,6 +22,7 @@ import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
@@ -309,10 +310,16 @@ public class AgapeBot extends ListenerAdapter {
                 .addOption(OptionType.USER, "user", "The user whose profile to opt in or out", true)
                 .addOption(OptionType.BOOLEAN, "opted-in", "true to opt in (restore), false to opt out (soft-delete)", true);
 
+        OptionData editFieldOpt = new OptionData(OptionType.STRING, "field", "Which field to edit", true);
+        for (ProfileEditor.Field f : ProfileEditor.Field.values()) editFieldOpt.addChoice(f.label, f.key);
+        SlashCommandData editProfileCmd = Commands.slash("edit-profile", "Edit a field on a user's profile to fix errors (Matchmakers only)")
+                .addOption(OptionType.USER, "user", "The user whose profile to edit", true)
+                .addOptions(editFieldOpt);
+
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         jda.getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd, setOptCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd, setOptCmd, editProfileCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -378,6 +385,7 @@ public class AgapeBot extends ListenerAdapter {
             case "pardon":          handlePardon(event); break;
             case "end-match":       handleEndMatch(event); break;
             case "set-opt":         handleSetOpt(event); break;
+            case "edit-profile":    handleEditProfile(event); break;
             default: break;
         }
     }
@@ -1210,6 +1218,43 @@ public class AgapeBot extends ListenerAdapter {
                 .setEphemeral(true).queue();
     }
 
+    /** /edit-profile — open a pre-filled modal for a matchmaker to correct one profile field. */
+    private void handleEditProfile(SlashCommandInteractionEvent event) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
+            event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+            return;
+        }
+
+        String targetId = event.getOption("user").getAsUser().getId();
+        ProfileEditor.Field field = ProfileEditor.Field.fromKey(event.getOption("field").getAsString());
+        if (field == null) {
+            event.reply("❌ Unknown field.").setEphemeral(true).queue();
+            return;
+        }
+
+        AppState state = ProfileRepository.load(targetId);
+        if (state == null) {
+            event.reply("❌ No profile found for <@" + targetId + ">.").setEphemeral(true).queue();
+            return;
+        }
+
+        String current = ProfileEditor.currentValue(state, field);
+        TextInput.Builder input = TextInput
+            .create("value", field.label, field.paragraph ? TextInputStyle.PARAGRAPH : TextInputStyle.SHORT)
+            .setRequired(field.required)
+            .setMaxLength(field.paragraph ? 4000 : 256);
+        // Prefill with the current value (guard against the rare over-long field so
+        // building the modal never throws on setValue).
+        if (!current.isEmpty()) input.setValue(current.length() > 4000 ? current.substring(0, 4000) : current);
+
+        // Modal ID: editprofile_{fieldKey}_{userId}. Field keys contain no underscores,
+        // so the trailing segment after the last '_' is always the user ID.
+        Modal modal = Modal.create("editprofile_" + field.key + "_" + targetId, "Edit " + field.label)
+            .addActionRow(input.build())
+            .build();
+        event.replyModal(modal).queue();
+    }
+
     /** /user-insights — show collected preference tags and decline history. */
     private void handleUserInsights(SlashCommandInteractionEvent event) {
         if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
@@ -1339,7 +1384,51 @@ public class AgapeBot extends ListenerAdapter {
             handleReportModal(event, modalId);
         } else if (modalId.startsWith("match_decline_")) {
             handleDeclineModal(event, modalId);
+        } else if (modalId.startsWith("editprofile_")) {
+            handleEditProfileModal(event, modalId);
         }
+    }
+
+    /** Applies a submitted /edit-profile modal to the target profile. */
+    private void handleEditProfileModal(ModalInteractionEvent event, String modalId) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
+            event.reply("❌ Only matchmakers and admins can edit profiles.").setEphemeral(true).queue();
+            return;
+        }
+
+        String rest = modalId.substring("editprofile_".length());
+        int sep = rest.lastIndexOf('_');
+        if (sep < 0) { event.reply("❌ Malformed edit request.").setEphemeral(true).queue(); return; }
+        String fieldKey = rest.substring(0, sep);
+        String targetId = rest.substring(sep + 1);
+
+        ProfileEditor.Field field = ProfileEditor.Field.fromKey(fieldKey);
+        if (field == null) { event.reply("❌ Unknown field.").setEphemeral(true).queue(); return; }
+
+        AppState state = ProfileRepository.load(targetId);
+        if (state == null) { event.reply("❌ No profile found for <@" + targetId + ">.").setEphemeral(true).queue(); return; }
+
+        String raw = event.getValue("value") != null ? event.getValue("value").getAsString() : "";
+        boolean hadCard = state.displayBoardMessageId != null && !state.softDeleted;
+
+        ProfileEditor.Result result = ProfileEditor.apply(state, field, raw);
+        if (!result.ok) {
+            event.reply("❌ " + result.message).setEphemeral(true).queue();
+            return;
+        }
+
+        ProfileRepository.save(targetId, state);
+        System.out.println("edit-profile: " + event.getUser().getId() + " edited " + fieldKey + " on profile " + targetId);
+
+        // If a card is currently on the display board, repost it so the fix is visible.
+        if (hadCard && event.getGuild() != null) {
+            DisplayBoardService.remove(event.getGuild(), targetId);
+            DisplayBoardService.post(event.getGuild(), targetId, null, null);
+        }
+
+        event.reply("✅ " + result.message + " for <@" + targetId + ">."
+                + (hadCard ? " Their display-board card has been refreshed." : ""))
+            .setEphemeral(true).queue();
     }
 
     /** Post-match feedback text submitted from a DM button. */
