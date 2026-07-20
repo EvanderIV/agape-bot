@@ -76,7 +76,7 @@ public class ApplicationHandler extends ListenerAdapter {
      * its centered default. Detection is CPU-bound, so callers should invoke
      * this off the JDA event loop.
      */
-    private static void applyFaceFocus(AppState state) {
+    static void applyFaceFocus(AppState state) {
         float[] focus = FaceDetector.computeFocus(state.photoPath);
         if (focus != null) {
             state.photoFocusX = focus[0];

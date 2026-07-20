@@ -314,7 +314,8 @@ public class AgapeBot extends ListenerAdapter {
         for (ProfileEditor.Field f : ProfileEditor.Field.values()) editFieldOpt.addChoice(f.label, f.key);
         SlashCommandData editProfileCmd = Commands.slash("edit-profile", "Edit a field on a user's profile to fix errors (Matchmakers only)")
                 .addOption(OptionType.USER, "user", "The user whose profile to edit", true)
-                .addOptions(editFieldOpt);
+                .addOptions(editFieldOpt)
+                .addOption(OptionType.ATTACHMENT, "photo", "New profile photo (required when field is Photo)", false);
 
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         jda.getGuilds().forEach(guild -> {
@@ -1238,6 +1239,12 @@ public class AgapeBot extends ListenerAdapter {
             return;
         }
 
+        // Photo edits come from the attachment option — no modal (files can't go in one).
+        if (field == ProfileEditor.Field.PHOTO) {
+            handlePhotoEdit(event, targetId, state);
+            return;
+        }
+
         String current = ProfileEditor.currentValue(state, field);
         TextInput.Builder input = TextInput
             .create("value", field.label, field.paragraph ? TextInputStyle.PARAGRAPH : TextInputStyle.SHORT)
@@ -1253,6 +1260,62 @@ public class AgapeBot extends ListenerAdapter {
             .addActionRow(input.build())
             .build();
         event.replyModal(modal).queue();
+    }
+
+    /**
+     * Replaces a user's profile photo from the /edit-profile `photo:` attachment,
+     * re-running face detection and refreshing their display-board card.
+     */
+    private void handlePhotoEdit(SlashCommandInteractionEvent event, String targetId, AppState state) {
+        net.dv8tion.jda.api.interactions.commands.OptionMapping photoOpt = event.getOption("photo");
+        if (photoOpt == null) {
+            event.reply("❌ To edit the photo, attach an image with the `photo:` option.").setEphemeral(true).queue();
+            return;
+        }
+        net.dv8tion.jda.api.entities.Message.Attachment attachment = photoOpt.getAsAttachment();
+        if (!attachment.isImage()) {
+            event.reply("❌ That attachment is not an image.").setEphemeral(true).queue();
+            return;
+        }
+
+        event.deferReply(true).queue();
+
+        final boolean hadCard = state.displayBoardMessageId != null && !state.softDeleted;
+        final Guild guild = event.getGuild();
+
+        File dir = new File("user_content/images/");
+        if (!dir.exists()) dir.mkdirs();
+        String ext = attachment.getFileExtension() != null ? attachment.getFileExtension() : "png";
+        File dest = new File(dir, targetId + "." + ext);
+
+        // downloadToFile completes on a background thread, so the CPU-bound face
+        // detection below never runs on the JDA event loop.
+        attachment.getProxy().downloadToFile(dest).thenAccept(file -> {
+            AppState fresh = ProfileRepository.load(targetId);
+            if (fresh == null) {
+                event.getHook().sendMessage("❌ Could not reload the profile to save the new photo.").queue();
+                return;
+            }
+            fresh.photoPath = file.getAbsolutePath();
+            ApplicationHandler.applyFaceFocus(fresh); // re-detect the face for the new photo
+            ProfileRepository.save(targetId, fresh);
+            System.out.println("edit-profile: " + event.getUser().getId() + " replaced photo on profile " + targetId);
+
+            refreshDisplayBoardCard(guild, targetId, hadCard);
+            event.getHook().sendMessage("✅ Updated **Photo** for <@" + targetId + ">."
+                + (hadCard ? " Their display-board card has been regenerated." : "")).queue();
+        }).exceptionally(ex -> {
+            System.err.println("edit-profile: photo download failed for " + targetId + ": " + ex.getMessage());
+            event.getHook().sendMessage("❌ Failed to download that image. Please try again.").queue();
+            return null;
+        });
+    }
+
+    /** Deletes and reposts the user's display-board card so an edit is reflected. */
+    private static void refreshDisplayBoardCard(Guild guild, String targetId, boolean hadCard) {
+        if (!hadCard || guild == null) return;
+        DisplayBoardService.remove(guild, targetId);
+        DisplayBoardService.post(guild, targetId, null, null);
     }
 
     /** /user-insights — show collected preference tags and decline history. */
@@ -1420,14 +1483,11 @@ public class AgapeBot extends ListenerAdapter {
         ProfileRepository.save(targetId, state);
         System.out.println("edit-profile: " + event.getUser().getId() + " edited " + fieldKey + " on profile " + targetId);
 
-        // If a card is currently on the display board, repost it so the fix is visible.
-        if (hadCard && event.getGuild() != null) {
-            DisplayBoardService.remove(event.getGuild(), targetId);
-            DisplayBoardService.post(event.getGuild(), targetId, null, null);
-        }
+        // If a card is currently on the display board, delete and regenerate it so the fix is visible.
+        refreshDisplayBoardCard(event.getGuild(), targetId, hadCard);
 
         event.reply("✅ " + result.message + " for <@" + targetId + ">."
-                + (hadCard ? " Their display-board card has been refreshed." : ""))
+                + (hadCard ? " Their display-board card has been regenerated." : ""))
             .setEphemeral(true).queue();
     }
 

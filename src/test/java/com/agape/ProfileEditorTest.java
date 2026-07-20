@@ -98,6 +98,15 @@ public class ProfileEditorTest {
     }
 
     @Test
+    public void photoCannotBeSetAsText() {
+        AppState s = profile();
+        s.photoPath = "user_content/images/123.png";
+        ProfileEditor.Result r = ProfileEditor.apply(s, Field.PHOTO, "some/other/path.png");
+        assertFalse("photo must go through the attachment option", r.ok);
+        assertEquals("user_content/images/123.png", s.photoPath); // unchanged
+    }
+
+    @Test
     public void currentValueNeverNull() {
         AppState blank = new AppState();
         for (Field f : Field.values()) {

@@ -32,7 +32,9 @@ public final class ProfileEditor {
         STRENGTHS("strengths", "Strengths", true, false),
         WEAKNESSES("weaknesses", "Weaknesses", true, false),
         LOOK_FOR("lookfor", "What They're Looking For", true, false),
-        DEAL_BREAKERS("dealbreakers", "Deal Breakers", true, true);
+        DEAL_BREAKERS("dealbreakers", "Deal Breakers", true, true),
+        /** Edited via the {@code photo:} attachment option, not a modal. */
+        PHOTO("photo", "Photo", false, false);
 
         public final String key;
         public final String label;
@@ -78,6 +80,7 @@ public final class ProfileEditor {
             case WEAKNESSES:          return nz(s.weaknesses);
             case LOOK_FOR:            return nz(s.lookFor);
             case DEAL_BREAKERS:       return nz(s.dealBreakers);
+            case PHOTO:               return nz(s.photoPath);
             default:                  return "";
         }
     }
@@ -148,6 +151,9 @@ public final class ProfileEditor {
                 if (v.isEmpty()) return Result.error("Deal breakers cannot be empty.");
                 s.dealBreakers = ApplicationHandler.normalizeLineBreaks(v);
                 break;
+            case PHOTO:
+                // Photos are files, not text — handled by the command's attachment option.
+                return Result.error("Photo edits require the `photo:` attachment option on `/edit-profile`.");
             default:
                 return Result.error("Unknown field.");
         }
