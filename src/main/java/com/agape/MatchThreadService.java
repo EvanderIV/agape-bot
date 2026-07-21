@@ -43,6 +43,14 @@ public final class MatchThreadService {
             String user2Id, boolean user2IsMale, String user2Name, AppState user2Profile,
             boolean isManualMatch) {
 
+        // A match — quickmatch OR manual — permanently precludes this pair from ever being
+        // matched again. Both auto-selection paths (the quickmatch candidate scan and the
+        // /compat-algo ranking) skip precluded pairs, so this closes every automatic rematch
+        // route. Recorded FIRST, before any early return below, so the guarantee holds even
+        // if the thread channel is missing or thread creation fails. Order-independent and
+        // idempotent: re-adding an existing pair is a no-op.
+        CompatibilityEngine.addPrecludedPair(user1Id, user2Id);
+
         // Find the appropriate parent channel
         TextChannel qmChannel = null;
         for (TextChannel ch : guild.getTextChannels()) {

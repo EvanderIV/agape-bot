@@ -613,6 +613,27 @@ public class CompatibilityEngine {
         }
     }
 
+    /**
+     * Precludes many pairs at once, loading and saving {@code precluded_pairs.json}
+     * a single time (unlike calling {@link #addPrecludedPair} in a loop). Each pair
+     * is a {@code [uid1, uid2]} array; order and duplicates don't matter. Returns
+     * the number of pairs that were newly added.
+     */
+    public static int addPrecludedPairs(java.util.Collection<String[]> pairs) {
+        PrecludedPairs pp = loadPrecluded();
+        int added = 0;
+        for (String[] pair : pairs) {
+            if (pair == null || pair.length < 2 || pair[0] == null || pair[1] == null) continue;
+            String key = pairKey(pair[0], pair[1]);
+            if (!pp.pairs.contains(key)) {
+                pp.pairs.add(key);
+                added++;
+            }
+        }
+        if (added > 0) savePrecluded(pp);
+        return added;
+    }
+
     private static PrecludedPairs loadPrecluded() {
         File f = new File(PRECLUDED_FILE);
         if (!f.exists()) return new PrecludedPairs();

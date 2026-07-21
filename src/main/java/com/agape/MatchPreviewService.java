@@ -52,6 +52,11 @@ public final class MatchPreviewService {
             String name2 = p2.name != null ? p2.name : uid2;
 
             List<String> warnings = new ArrayList<>();
+            if (CompatibilityEngine.isPrecluded(uid1, uid2)) {
+                warnings.add("**Precluded Pair** — These two are on the precluded list (they have already been "
+                    + "matched before, or a matchmaker excluded them). Re-matching is normally prevented — only "
+                    + "proceed if you intend to override this.");
+            }
             if (dist.score <= -10) {
                 warnings.add("**Extreme Distance** — These users appear to be on opposite sides of the globe. "
                     + "The time zone gap will likely make it very hard for them to find mutual availability.");

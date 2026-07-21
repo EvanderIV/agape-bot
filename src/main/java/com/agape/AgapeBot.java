@@ -159,6 +159,10 @@ public class AgapeBot extends ListenerAdapter {
         // Sync preference insights from all accepted profiles
         UserInsightsManager.syncAllProfiles();
 
+        // Reconcile the precluded-pairs list with historical matches so any pair that was
+        // ever matched (before automatic preclusion existed) can never be re-matched.
+        ThreadManager.backfillPrecludedPairs();
+
         // Role backfill sweep. Loads each allowed guild's members ONCE via gateway
         // chunking (not per-user REST, which previously caused 429s), then fixes
         // roles only where actually needed:
@@ -310,6 +314,10 @@ public class AgapeBot extends ListenerAdapter {
                 .addOption(OptionType.USER, "user", "The user whose profile to opt in or out", true)
                 .addOption(OptionType.BOOLEAN, "opted-in", "true to opt in (restore), false to opt out (soft-delete)", true);
 
+        SlashCommandData precludeCmd = Commands.slash("preclude", "Prevent two users from ever being matched or recommended together (Matchmakers only)")
+                .addOption(OptionType.USER, "user1", "First user", true)
+                .addOption(OptionType.USER, "user2", "Second user", true);
+
         OptionData editFieldOpt = new OptionData(OptionType.STRING, "field", "Which field to edit", true);
         for (ProfileEditor.Field f : ProfileEditor.Field.values()) editFieldOpt.addChoice(f.label, f.key);
         SlashCommandData editProfileCmd = Commands.slash("edit-profile", "Edit a field on a user's profile to fix errors (Matchmakers only)")
@@ -320,7 +328,7 @@ public class AgapeBot extends ListenerAdapter {
         // 1. Force refresh the commands on every specific server the bot is in (Updates instantly!)
         jda.getGuilds().forEach(guild -> {
             guild.updateCommands()
-                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd, setOptCmd, editProfileCmd)
+                .addCommands(generateCmd, applyCmd, messageCmd, statusCmd, historyCmd, quickmatchCmd, toggleQmCmd, compatAlgoCmd, matchCmd, qmThreadCmd, mmThreadCmd, confirmCmd, declineCmd, closeThreadCmd, viewMatchesCmd, userMatchesCmd, userInsightsCmd, tagUserCmd, pardonCmd, endMatchCmd, setOptCmd, editProfileCmd, precludeCmd)
                 .queue();
             System.out.println("Refreshed commands for server: " + guild.getName());
         });
@@ -387,6 +395,7 @@ public class AgapeBot extends ListenerAdapter {
             case "end-match":       handleEndMatch(event); break;
             case "set-opt":         handleSetOpt(event); break;
             case "edit-profile":    handleEditProfile(event); break;
+            case "preclude":        handlePreclude(event); break;
             default: break;
         }
     }
@@ -1316,6 +1325,42 @@ public class AgapeBot extends ListenerAdapter {
         if (!hadCard || guild == null) return;
         DisplayBoardService.remove(guild, targetId);
         DisplayBoardService.post(guild, targetId, null, null);
+    }
+
+    /** /preclude — manually exclude a pair from all automatic matching and recommendations. */
+    private void handlePreclude(SlashCommandInteractionEvent event) {
+        if (!Roles.isMatchmakerOrAdmin(event.getMember())) {
+            event.reply("❌ Only matchmakers and admins can use this command.").setEphemeral(true).queue();
+            return;
+        }
+
+        String uid1 = event.getOption("user1").getAsUser().getId();
+        String uid2 = event.getOption("user2").getAsUser().getId();
+        if (uid1.equals(uid2)) {
+            event.reply("❌ You cannot preclude a user with themselves.").setEphemeral(true).queue();
+            return;
+        }
+
+        boolean already = CompatibilityEngine.isPrecluded(uid1, uid2);
+        if (already) {
+            event.reply("ℹ️ <@" + uid1 + "> and <@" + uid2 + "> are already precluded. No change made.")
+                .setEphemeral(true).queue();
+            return;
+        }
+
+        CompatibilityEngine.addPrecludedPair(uid1, uid2);
+        System.out.println("preclude: " + event.getUser().getId() + " precluded " + uid1 + " and " + uid2);
+
+        String name1 = nameOrMention(uid1);
+        String name2 = nameOrMention(uid2);
+        event.reply("✅ **" + name1 + "** and **" + name2 + "** are now precluded — they will never be "
+            + "quickmatched, manually matched, or recommended together.").setEphemeral(true).queue();
+    }
+
+    /** A profile's display name if one exists, else a mention. */
+    private static String nameOrMention(String userId) {
+        AppState p = ProfileRepository.load(userId);
+        return (p != null && p.name != null) ? p.name : "<@" + userId + ">";
     }
 
     /** /user-insights — show collected preference tags and decline history. */

@@ -1304,6 +1304,29 @@ public class ThreadManager {
         return out;
     }
 
+    /**
+     * Reconciles the precluded-pairs list against the historical thread records:
+     * every pair that has ever had a quickmatch or manual match thread is precluded
+     * from future automatic matching. Idempotent and cheap — safe to run on every
+     * boot, and it self-heals the precluded list from thread history if
+     * {@code data/precluded_pairs.json} is ever lost. Returns pairs newly added.
+     */
+    public static int backfillPrecludedPairs() {
+        List<QMThread> all = new ArrayList<>();
+        all.addAll(loadAllFromDir(MM_THREADS_DIR));
+        all.addAll(loadAllFromDir(THREADS_DIR));
+
+        List<String[]> pairs = new ArrayList<>();
+        for (QMThread r : all) {
+            if (r.maleId != null && r.femaleId != null) pairs.add(new String[]{r.maleId, r.femaleId});
+        }
+
+        int added = CompatibilityEngine.addPrecludedPairs(pairs);
+        System.out.println("ThreadManager: Preclusion backfill — " + added + " new pair(s) precluded from "
+            + all.size() + " historical thread record(s).");
+        return added;
+    }
+
     private static List<QMThread> loadAllFromDir(String dirPath) {
         List<QMThread> result = new ArrayList<>();
         File dir = new File(dirPath);
